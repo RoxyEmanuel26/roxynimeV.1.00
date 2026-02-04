@@ -205,28 +205,25 @@ export default function WatchPage() {
     };
 
     // Navigation
-    const hasPrev = currentEpisode > 1;
-    const hasNext = currentEpisode < episodes.length;
+      // Navigation
+  const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
+  const hasPrev = currentIdx > 0;
+  const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
 
-    const goToPrev = () => {
-        if (hasPrev) {
-            const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-            if (currentIdx > 0) {
-                const prevEp = episodes[currentIdx - 1];
-                router.push(`/watch/${animeId}/${prevEp.slug}`);
-            }
-        }
-    };
+  const goToPrev = () => {
+    if (hasPrev && currentIdx > 0) {
+      const prevEp = episodes[currentIdx - 1];
+      router.push(`/watch/${animeId}/${prevEp.slug}`);
+    }
+  };
 
-    const goToNext = () => {
-        if (hasNext) {
-            const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-            if (currentIdx < episodes.length - 1) {
-                const nextEp = episodes[currentIdx + 1];
-                router.push(`/watch/${animeId}/${nextEp.slug}`);
-            }
-        }
-    };
+
+  const goToNext = () => {
+    if (hasNext && currentIdx < episodes.length - 1) {
+      const nextEp = episodes[currentIdx + 1];
+      router.push(`/watch/${animeId}/${nextEp.slug}`);
+    }
+
 
     const handleEpisodeSelect = (episode: Episode) => {
         router.push(`/watch/${animeId}/${episode.slug}`);
