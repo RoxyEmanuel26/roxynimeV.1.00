@@ -12,7 +12,7 @@ interface AnimeCardProps {
     title: string;
     image: string;
     episode?: string | number;
-    rating?: number;
+    rating?: number | string;
     type?: string | string[];
     className?: string;
 }
@@ -30,6 +30,11 @@ export function AnimeCard({
     // Extract anime ID from slug if needed, fallback to id
     const animeId = id || (slug?.match(/\/anime\/(\d+)/)?.[1]) || slug || "";
     const href = `/anime/${animeId}`;
+    const imageSrc = image || '/placeholder-anime.svg';
+
+    // Convert rating to number if it's a string
+    const ratingNum = typeof rating === 'string' ? parseFloat(rating) : rating;
+    const hasValidRating = ratingNum && !isNaN(ratingNum) && ratingNum > 0;
 
     return (
         <motion.div
@@ -41,14 +46,19 @@ export function AnimeCard({
             <Link href={href} className="block">
                 <div className="anime-card aspect-[3/4] relative">
                     {/* Poster Image */}
-                    <Image
-                        src={image || "/placeholder-anime.jpg"}
-                        alt={title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                        unoptimized
-                    />
+                    {imageSrc ? (
+                        <Image
+                            src={imageSrc}
+                            alt={title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <span className="text-muted-foreground text-xs">No Image</span>
+                        </div>
+                    )}
 
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
@@ -70,10 +80,10 @@ export function AnimeCard({
                     )}
 
                     {/* Rating Badge */}
-                    {rating && rating > 0 && (
+                    {hasValidRating && (
                         <div className="absolute top-2 right-2 z-20 rating-badge">
                             <Star className="h-3 w-3 fill-current" />
-                            <span>{rating.toFixed(1)}</span>
+                            <span>{ratingNum!.toFixed(1)}</span>
                         </div>
                     )}
 

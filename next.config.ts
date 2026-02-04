@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "otakudesu.best",
+        pathname: "/wp-content/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.sankavollerei.com",
+      },
+      {
+        protocol: "https",
         hostname: "objects.nyomo.my.id",
         pathname: "/**",
       },

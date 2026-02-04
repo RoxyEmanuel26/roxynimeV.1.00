@@ -1,228 +1,181 @@
-import { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Play, Star, Calendar, Film, Heart, Share2, Clock } from "lucide-react";
-import { BannerAd, SidebarAd } from "@/components/ads";
-import { AnimeCarousel } from "@/components/anime";
-import { getAnimeInfo, getOngoingAnimeList } from "@/lib/animbus";
+import { Play, Calendar, Star, Tag, Users } from "lucide-react";
+import { AnimeCard } from "@/components/anime/AnimeCard";
+import { SidebarAd, BannerAd } from "@/components/ads";
+import { getAnimeInfo, getTrendingAnime } from "@/lib/animbus";
 
-interface PageProps {
+export const revalidate = 3600; // Revalidate every hour
+
+interface AnimeDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export default async function AnimeDetailPage({
+    params,
+}: AnimeDetailPageProps) {
     const { id } = await params;
-    const anime = await getAnimeInfo(id);
 
-    if (!anime) {
-        return {
-            title: "Anime Not Found",
-        };
-    }
-
-    return {
-        title: anime.title,
-        description: anime.description || `Watch ${anime.title} on RoxyNime`,
-        openGraph: {
-            title: anime.title,
-            description: anime.description || `Watch ${anime.title} on RoxyNime`,
-            images: anime.image ? [{ url: anime.image }] : [],
-        },
-    };
-}
-
-export default async function AnimeDetailPage({ params }: PageProps) {
-    const { id } = await params;
-    const [anime, relatedData] = await Promise.all([
+    // Fetch anime details and related anime
+    const [anime, relatedAnime] = await Promise.all([
         getAnimeInfo(id),
-        getOngoingAnimeList(1),
+        getTrendingAnime(),
     ]);
 
     if (!anime) {
         notFound();
     }
 
-    // Parse episodes from the anime data
+    // Debug logging
+    console.log('Anime Detail Data:', {
+        id,
+        title: anime.title,
+        hasEpisodes: !!anime.episodes,
+        episodeCount: anime.episodes?.length || 0,
+        hasImage: !!(anime.poster || anime.image),
+    });
+
+    // Get episodes list
     const episodes = anime.episodes || [];
-    const firstEpisode = episodes[0];
 
     return (
         <div className="min-h-screen">
             {/* Hero Banner */}
-            <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
-                <div className="absolute inset-0">
-                    <Image
-                        src={anime.image}
-                        alt={anime.title}
-                        fill
-                        className="object-cover blur-sm scale-110"
-                        priority
-                        unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
-                </div>
+            <div className="relative h-[300px] md:h-[400px] lg:h-[500px]">
+                <Image
+                    src={anime.poster || anime.image || "/placeholder-anime.svg"}
+                    alt={anime.title || "Anime poster"}
+                    fill
+                    className="object-cover"
+                    sizes="100vw"
+                    priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
             </div>
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 -mt-48 relative z-10">
-                {/* Top Banner Ad */}
-                <BannerAd className="mb-8" />
-
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Main Column */}
-                    <div className="flex-1">
-                        <div className="flex flex-col md:flex-row gap-8 mb-8">
-                            {/* Poster */}
-                            <div className="flex-shrink-0 mx-auto md:mx-0">
-                                <div className="relative w-[200px] md:w-[250px] aspect-[3/4] rounded-xl overflow-hidden shadow-2xl">
-                                    <Image
-                                        src={anime.image}
-                                        alt={anime.title}
-                                        fill
-                                        className="object-cover"
-                                        priority
-                                        unoptimized
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 space-y-4">
-                                {/* Type Badge */}
-                                <div className="flex flex-wrap gap-2">
-                                    {anime.type && (
-                                        <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium">
-                                            {anime.type}
-                                        </span>
-                                    )}
-                                    {anime.status && (
-                                        <span className="px-3 py-1 rounded-full bg-secondary/20 text-secondary-foreground text-sm">
-                                            {anime.status}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Title */}
-                                <h1 className="text-3xl md:text-4xl font-bold">{anime.title}</h1>
-
-                                {/* Meta Info */}
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                    {anime.rating && (
-                                        <span className="flex items-center gap-1">
-                                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                                            {anime.rating}
-                                        </span>
-                                    )}
-                                    {anime.released && (
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="h-4 w-4" />
-                                            {anime.released}
-                                        </span>
-                                    )}
-                                    {anime.studio && (
-                                        <span className="flex items-center gap-1">
-                                            <Film className="h-4 w-4" />
-                                            {anime.studio}
-                                        </span>
-                                    )}
-                                    {episodes.length > 0 && (
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="h-4 w-4" />
-                                            {episodes.length} Episodes
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Genres */}
-                                {anime.genres && anime.genres.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {anime.genres.map((genre, index) => (
-                                            <Link
-                                                key={index}
-                                                href={`/browse?genre=${encodeURIComponent(genre.toLowerCase())}`}
-                                                className="genre-tag hover:bg-primary/20 transition-colors"
-                                            >
-                                                {genre}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Synopsis */}
-                                {anime.synopsis && (
-                                    <div className="glass-card p-4">
-                                        <h3 className="font-semibold mb-2">Synopsis</h3>
-                                        <p className="text-muted-foreground text-sm leading-relaxed">
-                                            {anime.description}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-wrap gap-3">
-                                    {firstEpisode && (
-                                        <Link
-                                            href={`/watch/${id}/${firstEpisode.number || "1"}`}
-                                            className="btn-primary px-6"
-                                        >
-                                            <Play className="h-5 w-5 fill-current" />
-                                            Watch Now
-                                        </Link>
-                                    )}
-                                    <button className="btn-outline px-4">
-                                        <Heart className="h-5 w-5" />
-                                        Add to Favorites
-                                    </button>
-                                    <button className="btn-ghost px-4">
-                                        <Share2 className="h-5 w-5" />
-                                        Share
-                                    </button>
-                                </div>
-                            </div>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl -mt-32 relative z-10">
+                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                    {/* Left: Poster */}
+                    <div className="flex-shrink-0 mx-auto lg:mx-0">
+                        <div className="relative w-[200px] sm:w-[250px] md:w-[300px] aspect-[2/3] rounded-lg overflow-hidden shadow-2xl">
+                            <Image
+                                src={anime.poster || anime.image || "/placeholder-anime.svg"}
+                                alt={anime.title || "Anime cover"}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 200px, (max-width: 1024px) 250px, 300px"
+                                priority
+                            />
                         </div>
+                    </div>
+
+                    {/* Center: Info */}
+                    <div className="flex-1 space-y-4 sm:space-y-6">
+                        {/* Title */}
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+                                {anime.title}
+                            </h1>
+                            {anime.japaneseTitle && (
+                                <p className="text-sm sm:text-base text-muted-foreground">
+                                    {anime.japaneseTitle}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Meta Info */}
+                        <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
+                            {anime.type && (
+                                <div className="flex items-center gap-1.5">
+                                    <Tag className="h-4 w-4 text-primary" />
+                                    <span>{anime.type}</span>
+                                </div>
+                            )}
+                            {anime.status && (
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-4 w-4 text-primary" />
+                                    <span>{anime.status}</span>
+                                </div>
+                            )}
+                            {anime.rating && (
+                                <div className="flex items-center gap-1.5">
+                                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                    <span>{anime.rating}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Genres */}
+                        {anime.genres && anime.genres.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {anime.genres.map((genre: string, index: number) => (
+                                    <span
+                                        key={index}
+                                        className="px-2 sm:px-3 py-1 bg-primary/10 text-primary rounded-full text-xs sm:text-sm"
+                                    >
+                                        {genre}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Synopsis */}
+                        {anime.synopsis && (
+                            <div>
+                                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                                    Synopsis
+                                </h2>
+                                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                                    {anime.synopsis}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Watch Button */}
+                        {episodes.length > 0 && (
+                            <Link
+                                href={`/watch/${id}/${episodes[0].id || episodes[0].urlSlug || 1}`}
+                                className="btn-primary inline-flex items-center gap-2 px-6 sm:px-8 py-3 text-sm sm:text-base"
+                            >
+                                <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
+                                Watch Now
+                            </Link>
+                        )}
 
                         {/* Episodes List */}
                         {episodes.length > 0 && (
-                            <div className="glass-card p-6 mb-8">
-                                <h2 className="text-xl font-bold mb-4">Episodes</h2>
-                                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                                    {episodes.map((episode) => (
+                            <div className="pt-4 sm:pt-6">
+                                <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                                    Episodes ({episodes.length})
+                                </h2>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
+                                    {episodes.map((ep: any) => (
                                         <Link
-                                            key={episode.id}
-                                            href={`/watch/${id}/${episode.number}`}
-                                            className="flex items-center justify-center p-3 rounded-lg bg-muted hover:bg-primary hover:text-white transition-colors text-sm font-medium"
+                                            key={ep.id || ep.number}
+                                            href={`/watch/${id}/${ep.id || ep.urlSlug}`}
+                                            className="btn-outline text-center py-2 sm:py-3 text-xs sm:text-sm hover:bg-primary hover:text-primary-foreground transition-colors"
                                         >
-                                            {episode.number}
+                                            Ep {ep.number}
                                         </Link>
                                     ))}
                                 </div>
                             </div>
                         )}
-
-                        {/* Banner Ad */}
-                        <BannerAd className="mb-8" />
-
-                        {/* Related Anime */}
-                        <AnimeCarousel
-                            title="You May Also Like"
-                            subtitle="Similar anime recommendations"
-                            animes={relatedData
-                                .slice(0, 12)
-                                .map((a) => ({
-                                    ...a,
-                                }))}
-                        />
                     </div>
 
-                    {/* Sidebar */}
-                    <aside className="lg:w-[300px] space-y-6">
-                        <SidebarAd className="hidden lg:flex" />
+                    {/* Right: Sidebar */}
+                    <aside className="lg:w-[280px] space-y-4 sm:space-y-6">
+                        {/* Sidebar Ad */}
+                        <SidebarAd className="hidden lg:block" />
 
-                        {/* Anime Info Card */}
-                        <div className="glass-card p-4">
-                            <h3 className="font-semibold mb-4">Information</h3>
-                            <dl className="space-y-3 text-sm">
+                        {/* Additional Info */}
+                        <div className="glass-card p-4 space-y-3">
+                            <h3 className="font-semibold text-sm sm:text-base">
+                                Information
+                            </h3>
+                            <dl className="space-y-2 text-xs sm:text-sm">
                                 {anime.type && (
                                     <div className="flex justify-between">
                                         <dt className="text-muted-foreground">Type</dt>
@@ -259,8 +212,49 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                 </div>
             </div>
 
+            {/* YOU MAY ALSO LIKE SECTION - FIXED: PROPER CARD SIZING */}
+            <section className="py-8 sm:py-12 md:py-16 bg-muted/30 mt-8 sm:mt-12">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+                    {/* Section Header */}
+                    <div className="mb-6 sm:mb-8">
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+                            You May Also Like
+                        </h2>
+                        <p className="text-sm sm:text-base text-muted-foreground">
+                            Similar anime recommendations
+                        </p>
+                    </div>
+
+                    {/* RESPONSIVE GRID - MAXIMUM 12 CARDS, NEVER MORE THAN 6 COLUMNS */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+                        {relatedAnime.slice(0, 12).map((anime: any, index: number) => (
+                            <AnimeCard
+                                key={anime.id || anime.slug || anime.animeId || `related-${index}`}
+                                id={anime.id || anime.slug || anime.animeId || ""}
+                                slug={anime.slug}
+                                title={anime.title}
+                                image={anime.image || anime.poster || "/placeholder-anime.svg"}
+                                episode={anime.episode}
+                                rating={anime.rating}
+                                type={anime.type}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Browse More Button */}
+                    <div className="mt-6 sm:mt-8 flex justify-center">
+                        <Link
+                            href="/browse"
+                            className="btn-outline px-6 sm:px-8 py-2 sm:py-3"
+                        >
+                            Browse More Anime
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
             {/* Mobile Bottom Ad */}
-            <div className="lg:hidden p-4 mt-8">
+            <div className="lg:hidden p-4">
                 <SidebarAd className="w-full h-[100px]" />
             </div>
         </div>

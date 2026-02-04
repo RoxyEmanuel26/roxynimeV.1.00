@@ -188,10 +188,10 @@ export default function ProfilePage() {
                                             <Image
                                                 src={item.image || "/placeholder-anime.jpg"}
                                                 alt={item.title}
-                                                width={80}
-                                                height={120}
-                                                className="rounded-lg object-cover"
-                                                unoptimized
+                                                width={200}
+                                                height={300}
+                                                className="rounded object-cover"
+                                                sizes="200px"
                                             />
                                         </Link>
                                         <div className="flex-1 min-w-0">

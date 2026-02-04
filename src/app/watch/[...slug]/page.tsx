@@ -60,33 +60,47 @@ export default function WatchPage() {
             setLoading(true);
             setError(null);
 
-            // Fetch anime details
+            // 1. Fetch anime details first
             const animeRes = await fetch(`/api/anime/${animeId}`);
             if (!animeRes.ok) throw new Error("Failed to fetch anime info");
             const animeData = await animeRes.json();
 
-            if (animeData.data) {
-                setAnimeInfo(animeData.data);
+            if (!animeData.data) throw new Error("No anime data found");
 
-                // Parse episodes
-                const eps: Episode[] = (animeData.data.episodes || []).map(
-                    (ep: { episode: string; slug: string }, index: number) => ({
-                        id: ep.slug,
-                        number: index + 1,
-                        slug: ep.slug,
-                    })
-                );
-                setEpisodes(eps);
-            }
+            setAnimeInfo(animeData.data);
 
-            // Fetch streaming data
-            const streamRes = await fetch(`/api/streaming/${animeId}/${episodeId}`);
-            if (streamRes.ok) {
-                const streamJson = await streamRes.json();
-                if (streamJson.data) {
-                    setStreamData(streamJson.data);
+            // Parse episodes correctly from API matching animbus.ts structure
+            // { id: string, number: number, title: string, urlSlug: string }
+            const eps: Episode[] = (animeData.data.episodes || []).map((ep: any) => ({
+                id: ep.id || ep.urlSlug, // Key for React
+                number: ep.number,
+                title: ep.title,
+                slug: ep.urlSlug || ep.id // Slug for API calls
+            }));
+
+            setEpisodes(eps);
+
+            // 2. Find the current episode slug
+            // params.slug[1] is the episode number (e.g., "1", "2")
+            const targetEpNum = parseInt(episodeId);
+            const currentEp = eps.find(e => e.number === targetEpNum);
+
+            if (currentEp) {
+                // Use the found slug to fetch streams
+                const streamRes = await fetch(`/api/streaming/${animeId}/${currentEp.slug}`);
+                if (streamRes.ok) {
+                    const streamJson = await streamRes.json();
+                    if (streamJson.data) {
+                        setStreamData(streamJson.data);
+                    }
+                } else {
+                    console.warn("Stream fetch failed:", streamRes.status);
+                    // Don't set error here, just show "No streams" state
                 }
+            } else {
+                console.warn(`Episode ${targetEpNum} not found in list`);
             }
+
         } catch (err) {
             console.error("Error fetching data:", err);
             setError("Failed to load video. Please try again.");

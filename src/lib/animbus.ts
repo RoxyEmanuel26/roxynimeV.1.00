@@ -4,8 +4,10 @@ import { sankaClient, SankaAnime, SankaEpisode, SankaStreamServer } from "./sank
 // Interfaces to match the UI expectations
 export interface Anime {
     id: string;
+    slug?: string;
     title: string;
     image: string;
+    poster?: string;
     episode?: number | string;
     type?: string;
     genres?: string[];
@@ -16,6 +18,7 @@ export interface Anime {
     studio?: string;
     season?: string;
     synopsis?: string;
+    japaneseTitle?: string;
 }
 
 export type AnimeDetail = Anime & {
@@ -26,6 +29,7 @@ export interface Episode {
     id: string;
     number: number;
     title?: string;
+    urlSlug?: string;
 }
 
 export interface StreamingData {
@@ -61,9 +65,10 @@ export async function getAnimeInfo(id: string): Promise<AnimeDetail> {
     return {
         ...mapSankaToAnime(data),
         episodes: data.episodes.map(ep => ({
-            id: ep.urlSlug,
+            id: ep.urlSlug || ep.id,
             number: ep.number,
-            title: ep.title
+            title: ep.title,
+            urlSlug: ep.urlSlug
         }))
     };
 }
@@ -92,15 +97,21 @@ export async function searchAnimes(query: string): Promise<Anime[]> {
 
 // Helper mapper
 function mapSankaToAnime(sanka: SankaAnime): Anime {
+    // Ensure we always have a valid ID - use slug as ultimate fallback
+    const validId = sanka.slug || sanka.id || `anime-${sanka.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+
     return {
-        id: sanka.slug, // Use slug as ID
+        id: validId,
+        slug: sanka.slug,
         title: sanka.title,
         image: sanka.poster,
+        poster: sanka.poster,
         episode: sanka.totalEpisodes,
         type: sanka.type,
         genres: sanka.genres,
         status: sanka.status,
         description: sanka.synopsis,
+        synopsis: sanka.synopsis,
         rating: sanka.rating?.toString(),
         released: sanka.releaseDate,
         studio: sanka.studio
