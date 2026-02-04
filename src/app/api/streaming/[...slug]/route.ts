@@ -21,7 +21,7 @@ export async function GET(
     }
 
     try {
-        // Pass the episode ID/slug directly to the client wrapper
+        // Get streaming data from animbus wrapper
         const streamData = await getEpisodeStreams(episodeId);
 
         if (!streamData) {
@@ -32,19 +32,35 @@ export async function GET(
             );
         }
 
-        // Convert to UI compatible format
-        const streams = streamData.servers?.map(server => ({
-            quality: server.quality || server.name, // Use quality if available, else name
-            url: server.streamUrl,
-            type: "iframe" // Most sanka streams are iframes
-        })) || [];
+        console.log("📦 [API /streaming] Stream data received:", {
+            hasUrl: !!streamData.url,
+            serverCount: streamData.servers?.length || 0
+        });
+
+        // Convert to UI compatible format - INCLUDE NAME FIELD
+        const streams = streamData.servers?.map((server, index) => {
+            console.log(`   Mapping server ${index + 1}:`, {
+                name: server.name,
+                quality: server.quality,
+                hasUrl: !!server.streamUrl
+            });
+
+            return {
+                name: server.name,           // 👈 SERVER NAME (vidhide, filedon, mega, etc)
+                quality: server.quality,      // 👈 QUALITY (360p, 480p, 720p)
+                url: server.streamUrl,        // 👈 STREAM URL
+                type: "iframe"                // Type of player
+            };
+        }) || [];
 
         console.log("✨ [API /streaming] Mapped streams:", streams.length);
 
         // Fallback if no servers but direct url exists
         if (streams.length === 0 && streamData.url) {
+            console.log("⚠️ [API /streaming] Using fallback direct URL");
             streams.push({
-                quality: "default",
+                name: "default",
+                quality: "auto",
                 url: streamData.url,
                 type: "iframe"
             });
@@ -58,7 +74,11 @@ export async function GET(
 
         console.log("✅ [API /streaming] Response ready:", {
             streamCount: streams.length,
-            hasStreams: streams.length > 0
+            hasStreams: streams.length > 0,
+            sampleStream: streams[0] ? {
+                name: streams[0].name,
+                quality: streams[0].quality
+            } : null
         });
 
         return NextResponse.json({ data });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Hls from "hls.js";
 import {
     Play,
@@ -20,6 +20,7 @@ interface Stream {
     quality: string;
     url: string;
     type: string;
+    name?: string;
 }
 
 interface VideoPlayerProps {
@@ -60,137 +61,134 @@ export function VideoPlayer({
     const [buffered, setBuffered] = useState(0);
     const [showControls, setShowControls] = useState(true);
     const [volume, setVolume] = useState(1);
-    const [selectedQuality, setSelectedQuality] = useState<string>("");
     const [showSettings, setShowSettings] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    // Server Selector States
     const [selectedServer, setSelectedServer] = useState<string | null>(null);
-    const [showServerSelector, setShowServerSelector] = useState(false);
+    const [selectedQuality, setSelectedQuality] = useState<string | null>(null);
+    const [selectedStreamUrl, setSelectedStreamUrl] = useState<string>("");
 
-    // Group streams by server name
-    const groupStreamsByServer = useCallback(() => {
-        const serverMap = new Map<string, Array<Stream & { index: number }>>();
+    // Group streams by server name (from stream.name field)
+    const serverGroups = useMemo(() => {
+        const groups = new Map<string, Stream[]>();
 
-        streams.forEach((stream, index) => {
-            // Extract server name from quality field
-            let serverName = "default";
-            const qualityLower = stream.quality.toLowerCase();
+        streams.forEach((stream) => {
+            const serverName = (stream.name || stream.quality || "default").toLowerCase().trim();
 
-            if (qualityLower.includes("vidhide")) serverName = "vidhide";
-            else if (qualityLower.includes("filedon")) serverName = "filedon";
-            else if (qualityLower.includes("mega")) serverName = "mega";
-            else if (qualityLower.includes("odstream") || qualityLower.includes("od stream")) serverName = "odstream";
-            else if (qualityLower.includes("ondesu")) serverName = "ondesu";
-            // If just quality number, check URL
-            else if (/^\d+p$/.test(qualityLower)) {
-                const urlLower = stream.url.toLowerCase();
-                if (urlLower.includes("vidhide")) serverName = "vidhide";
-                else if (urlLower.includes("filedon")) serverName = "filedon";
-                else if (urlLower.includes("mega")) serverName = "mega";
-                else if (urlLower.includes("odstream")) serverName = "odstream";
-                else if (urlLower.includes("ondesu")) serverName = "ondesu";
+            if (!groups.has(serverName)) {
+                groups.set(serverName, []);
             }
-
-            if (!serverMap.has(serverName)) {
-                serverMap.set(serverName, []);
-            }
-
-            serverMap.get(serverName)!.push({ ...stream, index });
+            groups.get(serverName)!.push(stream);
         });
 
-        return serverMap;
+        return groups;
     }, [streams]);
 
-    const serverMap = groupStreamsByServer();
-    const serverNames = Array.from(serverMap.keys());
-    const currentServerStreams = selectedServer ? serverMap.get(selectedServer) || [] : [];
+    const availableServers = useMemo(() => Array.from(serverGroups.keys()), [serverGroups]);
 
-    // Set default server
+    const currentServerStreams = useMemo(() => {
+        if (!selectedServer) return [];
+        return serverGroups.get(selectedServer) || [];
+    }, [selectedServer, serverGroups]);
+
+    // Initialize default server and stream
     useEffect(() => {
-        if (serverNames.length > 0 && !selectedServer) {
-            const preferredServers = ["vidhide", "ondesu", "filedon", "mega", "odstream"];
-            const firstKnownServer = serverNames.find(s => preferredServers.includes(s));
-            const defaultServer = firstKnownServer || serverNames[0];
-            setSelectedServer(defaultServer);
+        if (availableServers.length > 0 && !selectedServer) {
+            const preferredOrder = ["vidhide", "ondesuhd", "updesu", "filedon", "mega", "odstream"];
+            const firstServer = preferredOrder.find(s => availableServers.includes(s)) || availableServers[0];
 
-            // Auto-select first stream of this server
-            const serverStreams = serverMap.get(defaultServer);
-            if (serverStreams && serverStreams.length > 0 && !selectedQuality) {
-                setSelectedQuality(serverStreams[0].quality);
+            setSelectedServer(firstServer);
+
+            const firstStream = serverGroups.get(firstServer)?.[0];
+            if (firstStream) {
+                setSelectedQuality(firstStream.quality);
+                setSelectedStreamUrl(firstStream.url);
             }
         }
-    }, [serverNames, selectedServer, serverMap, selectedQuality]);
+    }, [availableServers.length]);
 
     const handleServerClick = (serverName: string) => {
         setSelectedServer(serverName);
-        setShowServerSelector(true);
 
-        // Auto-select first stream of this server
-        const serverStreams = serverMap.get(serverName);
-        if (serverStreams && serverStreams.length > 0) {
-            setSelectedQuality(serverStreams[0].quality);
+        const firstStream = serverGroups.get(serverName)?.[0];
+        if (firstStream) {
+            setSelectedQuality(firstStream.quality);
+            setSelectedStreamUrl(firstStream.url);
         }
     };
 
-    const handleQualitySelect = (quality: string) => {
-        setSelectedQuality(quality);
-        setShowServerSelector(false);
+    const handleQualityClick = async (stream: Stream) => {
+        setSelectedQuality(stream.quality);
+        setIsLoading(true);
+
+        console.log("🎬 Resolving stream URL:", stream.url);
+
+        // Check if URL is a Sanka server endpoint that needs resolution
+        if (stream.url.includes("/anime/server/")) {
+            try {
+                // Extract server ID from URL
+                const serverIdMatch = stream.url.match(/\/anime\/server\/([^/]+)/);
+                if (serverIdMatch) {
+                    const serverId = serverIdMatch[1];
+                    console.log("🔍 Resolving server ID:", serverId);
+
+                    // Call our API to resolve the server URL
+                    const response = await fetch(`/api/server/${serverId}`);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log("✅ Resolved URL:", data.url);
+                        setSelectedStreamUrl(data.url);
+                    } else {
+                        console.error("❌ Failed to resolve server URL");
+                        // Fallback to original URL (will be iframe)
+                        setSelectedStreamUrl(stream.url);
+                    }
+                } else {
+                    setSelectedStreamUrl(stream.url);
+                }
+            } catch (error) {
+                console.error("Error resolving stream:", error);
+                setSelectedStreamUrl(stream.url);
+            }
+        } else {
+            // Direct URL, use as-is
+            setSelectedStreamUrl(stream.url);
+        }
+
+        setIsLoading(false);
     };
+
 
     const getServerDisplayName = (serverName: string) => {
         const names: Record<string, string> = {
-            "ondesu": "OndesuHD",
+            "ondesuhd": "OndesuHD",
+            "updesu": "Updesu",
             "vidhide": "Vidhide",
             "filedon": "Filedon",
             "mega": "Mega",
             "odstream": "ODstream"
         };
-        return names[serverName] || serverName;
+        return names[serverName] || serverName.charAt(0).toUpperCase() + serverName.slice(1);
     };
-
-    // Find the best stream (prefer HLS/m3u8)
-    const getStreamUrl = useCallback(() => {
-        if (!streams || streams.length === 0) return null;
-
-        // Try to find selected quality
-        if (selectedQuality) {
-            const stream = streams.find((s) => s.quality === selectedQuality);
-            if (stream) return stream.url;
-        }
-
-        // Default: prefer 720p or highest available
-        const preferred = streams.find(
-            (s) => s.quality === "720p" || s.quality === "720"
-        );
-        if (preferred) return preferred.url;
-
-        return streams[0]?.url;
-    }, [streams, selectedQuality]);
 
     // Initialize video
     useEffect(() => {
         const video = videoRef.current;
-        const streamUrl = getStreamUrl();
 
-        if (!video || !streamUrl) {
-            setError("No stream available");
-            setIsLoading(false);
+        if (!video || !selectedStreamUrl) {
             return;
         }
 
         setError(null);
         setIsLoading(true);
 
-        // Clean up previous HLS instance
         if (hlsRef.current) {
             hlsRef.current.destroy();
             hlsRef.current = null;
         }
 
-        // Check if it's an HLS stream
-        if (streamUrl.includes(".m3u8")) {
+        if (selectedStreamUrl.includes(".m3u8")) {
             if (Hls.isSupported()) {
                 const hls = new Hls({
                     enableWorker: true,
@@ -198,7 +196,7 @@ export function VideoPlayer({
                 });
                 hlsRef.current = hls;
 
-                hls.loadSource(streamUrl);
+                hls.loadSource(selectedStreamUrl);
                 hls.attachMedia(video);
 
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -215,12 +213,10 @@ export function VideoPlayer({
                     }
                 });
             } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                // Safari native HLS support
-                video.src = streamUrl;
+                video.src = selectedStreamUrl;
             }
         } else {
-            // Regular MP4 or other format
-            video.src = streamUrl;
+            video.src = selectedStreamUrl;
         }
 
         return () => {
@@ -228,9 +224,9 @@ export function VideoPlayer({
                 hlsRef.current.destroy();
             }
         };
-    }, [getStreamUrl, initialProgress, duration]);
+    }, [selectedStreamUrl, initialProgress, duration]);
 
-    // Handle video events
+    // Video event handlers
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
@@ -267,7 +263,6 @@ export function VideoPlayer({
         };
     }, [onEnded]);
 
-    // Progress tracking
     useEffect(() => {
         if (onProgress && duration > 0) {
             progressInterval.current = setInterval(() => {
@@ -283,7 +278,6 @@ export function VideoPlayer({
         };
     }, [currentTime, duration, onProgress]);
 
-    // Auto-hide controls
     useEffect(() => {
         let timeout: NodeJS.Timeout;
 
@@ -304,7 +298,6 @@ export function VideoPlayer({
         };
     }, [isPlaying]);
 
-    // Fullscreen handling
     useEffect(() => {
         const handleFullscreenChange = () => {
             setIsFullscreen(!!document.fullscreenElement);
@@ -319,7 +312,6 @@ export function VideoPlayer({
     const togglePlay = () => {
         const video = videoRef.current;
         if (!video) return;
-
         if (isPlaying) {
             video.pause();
         } else {
@@ -330,7 +322,6 @@ export function VideoPlayer({
     const toggleMute = () => {
         const video = videoRef.current;
         if (!video) return;
-
         video.muted = !video.muted;
         setIsMuted(video.muted);
     };
@@ -338,7 +329,6 @@ export function VideoPlayer({
     const toggleFullscreen = async () => {
         const container = containerRef.current;
         if (!container) return;
-
         if (isFullscreen) {
             await document.exitFullscreen();
         } else {
@@ -349,7 +339,6 @@ export function VideoPlayer({
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
         const video = videoRef.current;
         if (!video) return;
-
         const time = parseFloat(e.target.value);
         video.currentTime = time;
         setCurrentTime(time);
@@ -358,7 +347,6 @@ export function VideoPlayer({
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const video = videoRef.current;
         if (!video) return;
-
         const vol = parseFloat(e.target.value);
         video.volume = vol;
         setVolume(vol);
@@ -368,7 +356,6 @@ export function VideoPlayer({
     const skip = (seconds: number) => {
         const video = videoRef.current;
         if (!video) return;
-
         video.currentTime = Math.max(0, Math.min(duration, video.currentTime + seconds));
     };
 
@@ -394,7 +381,6 @@ export function VideoPlayer({
                     isFullscreen && "fixed inset-0 z-50"
                 )}
             >
-                {/* Video Element */}
                 <video
                     ref={videoRef}
                     className="w-full h-full object-contain bg-black"
@@ -402,50 +388,33 @@ export function VideoPlayer({
                     onClick={togglePlay}
                 />
 
-                {/* Loading Indicator */}
                 {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                 )}
 
-                {/* Controls Overlay */}
                 <div
                     className={cn(
                         "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 transition-opacity duration-300",
                         showControls ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                 >
-                    {/* Top Bar */}
                     <div className="absolute top-0 left-0 right-0 p-4">
                         <h3 className="text-white font-medium truncate">{title}</h3>
-                        {episodeTitle && (
-                            <p className="text-white/70 text-sm">{episodeTitle}</p>
-                        )}
+                        {episodeTitle && <p className="text-white/70 text-sm">{episodeTitle}</p>}
                     </div>
 
-                    {/* Center Play Button */}
                     <button
                         onClick={togglePlay}
                         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-primary/80 hover:bg-primary flex items-center justify-center transition-all"
                     >
-                        {isPlaying ? (
-                            <Pause className="h-8w-8 text-white" />
-                        ) : (
-                            <Play className="h-8 w-8 text-white ml-1" />
-                        )}
+                        {isPlaying ? <Pause className="h-8 w-8 text-white" /> : <Play className="h-8 w-8 text-white ml-1" />}
                     </button>
 
-                    {/* Bottom Controls */}
                     <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
-                        {/* Progress Bar */}
                         <div className="relative h-1 bg-white/30 rounded-full overflow-hidden">
-                            {/* Buffered */}
-                            <div
-                                className="absolute h-full bg-white/50"
-                                style={{ width: `${(buffered / duration) * 100}%` }}
-                            />
-                            {/* Progress */}
+                            <div className="absolute h-full bg-white/50" style={{ width: `${(buffered / duration) * 100}%` }} />
                             <input
                                 type="range"
                                 min={0}
@@ -454,68 +423,30 @@ export function VideoPlayer({
                                 onChange={handleSeek}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             />
-                            <div
-                                className="absolute h-full bg-primary"
-                                style={{ width: `${(currentTime / duration) * 100}%` }}
-                            />
+                            <div className="absolute h-full bg-primary" style={{ width: `${(currentTime / duration) * 100}%` }} />
                         </div>
 
-                        {/* Control Buttons */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                {/* Prev/Play/Next */}
-                                <button
-                                    onClick={onPrev}
-                                    disabled={!hasPrev}
-                                    className="p-2 text-white hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
+                                <button onClick={onPrev} disabled={!hasPrev} className="p-2 text-white hover:text-primary disabled:opacity-50">
                                     <SkipBack className="h-5 w-5" />
                                 </button>
                                 <button onClick={togglePlay} className="p-2 text-white hover:text-primary">
-                                    {isPlaying ? (
-                                        <Pause className="h-6 w-6" />
-                                    ) : (
-                                        <Play className="h-6 w-6" />
-                                    )}
+                                    {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                                 </button>
-                                <button
-                                    onClick={onNext}
-                                    disabled={!hasNext}
-                                    className="p-2 text-white hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
+                                <button onClick={onNext} disabled={!hasNext} className="p-2 text-white hover:text-primary disabled:opacity-50">
                                     <SkipForward className="h-5 w-5" />
                                 </button>
-
-                                {/* Skip buttons */}
-                                <button
-                                    onClick={() => skip(-10)}
-                                    className="p-2 text-white hover:text-primary text-xs"
-                                >
-                                    -10s
-                                </button>
-                                <button
-                                    onClick={() => skip(10)}
-                                    className="p-2 text-white hover:text-primary text-xs"
-                                >
-                                    +10s
-                                </button>
-
-                                {/* Time */}
+                                <button onClick={() => skip(10)} className="p-2 text-white hover:text-primary text-xs">+10s</button>
                                 <span className="text-white/80 text-sm ml-2">
-                                    {formatDuration(Math.floor(currentTime))} /{" "}
-                                    {formatDuration(Math.floor(duration))}
+                                    {formatDuration(Math.floor(currentTime))} / {formatDuration(Math.floor(duration))}
                                 </span>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {/* Volume */}
                                 <div className="flex items-center gap-1 group/volume">
                                     <button onClick={toggleMute} className="p-2 text-white hover:text-primary">
-                                        {isMuted || volume === 0 ? (
-                                            <VolumeX className="h-5 w-5" />
-                                        ) : (
-                                            <Volume2 className="h-5 w-5" />
-                                        )}
+                                        {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                                     </button>
                                     <input
                                         type="range"
@@ -528,46 +459,22 @@ export function VideoPlayer({
                                     />
                                 </div>
 
-                                {/* Settings */}
                                 <div className="relative">
-                                    <button
-                                        onClick={() => setShowSettings(!showSettings)}
-                                        className="p-2 text-white hover:text-primary"
-                                    >
+                                    <button onClick={() => setShowSettings(!showSettings)} className="p-2 text-white hover:text-primary">
                                         <Settings className="h-5 w-5" />
                                     </button>
                                     {showSettings && (
                                         <div className="absolute bottom-full right-0 mb-2 glass-card p-2 min-w-[150px]">
-                                            <p className="text-xs font-medium mb-2 px-2">Quality</p>
-                                            {streams.map((stream) => (
-                                                <button
-                                                    key={stream.quality}
-                                                    onClick={() => {
-                                                        setSelectedQuality(stream.quality);
-                                                        setShowSettings(false);
-                                                    }}
-                                                    className={cn(
-                                                        "block w-full text-left px-2 py-1 text-sm rounded hover:bg-muted",
-                                                        selectedQuality === stream.quality && "text-primary"
-                                                    )}
-                                                >
-                                                    {stream.quality}
-                                                </button>
-                                            ))}
+                                            <p className="text-xs font-medium mb-2 px-2">Quick Settings</p>
+                                            <button onClick={() => setShowSettings(false)} className="block w-full text-left px-2 py-1 text-sm rounded hover:bg-muted">
+                                                Close
+                                            </button>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Fullscreen */}
-                                <button
-                                    onClick={toggleFullscreen}
-                                    className="p-2 text-white hover:text-primary"
-                                >
-                                    {isFullscreen ? (
-                                        <Minimize className="h-5 w-5" />
-                                    ) : (
-                                        <Maximize className="h-5 w-5" />
-                                    )}
+                                <button onClick={toggleFullscreen} className="p-2 text-white hover:text-primary">
+                                    {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
@@ -575,57 +482,47 @@ export function VideoPlayer({
                 </div>
             </div>
 
-            {/* Server Selector Section - OUTSIDE video container */}
+            {/* SERVER SELECTOR */}
             <div className="bg-card border-t border-border">
                 <div className="container mx-auto px-4 py-4">
-                    <div className="space-y-3">
-                        {/* Server Label */}
-                        <div className="text-sm text-muted-foreground">
-                            Pilih Server:
-                        </div>
-
-                        {/* Server Buttons */}
-                        <div className="flex flex-wrap gap-2">
-                            {serverNames.map((serverName) => (
-                                <button
-                                    key={serverName}
-                                    onClick={() => handleServerClick(serverName)}
-                                    className={cn(
-                                        "px-6 py-3 rounded-lg font-medium transition-all text-sm",
-                                        selectedServer === serverName
-                                            ? "bg-primary text-white shadow-lg"
-                                            : "bg-muted hover:bg-muted/80 text-foreground"
-                                    )}
-                                >
-                                    {getServerDisplayName(serverName)}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Quality Dropdown */}
-                        {showServerSelector && selectedServer && currentServerStreams.length > 0 && (
-                            <div className="bg-muted/50 rounded-lg p-4 mt-3 animate-in fade-in slide-in-from-top-2">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-sm font-medium">
-                                        Pilih Quality ({getServerDisplayName(selectedServer)}):
-                                    </span>
+                    <div className="space-y-4">
+                        <div>
+                            <div className="text-sm text-muted-foreground mb-3">
+                                Pilih Server:
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {availableServers.map((serverName) => (
                                     <button
-                                        onClick={() => setShowServerSelector(false)}
-                                        className="text-xs text-muted-foreground hover:text-foreground"
+                                        key={`srv-${serverName}`}
+                                        onClick={() => handleServerClick(serverName)}
+                                        className={cn(
+                                            "px-6 py-3 rounded-lg font-medium transition-all text-sm",
+                                            selectedServer === serverName
+                                                ? "bg-primary text-white shadow-lg"
+                                                : "bg-muted hover:bg-muted/80 text-foreground"
+                                        )}
                                     >
-                                        ✕ Tutup
+                                        {getServerDisplayName(serverName)}
                                     </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {selectedServer && currentServerStreams.length > 0 && (
+                            <div className="bg-muted/30 rounded-lg p-4">
+                                <div className="text-sm font-medium mb-3">
+                                    Pilih Quality ({getServerDisplayName(selectedServer)}):
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {currentServerStreams.map((stream) => (
+                                    {currentServerStreams.map((stream, idx) => (
                                         <button
-                                            key={stream.index}
-                                            onClick={() => handleQualitySelect(stream.quality)}
+                                            key={`q-${selectedServer}-${stream.quality}-${idx}`}
+                                            onClick={() => handleQualityClick(stream)}
                                             className={cn(
                                                 "px-4 py-2 rounded-md font-medium transition-all text-sm",
-                                                selectedQuality === stream.quality
-                                                    ? "bg-primary text-white"
-                                                    : "bg-background hover:bg-background/80 text-foreground border border-border"
+                                                selectedQuality === stream.quality && selectedStreamUrl === stream.url
+                                                    ? "bg-primary text-white shadow-md"
+                                                    : "bg-background hover:bg-muted text-foreground border border-border"
                                             )}
                                         >
                                             {stream.quality}
@@ -635,12 +532,11 @@ export function VideoPlayer({
                             </div>
                         )}
 
-                        {/* Current Playing Badge */}
-                        {selectedServer && (
+                        {selectedServer && selectedQuality && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>Playing:</span>
-                                <span className="px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">
-                                    {getServerDisplayName(selectedServer)} - {selectedQuality || "Auto"}
+                                <span>Currently Playing:</span>
+                                <span className="px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                                    {getServerDisplayName(selectedServer)} - {selectedQuality}
                                 </span>
                             </div>
                         )}
@@ -650,3 +546,4 @@ export function VideoPlayer({
         </div>
     );
 }
+
