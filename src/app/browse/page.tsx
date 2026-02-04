@@ -18,8 +18,7 @@ interface Anime {
 interface ApiResponse {
   status: string;
   data: Anime[];
-  has_next: { has_next_page: boolean };
-  current_page: number;
+  hasNext: boolean;  currentPage: number;
 }
 
 export default function BrowsePage() {
@@ -65,8 +64,7 @@ export default function BrowsePage() {
         }));
 
         setAnimes(processedAnimes);
-        setHasMore(data.has_next?.has_next_page ?? false);
-      } catch (error) {
+      setHasMore(data.hasNext ?? false);      } catch (error) {
         console.error("Error fetching anime:", error);
       } finally {
         setLoading(false);
@@ -123,22 +121,28 @@ export default function BrowsePage() {
   // Generate pagination numbers
   const generatePaginationNumbers = () => {
     const pages: (number | string)[] = [];
-    const maxVisiblePages = 7;
+    const maxVisible = 7; // Maximum number of page buttons to show
 
     if (currentPage <= 4) {
-      // Show first 5 pages + ... + last
+      // Near the start: 1 2 3 4 5 ... (if hasMore)
       for (let i = 1; i <= Math.min(5, currentPage + 2); i++) {
         pages.push(i);
       }
-      if (hasMore && currentPage < 5) {
+      if (hasMore) {
         pages.push("...");
       }
     } else {
-      // Show 1 ... current-1 current current+1 ...
+      // In the middle or end: 1 ... current-1 current current+1 ...
       pages.push(1);
-      pages.push("...");
+      
+      if (currentPage > 5) {
+        pages.push("...");
+      }
+      
+      // Show current page and neighbors
       pages.push(currentPage - 1);
       pages.push(currentPage);
+      
       if (hasMore) {
         pages.push(currentPage + 1);
         pages.push("...");
