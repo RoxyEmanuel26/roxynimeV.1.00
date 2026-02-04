@@ -1,96 +1,94 @@
-# RoxyNime - Anime Streaming Website
+# RoxyAnimeHub - Anime Streaming Website
 
-A production-ready anime streaming platform built with Next.js 15, featuring anime data and streaming via the animbus API with Prisma-based caching.
+A production-ready anime streaming platform built with Next.js 15, powered by the **Sanka Vollerei API** for anime data and streaming links, featuring Prisma-based caching and full authenticaton.
 
-![RoxyNime Screenshot](./screenshot.png)
+![RoxyAnimeHub Screenshot](./screenshot.png)
 
 ## ✨ Features
 
-- 🎬 **Browse Anime** - Explore ongoing, completed series, and movies
-- 📺 **Stream Episodes** - Watch anime with HLS video player
-- 🔍 **Search & Filter** - Find anime by title, genre, or type
+- 🎬 **Browse Anime** - Explore ongoing, completed series, and movies from Sanka's vast library
+- 📺 **Stream Episodes** - Watch anime with HLS/iframe video player (multiple servers supported)
+- 🔍 **Search & Filter** - Find anime by title
 - 👤 **User Accounts** - Sign up/login with email or Google OAuth
-- 📊 **Watch History** - Track your viewing progress
+- 📊 **Watch History** - Track your viewing progress automatically
 - ❤️ **Favorites** - Save anime to your personal list
 - 🌙 **Dark/Light Mode** - Theme preference persisted
 - 📱 **Responsive** - Works on desktop, tablet, and mobile
-- 🎨 **Modern UI** - Beautiful anime-themed design
+- ⚡ **Performance** - Server-side caching for API responses
 
 ## 🛠️ Tech Stack
 
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS, Shadcn UI
 - **Database**: SQLite + Prisma ORM
 - **Auth**: NextAuth.js (Google OAuth + Credentials)
-- **State**: TanStack Query
-- **Video**: HLS.js
-- **Animations**: Framer Motion
+- **State**: React Query (TanStack Query)
+- **API Integration**: Sanka Vollerei API (via custom cached wrapper)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - npm or yarn
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone <repo-url>
-cd roxynime
+1. **Clone the repository**
+   ```bash
+   git clone <repo-url>
+   cd roxynime
+   ```
 
-# Install dependencies
-npm install
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Set up environment variables
-cp .env.example .env
+3. **Set up environment variables**
+   Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Update `.env` with your credentials:
+   ```env
+   # Database
+   DATABASE_URL="file:./dev.db"
 
-# Generate Prisma client
-npx prisma generate
+   # NextAuth
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key-here"  # Generate with: openssl rand -base64 32
 
-# Run database migrations
-npx prisma migrate dev --name init
+   # Google OAuth (Optional)
+   GOOGLE_CLIENT_ID="your-google-client-id"
+   GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# (Optional) Seed the database with demo data
-npx prisma db seed
+   # Sanka API (Optional - defaults to https://www.sankavollerei.com)
+   SANKA_API_BASE="https://www.sankavollerei.com"
+   ```
 
-# Start development server
-npm run dev
-```
+4. **Initialize Database**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   
+   # (Optional) Seed demo data
+   npx prisma db seed
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
 
-### Demo Account
+6. **Open in Browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
+### Demo Account (if seeded)
 - Email: `demo@roxynime.com`
 - Password: `demo123`
-
-## 📝 Environment Variables
-
-Create a `.env` file based on `.env.example`:
-
-```env
-# Database
-DATABASE_URL="file:./dev.db"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key"  # Generate: openssl rand -base64 32
-
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=""
-GOOGLE_CLIENT_SECRET=""
-
-# MyAnimeList API (optional, for fallback metadata)
-MAL_CLIENT_ID=""
-```
-
-### Getting API Keys
-
-1. **Google OAuth**: [Google Cloud Console](https://console.cloud.google.com/)
-2. **MyAnimeList API**: [MAL API Dashboard](https://myanimelist.net/apiconfig)
 
 ## 📂 Project Structure
 
@@ -98,91 +96,44 @@ MAL_CLIENT_ID=""
 roxynime/
 ├── prisma/
 │   ├── schema.prisma       # Database schema (User, Favorite, History, ApiCache)
-│   └── seed.ts             # Seed data for demo account
-├── public/                 # Static assets (images, icons)
+│   └── seed.ts             # Seed data
 ├── src/
 │   ├── app/                # Next.js App Router
 │   │   ├── api/            # API routes
-│   │   │   ├── anime/      # Anime list & details endpoints
-│   │   │   ├── auth/       # NextAuth endpoints
-│   │   │   ├── favorites/  # User favorites CRUD
-│   │   │   ├── history/    # Watch history tracking
-│   │   │   └── streaming/  # Episode streaming data
+│   │   │   ├── anime/      # Anime list & details endpoints (proxies Sanka)
+│   │   │   ├── streaming/  # Episode streaming data (proxies Sanka)
 │   │   ├── anime/[id]/     # Anime detail pages
-│   │   ├── auth/           # Sign in/up pages
-│   │   ├── browse/         # Browse/filter page
-│   │   ├── profile/        # User profile dashboard
 │   │   ├── watch/[...slug]/ # Video player page
-│   │   ├── layout.tsx      # Root layout with providers
-│   │   ├── page.tsx        # Homepage
-│   │   └── globals.css     # Global styles & theme
+│   │   └── browse/         # Browse/filter page
 │   ├── components/
 │   │   ├── ads/            # Ad placeholder components
 │   │   ├── anime/          # Anime cards, carousels
-│   │   ├── auth/           # Auth forms
-│   │   └── ui/             # Reusable UI components
-│   └── lib/
-│       ├── animbus.ts      # Animbus API wrapper with caching
-│       ├── mal-api.ts      # MyAnimeList API client
-│       ├── prisma.ts       # Prisma client instance
-│       ├── utils.ts        # Utility functions
-│       └── auth.ts         # NextAuth configuration
+│   │   └── player/         # Video player components
+│   ├── lib/
+│   │   ├── sankaClient.ts  # MAIN external API client (Sanka Vollerei)
+│   │   ├── animbus.ts      # Adapter layer for UI compatibility
+│   │   ├── cache.ts        # Prisma-based caching utility
+│   │   └── auth.ts         # NextAuth configuration
 └── package.json
 ```
 
-## 🎨 UI Components
+## 🔌 API Integration
 
-- **AnimeCard** - Display anime with poster and info
-- **AnimeCarousel** - Horizontal scrolling anime list
-- **VideoPlayer** - HLS video player with controls
-- **SearchFilter** - Search and filter functionality
-- **BannerAd/SidebarAd** - Ad placeholder components
-
-## 🔌 API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/anime` | GET | List anime (ongoing/completed/movie) |
-| `/api/anime/[id]` | GET | Get anime details |
-| `/api/anime/search` | GET | Search anime |
-| `/api/streaming/[animeId]/[episodeId]` | GET | Get streaming URLs |
-| `/api/history` | GET/POST | User watch history |
-| `/api/favorites` | GET/POST | User favorites |
+This project uses **Sanka Vollerei API** as the primary data source. 
+- All external API calls are cached in the `ApiCache` table (SQLite) for 1 hour to improve performance and reduce load on Sanka's servers.
+- The `sankaClient.ts` handles normalization of data specifically for this UI.
 
 ## 🚢 Deployment
 
-### Vercel (Recommended)
-
-```bash
-npm i -g vercel
-vercel
-```
-
-Add environment variables in Vercel dashboard.
+### Vercel (Frontend + Serverless)
+Note: SQLite does not work persistently on Vercel unless you use Vercel Postgres or another external DB.
+For full functionality with SQLite, deploy to a VPS, Railway (with volume), or Docker.
 
 ### Docker
-
 ```bash
 docker build -t roxynime .
-docker run -p 3000:3000 roxynime
+docker run -p 3000:3000 -v $(pwd)/prisma:/app/prisma roxynime
 ```
 
-### Railway/Render
-
-For production, consider switching to PostgreSQL:
-
-1. Update `DATABASE_URL` to PostgreSQL connection string
-2. Change `provider = "sqlite"` to `provider = "postgresql"` in `schema.prisma`
-3. Run migrations
-
-## ⚠️ Disclaimer
-
-This project is for educational purposes only. RoxyNime does not host or store any video content. All streaming content is provided by third-party APIs.
-
 ## 📄 License
-
-MIT License - see [LICENSE](./LICENSE) for details.
-
----
-
-Made with ❤️ for anime fans
+MIT License

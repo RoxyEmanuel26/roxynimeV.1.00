@@ -16,9 +16,8 @@ export async function GET(
     }
 
     try {
-        // Construct episode path in animbus format: /anime/{animeId}/episode/{episodeId}
-        const episodePath = `/anime/${animeId}/episode/${episodeId}`;
-        const streamData = await getEpisodeStreams(episodePath);
+        // Pass the episode ID/slug directly to the Sanka client wrapper
+        const streamData = await getEpisodeStreams(episodeId);
 
         if (!streamData) {
             return NextResponse.json(
@@ -27,17 +26,26 @@ export async function GET(
             );
         }
 
-        // Convert to kazuna-api compatible format
+        // Convert to UI compatible format
+        const streams = streamData.servers?.map(server => ({
+            quality: server.quality || server.name, // Use quality if available, else name
+            url: server.streamUrl,
+            type: "iframe" // Most sanka streams are iframes
+        })) || [];
+
+        // Fallback if no servers but direct url exists
+        if (streams.length === 0 && streamData.url) {
+            streams.push({
+                quality: "default",
+                url: streamData.url,
+                type: "iframe"
+            });
+        }
+
         const data = {
             title: animeId,
             episode: episodeId,
-            streams: streamData.url ? [
-                {
-                    quality: "default",
-                    url: streamData.url,
-                    type: "iframe"
-                }
-            ] : []
+            streams: streams
         };
 
         return NextResponse.json({ data });

@@ -53,9 +53,11 @@ export default function BrowsePage() {
             const response = await fetch(url);
             const data: ApiResponse = await response.json();
 
+            // Data already has correct id from the API, no need to process
             const processedAnimes = data.data.map((anime) => ({
                 ...anime,
-                id: anime.slug.match(/\/anime\/(\d+)/)?.[1] || "",
+                // Use existing id or slug as fallback
+                id: anime.id || anime.slug || "",
             }));
 
             if (isLoadMore) {
