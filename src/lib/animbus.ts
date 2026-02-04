@@ -54,8 +54,7 @@ export async function getCompletedAnimeList(page: number = 1): Promise<Anime[]> 
 }
 
 export async function getMoviesList(page: number = 1): Promise<Anime[]> {
-  const data = await sankaClient.getCompleted(page); // Use completed anime as temporary solution for movies pagination    return data.map(mapSankaToAnime);
-}
+  const data = await sankaClient.search("movie");}
 
 export async function getAnimeInfo(id: string): Promise<AnimeDetail> {
     const data = await sankaClient.getDetail(id);
