@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd } from "@/components/ads";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface Anime {
   id?: string;
@@ -18,8 +18,8 @@ interface Anime {
 interface ApiResponse {
   status: string;
   data: Anime[];
-  hasNext: boolean;
-  currentPage: number;
+  has_next: { has_next_page: boolean };
+  current_page: number;
 }
 
 export default function MoviesPage() {
@@ -28,6 +28,7 @@ export default function MoviesPage() {
 
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
@@ -38,106 +39,63 @@ export default function MoviesPage() {
     sortBy: "latest",
   });
 
-  const fetchAnimes = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const params = new URLSearchParams();
-      params.append("page", currentPage.toString());
-      params.append("type", "movie");
-      
-      if (filters.search) params.append("search", filters.search);
-      if (filters.status !== "all") params.append("status", filters.status);
-      if (filters.genre !== "all") params.append("genre", filters.genre);
-      if (filters.sortBy) params.append("sortBy", filters.sortBy);
-
-      const response = await fetch(`/api/anime?${params.toString()}`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.statusText}`);
+  const fetchAnimes = useCallback(
+    async (page: number = 1, shouldAppend = false) => {
+      if (shouldAppend) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
       }
 
-      const data: ApiResponse = await response.json();
+      try {
+        const params = new URLSearchParams();
+        params.append("page", page.toString());
+        params.append("type", "movie");
+        
+        if (filters.search) params.append("search", filters.search);
+        if (filters.status !== "all") params.append("status", filters.status);
+        if (filters.genre !== "all") params.append("genre", filters.genre);
+        if (filters.sortBy) params.append("sortBy", filters.sortBy);
 
-      // Override type to "Movie" for all anime
-      setAnimes(data.data.map((anime: Anime) => ({ ...anime, type: ["Movie"] })));
-      setHasMore(data.hasNext ?? false);
-    } catch (error) {
-      console.error("Error fetching animes:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, filters]);
+        const response = await fetch(`/api/anime?${params.toString()}`);
 
-  // Update URL when page/filters change
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.statusText}`);
+        }
+
+        const data: ApiResponse = await response.json();
+
+        if (shouldAppend) {
+          setAnimes((prev) => [...prev, ...data.data.map((anime: Anime) => ({ ...anime, type: ["Movie"] }))]);
+        } else {
+          setAnimes(data.data.map((anime: Anime) => ({ ...anime, type: ["Movie"] })));
+        }
+
+        setHasMore(data.has_next?.has_next_page ?? false);
+        setCurrentPage(page);
+      } catch (error) {
+        console.error("Error fetching animes:", error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [filters]
+  );
+
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (currentPage > 1) params.set("page", currentPage.toString());
-    
-    const newUrl = `/movies${params.toString() ? `?${params.toString()}` : ""}`;
-    router.replace(newUrl, { scroll: false });
-  }, [currentPage, router]);
-
-  useEffect(() => {
-    fetchAnimes();
+    fetchAnimes(1);
   }, [fetchAnimes]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters({ ...newFilters, type: "movie" });
-    setCurrentPage(1);
   };
 
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchAnimes(currentPage + 1, true);
     }
   };
-
-  const goToNextPage = () => {
-    if (hasMore) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  // Generate pagination numbers
-  const generatePaginationNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 7; // Maximum number of page buttons to show
-
-    if (currentPage <= 4) {
-      // Near the start: 1 2 3 4 5 ... (if hasMore)
-      for (let i = 1; i <= Math.min(5, currentPage + 2); i++) {
-        pages.push(i);
-      }
-      if (hasMore) {
-        pages.push("...");
-      }
-    } else {
-      // In the middle or end: 1 ... current-1 current current+1 ...
-      pages.push(1);
-      
-      if (currentPage > 5) {
-        pages.push("...");
-      }
-      
-      // Show current page and neighbors
-      pages.push(currentPage - 1);
-      pages.push(currentPage);
-      
-      if (hasMore) {
-        pages.push(currentPage + 1);
-        pages.push("...");
-      }
-    }
-
-    return pages;
-  };
-
-  const paginationNumbers = generatePaginationNumbers();
 
   if (loading) {
     return (
@@ -174,41 +132,24 @@ export default function MoviesPage() {
             <AnimeGrid animes={animes} />
           </div>
 
-          {/* Pagination */}
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <button
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1}
-              className="px-4 py-2 rounded-lg border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </button>
-
-            {paginationNumbers.map((page, index) => (
+          {hasMore && (
+            <div className="mt-8 flex justify-center">
               <button
-                key={index}
-                onClick={() => typeof page === "number" && goToPage(page)}
-                disabled={page === "..."}
-                className={`px-4 py-2 rounded-lg border ${
-                  page === currentPage
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border hover:bg-accent"
-                } disabled:cursor-default`}
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {page}
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading more...
+                  </>
+                ) : (
+                  "Load More"
+                )}
               </button>
-            ))}
-
-            <button
-              onClick={goToNextPage}
-              disabled={!hasMore}
-              className="px-4 py-2 rounded-lg border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+            </div>
+          )}
         </div>
 
         <aside className="w-80 hidden lg:block">
