@@ -1,6 +1,6 @@
 # RoxyNime - Anime Streaming Website
 
-A production-ready anime streaming platform built with Next.js 15, featuring real-time anime data from MyAnimeList and streaming content from Kazuna API.
+A production-ready anime streaming platform built with Next.js 15, featuring anime data and streaming via the animbus API with Prisma-based caching.
 
 ![RoxyNime Screenshot](./screenshot.png)
 
@@ -83,11 +83,8 @@ NEXTAUTH_SECRET="your-secret-key"  # Generate: openssl rand -base64 32
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
 
-# MyAnimeList API (optional, for metadata)
+# MyAnimeList API (optional, for fallback metadata)
 MAL_CLIENT_ID=""
-
-# Kazuna API (streaming source)
-KAZUNA_API_URL="https://luckyindraefendi.me/api/v2"
 ```
 
 ### Getting API Keys
@@ -100,20 +97,36 @@ KAZUNA_API_URL="https://luckyindraefendi.me/api/v2"
 ```
 roxynime/
 ├── prisma/
-│   ├── schema.prisma    # Database schema
-│   └── seed.ts          # Seed data
-├── public/              # Static assets
+│   ├── schema.prisma       # Database schema (User, Favorite, History, ApiCache)
+│   └── seed.ts             # Seed data for demo account
+├── public/                 # Static assets (images, icons)
 ├── src/
-│   ├── app/             # Next.js App Router pages
-│   │   ├── api/         # API routes
-│   │   ├── anime/       # Anime detail pages
-│   │   ├── auth/        # Auth pages
-│   │   ├── browse/      # Browse page
-│   │   ├── profile/     # User profile
-│   │   └── watch/       # Video player
-│   ├── components/      # React components
-│   ├── lib/             # Utilities & API clients
-│   └── types/           # TypeScript types
+│   ├── app/                # Next.js App Router
+│   │   ├── api/            # API routes
+│   │   │   ├── anime/      # Anime list & details endpoints
+│   │   │   ├── auth/       # NextAuth endpoints
+│   │   │   ├── favorites/  # User favorites CRUD
+│   │   │   ├── history/    # Watch history tracking
+│   │   │   └── streaming/  # Episode streaming data
+│   │   ├── anime/[id]/     # Anime detail pages
+│   │   ├── auth/           # Sign in/up pages
+│   │   ├── browse/         # Browse/filter page
+│   │   ├── profile/        # User profile dashboard
+│   │   ├── watch/[...slug]/ # Video player page
+│   │   ├── layout.tsx      # Root layout with providers
+│   │   ├── page.tsx        # Homepage
+│   │   └── globals.css     # Global styles & theme
+│   ├── components/
+│   │   ├── ads/            # Ad placeholder components
+│   │   ├── anime/          # Anime cards, carousels
+│   │   ├── auth/           # Auth forms
+│   │   └── ui/             # Reusable UI components
+│   └── lib/
+│       ├── animbus.ts      # Animbus API wrapper with caching
+│       ├── mal-api.ts      # MyAnimeList API client
+│       ├── prisma.ts       # Prisma client instance
+│       ├── utils.ts        # Utility functions
+│       └── auth.ts         # NextAuth configuration
 └── package.json
 ```
 
