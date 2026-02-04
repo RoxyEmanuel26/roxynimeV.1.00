@@ -223,6 +223,7 @@ export default function WatchPage() {
             const nextEp = episodes[currentIdx + 1];
             router.push(`/watch/${animeId}/${nextEp.slug}`);
         }
+          };
 
 
         const handleEpisodeSelect = (episode: Episode) => {
