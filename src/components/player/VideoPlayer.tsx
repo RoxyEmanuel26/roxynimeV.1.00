@@ -174,57 +174,11 @@ export function VideoPlayer({
 
     // Initialize video
     useEffect(() => {
-        const video = videoRef.current;
-
-        if (!video || !selectedStreamUrl) {
-            return;
+        if (selectedStreamUrl) {
+            setIsLoading(true);
         }
+    }, [selectedStreamUrl]);
 
-        setError(null);
-        setIsLoading(true);
-
-        if (hlsRef.current) {
-            hlsRef.current.destroy();
-            hlsRef.current = null;
-        }
-
-        if (selectedStreamUrl.includes(".m3u8")) {
-            if (Hls.isSupported()) {
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                });
-                hlsRef.current = hls;
-
-                hls.loadSource(selectedStreamUrl);
-                hls.attachMedia(video);
-
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    setIsLoading(false);
-                    if (initialProgress > 0 && duration > 0) {
-                        video.currentTime = (initialProgress / 100) * duration;
-                    }
-                });
-
-                hls.on(Hls.Events.ERROR, (_, data) => {
-                    if (data.fatal) {
-                        setError("Failed to load video");
-                        setIsLoading(false);
-                    }
-                });
-            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                video.src = selectedStreamUrl;
-            }
-        } else {
-            video.src = selectedStreamUrl;
-        }
-
-        return () => {
-            if (hlsRef.current) {
-                hlsRef.current.destroy();
-            }
-        };
-    }, [selectedStreamUrl, initialProgress, duration]);
 
     // Video event handlers
     useEffect(() => {
@@ -381,12 +335,17 @@ export function VideoPlayer({
                     isFullscreen && "fixed inset-0 z-50"
                 )}
             >
-                <video
-                    ref={videoRef}
-                    className="w-full h-full object-contain bg-black"
-                    playsInline
-                    onClick={togglePlay}
+                <iframe
+                    src={selectedStreamUrl}
+                    className="w-full h-full bg-black"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    onLoad={() => {
+                        setIsLoading(false);
+                        setIsPlaying(true);
+                    }}
                 />
+
 
                 {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -394,92 +353,17 @@ export function VideoPlayer({
                     </div>
                 )}
 
+                {/* Title Overlay - Only show on hover */}
                 <div
                     className={cn(
-                        "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 transition-opacity duration-300",
-                        showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                        "absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 pointer-events-none",
+                        showControls ? "opacity-100" : "opacity-0"
                     )}
                 >
-                    <div className="absolute top-0 left-0 right-0 p-4">
-                        <h3 className="text-white font-medium truncate">{title}</h3>
-                        {episodeTitle && <p className="text-white/70 text-sm">{episodeTitle}</p>}
-                    </div>
-
-                    <button
-                        onClick={togglePlay}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-primary/80 hover:bg-primary flex items-center justify-center transition-all"
-                    >
-                        {isPlaying ? <Pause className="h-8 w-8 text-white" /> : <Play className="h-8 w-8 text-white ml-1" />}
-                    </button>
-
-                    <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
-                        <div className="relative h-1 bg-white/30 rounded-full overflow-hidden">
-                            <div className="absolute h-full bg-white/50" style={{ width: `${(buffered / duration) * 100}%` }} />
-                            <input
-                                type="range"
-                                min={0}
-                                max={duration || 100}
-                                value={currentTime}
-                                onChange={handleSeek}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <div className="absolute h-full bg-primary" style={{ width: `${(currentTime / duration) * 100}%` }} />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <button onClick={onPrev} disabled={!hasPrev} className="p-2 text-white hover:text-primary disabled:opacity-50">
-                                    <SkipBack className="h-5 w-5" />
-                                </button>
-                                <button onClick={togglePlay} className="p-2 text-white hover:text-primary">
-                                    {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-                                </button>
-                                <button onClick={onNext} disabled={!hasNext} className="p-2 text-white hover:text-primary disabled:opacity-50">
-                                    <SkipForward className="h-5 w-5" />
-                                </button>
-                                <button onClick={() => skip(10)} className="p-2 text-white hover:text-primary text-xs">+10s</button>
-                                <span className="text-white/80 text-sm ml-2">
-                                    {formatDuration(Math.floor(currentTime))} / {formatDuration(Math.floor(duration))}
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1 group/volume">
-                                    <button onClick={toggleMute} className="p-2 text-white hover:text-primary">
-                                        {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                                    </button>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={1}
-                                        step={0.1}
-                                        value={isMuted ? 0 : volume}
-                                        onChange={handleVolumeChange}
-                                        className="w-0 group-hover/volume:w-20 transition-all opacity-0 group-hover/volume:opacity-100"
-                                    />
-                                </div>
-
-                                <div className="relative">
-                                    <button onClick={() => setShowSettings(!showSettings)} className="p-2 text-white hover:text-primary">
-                                        <Settings className="h-5 w-5" />
-                                    </button>
-                                    {showSettings && (
-                                        <div className="absolute bottom-full right-0 mb-2 glass-card p-2 min-w-[150px]">
-                                            <p className="text-xs font-medium mb-2 px-2">Quick Settings</p>
-                                            <button onClick={() => setShowSettings(false)} className="block w-full text-left px-2 py-1 text-sm rounded hover:bg-muted">
-                                                Close
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button onClick={toggleFullscreen} className="p-2 text-white hover:text-primary">
-                                    {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <h3 className="text-white font-medium truncate">{title}</h3>
+                    {episodeTitle && <p className="text-white/70 text-sm">{episodeTitle}</p>}
                 </div>
+
             </div>
 
             {/* SERVER SELECTOR */}
