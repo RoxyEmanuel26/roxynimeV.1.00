@@ -1,4 +1,3 @@
-
 import { sankaClient, SankaAnime, SankaEpisode, SankaStreamServer } from "./sankaClient";
 
 // Interfaces to match the UI expectations
@@ -39,7 +38,6 @@ export interface StreamingData {
 }
 
 // Wrapper functions using Sanka Client
-
 export async function getTrendingAnime(): Promise<Anime[]> {
     const data = await sankaClient.getHome();
     return data.map(mapSankaToAnime);
@@ -75,17 +73,34 @@ export async function getAnimeInfo(id: string): Promise<AnimeDetail> {
 
 export async function getEpisodeStreams(episodeId: string): Promise<StreamingData | null> {
     try {
-        const servers = await sankaClient.getStreams(episodeId);
-        if (!servers.length) return null;
+        console.log("🔍 [animbus] Getting streams for episode:", episodeId);
 
-        // Default to first server
+        const servers = await sankaClient.getStreams(episodeId);
+
+        console.log("📡 [animbus] Servers received:", servers);
+        console.log("📊 [animbus] Number of servers:", servers?.length || 0);
+
+        if (!servers || !servers.length) {
+            console.warn("⚠️ [animbus] No servers found for:", episodeId);
+            return null;
+        }
+
+        // Log all available servers
+        servers.forEach((server, idx) => {
+            console.log(`   Server ${idx + 1}:`, {
+                name: server.name,
+                quality: server.quality,
+                hasUrl: !!server.streamUrl
+            });
+        });
+
         return {
             url: servers[0].streamUrl,
             headers: {},
             servers: servers // Pass all servers for selection
         };
     } catch (e) {
-        console.error("Error getting stream", e);
+        console.error("❌ [animbus] Error getting stream:", e);
         return null;
     }
 }

@@ -8,7 +8,12 @@ export async function GET(
     const { slug } = await params;
     const [animeId, episodeId] = slug;
 
+    console.log("🎯 [API /streaming] Request received");
+    console.log("   Anime ID:", animeId);
+    console.log("   Episode ID:", episodeId);
+
     if (!animeId || !episodeId) {
+        console.error("❌ [API /streaming] Missing parameters");
         return NextResponse.json(
             { error: "Anime ID and episode ID are required" },
             { status: 400 }
@@ -16,10 +21,11 @@ export async function GET(
     }
 
     try {
-        // Pass the episode ID/slug directly to the Sanka client wrapper
+        // Pass the episode ID/slug directly to the client wrapper
         const streamData = await getEpisodeStreams(episodeId);
 
         if (!streamData) {
+            console.warn("⚠️ [API /streaming] No stream data returned");
             return NextResponse.json(
                 { error: "Stream not found" },
                 { status: 404 }
@@ -32,6 +38,8 @@ export async function GET(
             url: server.streamUrl,
             type: "iframe" // Most sanka streams are iframes
         })) || [];
+
+        console.log("✨ [API /streaming] Mapped streams:", streams.length);
 
         // Fallback if no servers but direct url exists
         if (streams.length === 0 && streamData.url) {
@@ -48,11 +56,19 @@ export async function GET(
             streams: streams
         };
 
+        console.log("✅ [API /streaming] Response ready:", {
+            streamCount: streams.length,
+            hasStreams: streams.length > 0
+        });
+
         return NextResponse.json({ data });
     } catch (error) {
-        console.error("Error fetching streaming data:", error);
+        console.error("💥 [API /streaming] Error:", error);
         return NextResponse.json(
-            { error: "Failed to fetch streaming data" },
+            {
+                error: "Failed to fetch streaming data",
+                details: error instanceof Error ? error.message : "Unknown error"
+            },
             { status: 500 }
         );
     }

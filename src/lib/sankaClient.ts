@@ -249,13 +249,112 @@ export const sankaClient = {
     /**
      * Get Streaming Links
      */
+    // getStreams: async (episodeSlug: string): Promise<SankaStreamServer[]> => {
+    //     return getCachedData(`sanka_stream_${episodeSlug}`, async () => {
+    //         try {
+    //             // Docs: /anime/episode/{id}
+    //             // Docs: /anime/episode/{id}
+    //             const url = `${SANKA_API_BASE}/anime/episode/${episodeSlug}`;
+    //             const res = await fetch(url);
+    //             if (!res.ok) {
+    //                 console.error(`Sanka Stream Fetch Failed for ${url}: ${res.status} ${res.statusText}`);
+    //                 try {
+    //                     const errorBody = await res.text();
+    //                     console.error('Error Body:', errorBody);
+    //                 } catch (e) { /* ignore */ }
+    //                 throw new Error(`Episode not found: ${res.status}`);
+    //             }
+    //             const response = await res.json();
+
+    //             // DEBUG: Log raw response
+    //             console.log('=== SANKA STREAMING RAW RESPONSE ===');
+    //             console.log('Episode Slug:', episodeSlug);
+    //             console.log('Response keys:', Object.keys(response));
+    //             console.log('Response data:', JSON.stringify(response, null, 2));
+    //             console.log('====================================');
+
+    //             // CRITICAL: API returns nested structure { data: { data: {...} } }
+    //             const data = response.data;
+
+    //             if (!data) {
+    //                 console.error('No data in streaming response');
+    //                 return [];
+    //             }
+
+    //             const servers: SankaStreamServer[] = [];
+
+    //             // 1. Check for 'mirror' field (Confirmed source)
+    //             // Structure: { "mirror": { "720p": [ { "title": "mega", "href": "/anime/server/..." } ] } }
+    //             if (data.mirror) {
+    //                 Object.entries(data.mirror).forEach(([quality, serverList]) => {
+    //                     if (Array.isArray(serverList)) {
+    //                         serverList.forEach((srv: any) => {
+    //                             let streamUrl = srv.href || srv.url || srv.serverId;
+
+    //                             // Handle relative URLs for server endpoints
+    //                             if (streamUrl && streamUrl.startsWith('/')) {
+    //                                 streamUrl = `${SANKA_API_BASE}${streamUrl}`;
+    //                             } else if (srv.serverId) {
+    //                                 // Construct URL if we have serverId
+    //                                 streamUrl = `${SANKA_API_BASE}/anime/server/${srv.serverId}`;
+    //                             }
+
+    //                             servers.push({
+    //                                 name: srv.title || srv.name || 'Server',
+    //                                 quality: quality, // e.g., "720p", "480p", "mkv"
+    //                                 streamUrl: streamUrl
+    //                             });
+    //                         });
+    //                     }
+    //                 });
+    //             }
+
+    //             // 2. Fallback: check for streamList/servers/stream_link
+    //             if (servers.length === 0) {
+    //                 if (data.streamList && Array.isArray(data.streamList)) {
+    //                     data.streamList.forEach((srv: any) => {
+    //                         servers.push({
+    //                             name: srv.server || srv.name || 'Unknown',
+    //                             quality: srv.quality || srv.resolution,
+    //                             streamUrl: srv.url || srv.link || ''
+    //                         });
+    //                     });
+    //                 }
+
+    //                 if (data.stream_link) {
+    //                     servers.push({
+    //                         name: "Default",
+    //                         quality: "default",
+    //                         streamUrl: data.stream_link
+    //                     });
+    //                 }
+    //             }
+
+    //             console.log('=== PARSED STREAMS ===');
+    //             console.log('Stream count:', servers.length);
+    //             console.log('Servers:', servers);
+    //             console.log('======================');
+
+    //             return servers;
+    //         } catch (e) {
+    //             console.error("Sanka Stream Error:", e);
+    //             return [];
+    //         }
+    //     });
+    // }
     getStreams: async (episodeSlug: string): Promise<SankaStreamServer[]> => {
         return getCachedData(`sanka_stream_${episodeSlug}`, async () => {
             try {
-                // Docs: /anime/episode/{id}
+                console.log("🌐 [SankaClient] getStreams called with:", episodeSlug);
+
                 // Docs: /anime/episode/{id}
                 const url = `${SANKA_API_BASE}/anime/episode/${episodeSlug}`;
+                console.log(`📞 [SankaClient] Fetching from: ${url}`);
+
                 const res = await fetch(url);
+
+                console.log("📥 [SankaClient] Response status:", res.status);
+
                 if (!res.ok) {
                     console.error(`Sanka Stream Fetch Failed for ${url}: ${res.status} ${res.statusText}`);
                     try {
@@ -264,13 +363,15 @@ export const sankaClient = {
                     } catch (e) { /* ignore */ }
                     throw new Error(`Episode not found: ${res.status}`);
                 }
+
                 const response = await res.json();
 
                 // DEBUG: Log raw response
                 console.log('=== SANKA STREAMING RAW RESPONSE ===');
                 console.log('Episode Slug:', episodeSlug);
                 console.log('Response keys:', Object.keys(response));
-                console.log('Response data:', JSON.stringify(response, null, 2));
+                console.log('Response data keys:', response.data ? Object.keys(response.data) : 'NO DATA');
+                console.log('Full response:', JSON.stringify(response, null, 2));
                 console.log('====================================');
 
                 // CRITICAL: API returns nested structure { data: { data: {...} } }
@@ -283,12 +384,16 @@ export const sankaClient = {
 
                 const servers: SankaStreamServer[] = [];
 
-                // 1. Check for 'mirror' field (Confirmed source)
-                // Structure: { "mirror": { "720p": [ { "title": "mega", "href": "/anime/server/..." } ] } }
-                if (data.mirror) {
-                    Object.entries(data.mirror).forEach(([quality, serverList]) => {
-                        if (Array.isArray(serverList)) {
-                            serverList.forEach((srv: any) => {
+                // === NEW PARSING LOGIC === 
+                // 1. Check for 'server.qualities' (NEW FORMAT from actual API)
+                if (data.server && data.server.qualities) {
+                    console.log("📀 [SankaClient] Processing server.qualities data...");
+
+                    data.server.qualities.forEach((qualityGroup: any) => {
+                        const quality = qualityGroup.title || "default"; // e.g., "360p", "480p", "720p"
+
+                        if (Array.isArray(qualityGroup.serverList)) {
+                            qualityGroup.serverList.forEach((srv: any) => {
                                 let streamUrl = srv.href || srv.url || srv.serverId;
 
                                 // Handle relative URLs for server endpoints
@@ -301,7 +406,7 @@ export const sankaClient = {
 
                                 servers.push({
                                     name: srv.title || srv.name || 'Server',
-                                    quality: quality, // e.g., "720p", "480p", "mkv"
+                                    quality: quality,
                                     streamUrl: streamUrl
                                 });
                             });
@@ -309,8 +414,44 @@ export const sankaClient = {
                     });
                 }
 
-                // 2. Fallback: check for streamList/servers/stream_link
-                if (servers.length === 0) {
+                // 2. FALLBACK: Check for 'mirror' field (OLD FORMAT)
+                else if (data.mirror) {
+                    console.log("📀 [SankaClient] Processing mirror data (old format)...");
+                    Object.entries(data.mirror).forEach(([quality, serverList]) => {
+                        if (Array.isArray(serverList)) {
+                            serverList.forEach((srv: any) => {
+                                let streamUrl = srv.href || srv.url || srv.serverId;
+
+                                if (streamUrl && streamUrl.startsWith('/')) {
+                                    streamUrl = `${SANKA_API_BASE}${streamUrl}`;
+                                } else if (srv.serverId) {
+                                    streamUrl = `${SANKA_API_BASE}/anime/server/${srv.serverId}`;
+                                }
+
+                                servers.push({
+                                    name: srv.title || srv.name || 'Server',
+                                    quality: quality,
+                                    streamUrl: streamUrl
+                                });
+                            });
+                        }
+                    });
+                }
+
+                // 3. FALLBACK: Use defaultStreamingUrl if available
+                else if (data.defaultStreamingUrl) {
+                    console.log("📀 [SankaClient] Using defaultStreamingUrl...");
+                    servers.push({
+                        name: "Default",
+                        quality: "auto",
+                        streamUrl: data.defaultStreamingUrl
+                    });
+                }
+
+                // 4. FALLBACK: check for streamList/stream_link
+                else {
+                    console.log("⚠️ [SankaClient] No server data, trying other fallbacks...");
+
                     if (data.streamList && Array.isArray(data.streamList)) {
                         data.streamList.forEach((srv: any) => {
                             servers.push({
@@ -331,15 +472,30 @@ export const sankaClient = {
                 }
 
                 console.log('=== PARSED STREAMS ===');
-                console.log('Stream count:', servers.length);
-                console.log('Servers:', servers);
+                console.log('🎬 Stream count:', servers.length);
+                if (servers.length > 0) {
+                    servers.forEach((s, idx) => {
+                        console.log(`   Server ${idx + 1}:`, {
+                            name: s.name,
+                            quality: s.quality,
+                            hasUrl: !!s.streamUrl
+                        });
+                    });
+                } else {
+                    console.warn('⚠️ No streams parsed from response!');
+                }
                 console.log('======================');
 
                 return servers;
             } catch (e) {
-                console.error("Sanka Stream Error:", e);
+                console.error("💥 [SankaClient] Stream Error:", e);
                 return [];
             }
         });
     }
+    /**
+ * Get Streaming Links
+ */
+
+
 };

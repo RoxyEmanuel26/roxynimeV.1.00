@@ -34,7 +34,7 @@ interface StreamData {
 interface AnimeInfo {
     title: string;
     image: string;
-    episodes: { episode: string; slug: string }[];
+    episodes: { episode: string; slug: string; number: number }[];
 }
 
 export default function WatchPage() {
@@ -43,13 +43,13 @@ export default function WatchPage() {
     const { data: session } = useSession();
 
     const animeId = params.slug?.[0] as string;
-    const episodeId = params.slug?.[1] as string || "1";
+    const episodeSlug = params.slug?.[1] as string; // Could be slug or number
 
     const [loading, setLoading] = useState(true);
     const [animeInfo, setAnimeInfo] = useState<AnimeInfo | null>(null);
     const [streamData, setStreamData] = useState<StreamData | null>(null);
     const [episodes, setEpisodes] = useState<Episode[]>([]);
-    const [currentEpisode, setCurrentEpisode] = useState<number>(parseInt(episodeId));
+    const [currentEpisode, setCurrentEpisode] = useState<number>(1);
     const [showEpisodeList, setShowEpisodeList] = useState(false);
     const [showAd, setShowAd] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -60,59 +60,110 @@ export default function WatchPage() {
             setLoading(true);
             setError(null);
 
+            console.log("=== FETCH DATA START ===");
+            console.log("Anime ID:", animeId);
+            console.log("Episode Slug/Number:", episodeSlug);
+
             // 1. Fetch anime details first
             const animeRes = await fetch(`/api/anime/${animeId}`);
-            if (!animeRes.ok) throw new Error("Failed to fetch anime info");
+            if (!animeRes.ok) {
+                const errorText = await animeRes.text();
+                console.error("Anime fetch failed:", animeRes.status, errorText);
+                throw new Error("Failed to fetch anime info");
+            }
+
             const animeData = await animeRes.json();
+            console.log("Anime data received:", animeData);
 
             if (!animeData.data) throw new Error("No anime data found");
 
             setAnimeInfo(animeData.data);
 
-            // Parse episodes correctly from API matching animbus.ts structure
-            // { id: string, number: number, title: string, urlSlug: string }
+            // Parse episodes correctly from API
             const eps: Episode[] = (animeData.data.episodes || []).map((ep: any) => ({
-                id: ep.id || ep.urlSlug, // Key for React
+                id: ep.id || ep.urlSlug || ep.slug,
                 number: ep.number,
                 title: ep.title,
-                slug: ep.urlSlug || ep.id // Slug for API calls
+                slug: ep.urlSlug || ep.slug || ep.id,
             }));
 
+            console.log("Parsed episodes:", eps);
             setEpisodes(eps);
 
-            // 2. Find the current episode slug
-            // params.slug[1] is the episode number (e.g., "1", "2")
-            const targetEpNum = parseInt(episodeId);
-            const currentEp = eps.find(e => e.number === targetEpNum);
+            // 2. Determine current episode
+            let currentEp: Episode | undefined;
 
-            if (currentEp) {
-                // Use the found slug to fetch streams
-                const streamRes = await fetch(`/api/streaming/${animeId}/${currentEp.slug}`);
-                if (streamRes.ok) {
-                    const streamJson = await streamRes.json();
-                    if (streamJson.data) {
-                        setStreamData(streamJson.data);
-                    }
-                } else {
-                    console.warn("Stream fetch failed:", streamRes.status);
-                    // Don't set error here, just show "No streams" state
-                }
+            // Try to match by slug first (if episodeSlug looks like a slug)
+            if (episodeSlug && isNaN(Number(episodeSlug))) {
+                console.log("Matching by slug:", episodeSlug);
+                currentEp = eps.find(
+                    (e) =>
+                        e.slug === episodeSlug ||
+                        e.id === episodeSlug ||
+                        e.slug?.toLowerCase() === episodeSlug.toLowerCase()
+                );
             } else {
-                console.warn(`Episode ${targetEpNum} not found in list`);
+                // Match by episode number
+                const epNum = parseInt(episodeSlug || "1");
+                console.log("Matching by number:", epNum);
+                currentEp = eps.find((e) => e.number === epNum);
             }
 
+            // Fallback to first episode if not found
+            if (!currentEp && eps.length > 0) {
+                console.warn(
+                    `Episode not found: ${episodeSlug}, using first episode`
+                );
+                currentEp = eps[0];
+            }
+
+            if (!currentEp) {
+                throw new Error("No episodes available");
+            }
+
+            console.log("Current episode found:", currentEp);
+            setCurrentEpisode(currentEp.number);
+
+            // 3. Fetch streams using the episode's slug
+            const streamUrl = `/api/streaming/${animeId}/${currentEp.slug}`;
+            console.log("Fetching streams from:", streamUrl);
+
+            const streamRes = await fetch(streamUrl);
+
+            if (!streamRes.ok) {
+                const errorText = await streamRes.text();
+                console.error("Stream fetch failed:", streamRes.status, errorText);
+                // Don't throw error, just show no streams message
+            } else {
+                const streamJson = await streamRes.json();
+                console.log("Stream response:", streamJson);
+
+                if (streamJson.data && streamJson.data.streams) {
+                    if (streamJson.data.streams.length > 0) {
+                        setStreamData(streamJson.data);
+                        console.log("Streams loaded successfully:", streamJson.data.streams.length);
+                    } else {
+                        console.warn("No streams in response");
+                    }
+                } else {
+                    console.warn("Invalid stream data structure");
+                }
+            }
+
+            console.log("=== FETCH DATA END ===");
         } catch (err) {
             console.error("Error fetching data:", err);
-            setError("Failed to load video. Please try again.");
+            setError(err instanceof Error ? err.message : "Failed to load video. Please try again.");
         } finally {
             setLoading(false);
         }
-    }, [animeId, episodeId]);
+    }, [animeId, episodeSlug]);
 
     useEffect(() => {
-        fetchData();
-        setCurrentEpisode(parseInt(episodeId));
-    }, [fetchData, episodeId]);
+        if (animeId && episodeSlug) {
+            fetchData();
+        }
+    }, [animeId, episodeSlug, fetchData]);
 
     // Save watch progress
     const handleProgress = useCallback(
@@ -125,7 +176,7 @@ export default function WatchPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         animeId,
-                        episode: parseInt(episodeId),
+                        episode: currentEpisode,
                         progress,
                         title: animeInfo?.title || "",
                         image: animeInfo?.image || "",
@@ -135,7 +186,7 @@ export default function WatchPage() {
                 console.error("Failed to save progress:", error);
             }
         },
-        [session, animeId, episodeId, animeInfo]
+        [session, animeId, currentEpisode, animeInfo]
     );
 
     // Handle episode end - show ad then go to next
@@ -149,7 +200,7 @@ export default function WatchPage() {
         const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
         if (currentIdx < episodes.length - 1) {
             const nextEp = episodes[currentIdx + 1];
-            router.push(`/watch/${animeId}/${nextEp.number}`);
+            router.push(`/watch/${animeId}/${nextEp.slug}`);
         }
     };
 
@@ -159,18 +210,26 @@ export default function WatchPage() {
 
     const goToPrev = () => {
         if (hasPrev) {
-            router.push(`/watch/${animeId}/${currentEpisode - 1}`);
+            const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
+            if (currentIdx > 0) {
+                const prevEp = episodes[currentIdx - 1];
+                router.push(`/watch/${animeId}/${prevEp.slug}`);
+            }
         }
     };
 
     const goToNext = () => {
         if (hasNext) {
-            router.push(`/watch/${animeId}/${currentEpisode + 1}`);
+            const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
+            if (currentIdx < episodes.length - 1) {
+                const nextEp = episodes[currentIdx + 1];
+                router.push(`/watch/${animeId}/${nextEp.slug}`);
+            }
         }
     };
 
     const handleEpisodeSelect = (episode: Episode) => {
-        router.push(`/watch/${animeId}/${episode.number}`);
+        router.push(`/watch/${animeId}/${episode.slug}`);
         setShowEpisodeList(false);
     };
 
@@ -211,8 +270,11 @@ export default function WatchPage() {
                         hasNext={hasNext}
                     />
                 ) : (
-                    <div className="aspect-video bg-muted flex items-center justify-center">
+                    <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-4">
                         <p className="text-muted-foreground">No streams available</p>
+                        <button onClick={fetchData} className="btn-outline">
+                            Retry
+                        </button>
                     </div>
                 )}
             </div>
@@ -245,6 +307,7 @@ export default function WatchPage() {
                                 <ChevronLeft className="h-4 w-4" />
                                 Prev
                             </button>
+
                             <button
                                 onClick={goToNext}
                                 disabled={!hasNext}
@@ -253,6 +316,7 @@ export default function WatchPage() {
                                 Next
                                 <ChevronRight className="h-4 w-4" />
                             </button>
+
                             <button
                                 onClick={() => setShowEpisodeList(!showEpisodeList)}
                                 className={cn(
