@@ -97,25 +97,65 @@ export function VideoPlayer({
             const preferredOrder = ["vidhide", "ondesuhd", "updesu", "filedon", "mega", "odstream"];
             const firstServer = preferredOrder.find(s => availableServers.includes(s)) || availableServers[0];
 
-            setSelectedServer(firstServer);
-
-            const firstStream = serverGroups.get(firstServer)?.[0];
-            if (firstStream) {
-                setSelectedQuality(firstStream.quality);
-                setSelectedStreamUrl(firstStream.url);
-            }
+            // Auto-select this server (will trigger handleServerClick logic via manual call)
+            handleServerClick(firstServer);
         }
     }, [availableServers.length]);
 
-    const handleServerClick = (serverName: string) => {
+
+    const handleServerClick = async (serverName: string) => {
         setSelectedServer(serverName);
 
-        const firstStream = serverGroups.get(serverName)?.[0];
-        if (firstStream) {
-            setSelectedQuality(firstStream.quality);
-            setSelectedStreamUrl(firstStream.url);
+        const serverStreams = serverGroups.get(serverName) || [];
+
+        if (serverStreams.length > 0) {
+            // Sort by quality - lowest first (360p < 480p < 720p < 1080p)
+            const sortedStreams = [...serverStreams].sort((a, b) => {
+                const getQualityNumber = (quality: string) => {
+                    const match = quality.match(/(\d+)/);
+                    return match ? parseInt(match[1]) : 999;
+                };
+
+                return getQualityNumber(a.quality) - getQualityNumber(b.quality);
+            });
+
+            const lowestQuality = sortedStreams[0];
+
+            console.log(`🎯 Auto-selecting lowest quality for ${serverName}:`, lowestQuality.quality);
+
+            setSelectedQuality(lowestQuality.quality);
+
+            // Resolve stream URL
+            setIsLoading(true);
+
+            if (lowestQuality.url.includes("/anime/server/")) {
+                const serverIdMatch = lowestQuality.url.match(/\/anime\/server\/([^/]+)/);
+                if (serverIdMatch) {
+                    const serverId = serverIdMatch[1];
+
+                    try {
+                        const response = await fetch(`/api/server/${serverId}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            setSelectedStreamUrl(data.url);
+                        } else {
+                            setSelectedStreamUrl(lowestQuality.url);
+                        }
+                    } catch (error) {
+                        console.error("Error resolving stream:", error);
+                        setSelectedStreamUrl(lowestQuality.url);
+                    }
+                } else {
+                    setSelectedStreamUrl(lowestQuality.url);
+                }
+            } else {
+                setSelectedStreamUrl(lowestQuality.url);
+            }
+
+            setIsLoading(false);
         }
     };
+
 
     const handleQualityClick = async (stream: Stream) => {
         setSelectedQuality(stream.quality);
