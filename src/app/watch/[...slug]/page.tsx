@@ -207,20 +207,21 @@ export default function WatchPage() {
     // Navigation
     // Navigation
     const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-    const hasPrev = currentIdx < episodes.length - 1;
-    const hasNext = currentIdx > 0;
+    const hasPrev = currentIdx > 0;
+    const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
+
     const goToPrev = () => {
-        if (hasNext && currentIdx < episodes.length - 1) {
-            const nextEp = episodes[currentIdx + 1];
-            router.push(`/watch/${animeId}/${nextEp.slug}`);
+        if (hasPrev && currentIdx > 0) {
+            const prevEp = episodes[currentIdx - 1];
+            router.push(`/watch/${animeId}/${prevEp.slug}`);
         }
     };
 
 
     const goToNext = () => {
-        if (hasPrev && currentIdx > 0) {
-            const prevEp = episodes[currentIdx - 1];
-            router.push(`/watch/${animeId}/${prevEp.slug}`);
+        if (hasNext && currentIdx < episodes.length - 1) {
+            const nextEp = episodes[currentIdx + 1];
+            router.push(`/watch/${animeId}/${nextEp.slug}`);
         }
     };
 
@@ -297,7 +298,7 @@ export default function WatchPage() {
                         {/* Navigation */}
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={goToNext}
+                                onClick={goToPrev}
                                 disabled={!hasPrev}
                                 className="btn-outline px-3 disabled:opacity-50"
                             >
@@ -310,7 +311,7 @@ export default function WatchPage() {
                                 disabled={!hasNext}
                                 className="btn-outline px-3 disabled:opacity-50"
                             >
-                                goToPrev
+                                Next
                                 <ChevronRight className="h-4 w-4" />
                             </button>
 
