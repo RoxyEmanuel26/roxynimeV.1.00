@@ -379,8 +379,6 @@ export function VideoPlayer({
                     src={selectedStreamUrl || undefined}
                     className="w-full h-full bg-black"
                     allowFullScreen
-                            sandbox="allow-same-origin allow-scripts allow-forms allow-presentation"
-                            referrerPolicy="no-referrer"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     onLoad={() => {
                         setIsLoading(false);
