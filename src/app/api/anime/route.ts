@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
                 break;
         }
 
+            // Handle case when animeList is undefined
+    if (!animeList) {
+      animeList = [];
+    }
+
         // Convert to match kazuna-api response format for compatibility
         data = {
             status: "success",
