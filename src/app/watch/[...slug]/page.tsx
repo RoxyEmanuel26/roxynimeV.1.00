@@ -207,9 +207,8 @@ export default function WatchPage() {
     // Navigation
     // Navigation
     const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-    const hasPrev = currentIdx > 0;
-    const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
-
+  const hasPrev = currentIdx < episodes.length - 1;
+  const hasNext = currentIdx > 0;
     const goToPrev = () => {
             if (hasNext && currentIdx < episodes.length - 1) {
       const nextEp = episodes[currentIdx + 1];
