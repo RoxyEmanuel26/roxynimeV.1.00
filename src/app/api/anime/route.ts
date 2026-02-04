@@ -3,44 +3,57 @@ import {
     getOngoingAnimeList,
     getCompletedAnimeList,
     getMoviesList,
+    Anime,
 } from "@/lib/animbus";
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get("type") || "ongoing";
+    const type = searchParams.get("type") || "completed";
     const page = parseInt(searchParams.get("page") || "1");
 
     try {
         let data;
 
-        let animeList;
+        let animeList: Anime[] = [];
+        let pagination;
 
         switch (type) {
             case "completed":
-                animeList = await getCompletedAnimeList(page);
+                const completedRes = await getCompletedAnimeList(page);
+                animeList = completedRes.data;
+                pagination = completedRes.pagination;
                 break;
             case "movie":
-                animeList = await getMoviesList(page);
+                const movieRes = await getMoviesList(page);
+                animeList = movieRes.data;
+                pagination = movieRes.pagination;
                 break;
             case "ongoing":
             default:
-                animeList = await getOngoingAnimeList(page);
+                const ongoingRes = await getOngoingAnimeList(page);
+                animeList = ongoingRes.data;
+                pagination = ongoingRes.pagination;
                 break;
         }
 
-            // Handle case when animeList is undefined
-    if (!animeList) {
-      animeList = [];
-    }
+        // Handle case when animeList is undefined
+        if (!animeList) {
+            animeList = [];
+        }
 
-        // Convert to match kazuna-api response format for compatibility
+        const totalPages = pagination?.totalPages || (pagination?.items?.total
+            ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20))
+            : (pagination?.lastVisiblePage || 1));
+
+        // Convert to match frontend response format
         data = {
             status: "success",
             data: animeList,
-            total_item: animeList.length,
-            has_next: { has_next_page: false },
-            has_prev: { has_prev_page: false },
-            current_page: page,
+            total_item: pagination?.items?.total || animeList.length,
+            hasNext: pagination?.hasNextPage ?? false,
+            hasPrev: pagination?.hasPrevPage ?? false,
+            current_page: pagination?.currentPage || page,
+            totalPages: totalPages,
         };
 
         return NextResponse.json(data);

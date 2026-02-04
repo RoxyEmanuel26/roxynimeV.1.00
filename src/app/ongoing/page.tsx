@@ -18,7 +18,7 @@ interface Anime {
 interface ApiResponse {
   status: string;
   data: Anime[];
-  has_next: { has_next_page: boolean };
+  hasNext: boolean;
   current_page: number;
 }
 
@@ -31,12 +31,11 @@ export default function OngoingPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>({
-    search: "",
     type: "ongoing",
-    status: "all",
-    genre: "all",
-    sortBy: "latest",
+    genre: "",
+    order: "updated",
   });
 
   const fetchAnimes = useCallback(
@@ -51,11 +50,10 @@ export default function OngoingPage() {
         const params = new URLSearchParams();
         params.append("page", page.toString());
         params.append("type", "ongoing");
-        
-        if (filters.search) params.append("search", filters.search);
-        if (filters.status !== "all") params.append("status", filters.status);
-        if (filters.genre !== "all") params.append("genre", filters.genre);
-        if (filters.sortBy) params.append("sortBy", filters.sortBy);
+
+        if (searchQuery) params.append("search", searchQuery);
+        if (filters.genre) params.append("genre", filters.genre);
+        if (filters.order) params.append("order", filters.order);
 
         const response = await fetch(`/api/anime?${params.toString()}`);
 
@@ -66,12 +64,12 @@ export default function OngoingPage() {
         const data: ApiResponse = await response.json();
 
         if (shouldAppend) {
-          setAnimes((prev) => [...prev, ...data.data]);
+          setAnimes((prev) => [...prev, ...data.data.map((anime) => ({ ...anime, type: ["Ongoing"] }))]);
         } else {
-          setAnimes(data.data);
+          setAnimes(data.data.map((anime) => ({ ...anime, type: ["Ongoing"] })));
         }
 
-        setHasMore(data.has_next?.has_next_page ?? false);
+        setHasMore(data.hasNext ?? false);
         setCurrentPage(page);
       } catch (error) {
         console.error("Error fetching animes:", error);
@@ -80,7 +78,7 @@ export default function OngoingPage() {
         setLoadingMore(false);
       }
     },
-    [filters]
+    [filters, searchQuery]
   );
 
   useEffect(() => {
@@ -89,6 +87,10 @@ export default function OngoingPage() {
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters({ ...newFilters, type: "ongoing" });
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   const handleLoadMore = () => {
@@ -119,9 +121,8 @@ export default function OngoingPage() {
       <div className="flex gap-6 mt-8">
         <div className="flex-1">
           <SearchFilter
-            filters={{ ...filters, type: "ongoing" }}
+            onSearch={handleSearch}
             onFilterChange={handleFilterChange}
-            hideTypeFilter={true}
           />
 
           <div className="mt-6">

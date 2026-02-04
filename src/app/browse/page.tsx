@@ -18,7 +18,9 @@ interface Anime {
 interface ApiResponse {
   status: string;
   data: Anime[];
-  hasNext: boolean;  currentPage: number;
+  hasNext: boolean;
+  currentPage: number;
+  totalPages: number;
 }
 
 export default function BrowsePage() {
@@ -30,12 +32,13 @@ export default function BrowsePage() {
   const [currentPage, setCurrentPage] = useState(
     parseInt(searchParams.get("page") || "1")
   );
+  const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("search") || ""
   );
   const [filters, setFilters] = useState<FilterState>({
-    type: searchParams.get("type") || "",
+    type: searchParams.get("type") || "completed", // Default to completed for more pages
     genre: searchParams.get("genre") || "",
     order: "updated",
   });
@@ -46,7 +49,7 @@ export default function BrowsePage() {
         setLoading(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
 
-        const type = filters.type || "ongoing";
+        const type = filters.type || "completed"; // Default to completed
         let url = `/api/anime?type=${type}&page=${pageNum}`;
 
         if (searchQuery) {
@@ -58,13 +61,18 @@ export default function BrowsePage() {
         const response = await fetch(url);
         const data: ApiResponse = await response.json();
 
-        const processedAnimes = data.data.map((anime) => ({
+        // Process anime to match UI requirements
+        const processedAnimes = data.data.map((anime: any) => ({
           ...anime,
           id: anime.id || anime.slug || "",
+          // If viewing completed or anime is completed, override type to show "Completed" badge
+          type: (type === 'completed' || anime.status === 'Completed') ? ['Completed'] : anime.type
         }));
 
         setAnimes(processedAnimes);
-      setHasMore(data.hasNext ?? false);      } catch (error) {
+        setHasMore(data.hasNext ?? false);
+        setTotalPages(data.totalPages || 1);
+      } catch (error) {
         console.error("Error fetching anime:", error);
       } finally {
         setLoading(false);
@@ -84,7 +92,11 @@ export default function BrowsePage() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
+    if (filters.type && filters.type !== "completed") params.set("type", filters.type); // Don't put default in URL to clean it up? Or consistent?
+    // User asked for browse to show completed. Let's keep it explicit or clean.
+    // If I put "completed", it forces the filter.
     if (filters.type) params.set("type", filters.type);
+
     if (filters.genre) params.set("genre", filters.genre);
     if (currentPage > 1) params.set("page", currentPage.toString());
 
@@ -121,33 +133,50 @@ export default function BrowsePage() {
   // Generate pagination numbers
   const generatePaginationNumbers = () => {
     const pages: (number | string)[] = [];
-    const maxVisible = 7; // Maximum number of page buttons to show
 
-    if (currentPage <= 4) {
-      // Near the start: 1 2 3 4 5 ... (if hasMore)
-      for (let i = 1; i <= Math.min(5, currentPage + 2); i++) {
+    // If we don't have totalPages or it's 1, just return [1]
+    if (totalPages <= 1) return [1];
+
+    const maxVisible = 5; // number of buttons to show in the main block
+
+    if (totalPages <= maxVisible + 2) {
+      // If total pages is small, show all
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // Always show first page
+    pages.push(1);
+
+    if (currentPage > 3) {
+      pages.push("...");
+    }
+
+    // Calculate start and end of visible range around current page
+    let start = Math.max(2, currentPage - 1);
+    let end = Math.min(totalPages - 1, currentPage + 1);
+
+    // Adjust if at the very beginning
+    if (currentPage < 3) {
+      end = 4;
+    }
+
+    // Adjust if at the very end
+    if (currentPage > totalPages - 2) {
+      start = totalPages - 3;
+    }
+
+    for (let i = start; i <= end; i++) {
+      if (i > 1 && i < totalPages) {
         pages.push(i);
       }
-      if (hasMore) {
-        pages.push("...");
-      }
-    } else {
-      // In the middle or end: 1 ... current-1 current current+1 ...
-      pages.push(1);
-      
-      if (currentPage > 5) {
-        pages.push("...");
-      }
-      
-      // Show current page and neighbors
-      pages.push(currentPage - 1);
-      pages.push(currentPage);
-      
-      if (hasMore) {
-        pages.push(currentPage + 1);
-        pages.push("...");
-      }
     }
+
+    if (currentPage < totalPages - 2) {
+      pages.push("...");
+    }
+
+    // Always show last page
+    pages.push(totalPages);
 
     return pages;
   };
@@ -182,7 +211,7 @@ export default function BrowsePage() {
             <p className="text-sm text-muted-foreground mb-4">
               {searchQuery
                 ? `Showing results for "${searchQuery}"`
-                : `Showing ${filters.type || "ongoing"} anime`}
+                : `Showing ${filters.type || "completed"} anime`}
               {animes.length > 0 && ` • Page ${currentPage} • ${animes.length} titles`}
             </p>
           )}
@@ -217,11 +246,10 @@ export default function BrowsePage() {
                     <button
                       key={pageNum}
                       onClick={() => goToPage(pageNum as number)}
-                      className={`px-3 py-2 rounded-md transition-colors ${
-                        currentPage === pageNum
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "hover:bg-muted"
-                      }`}
+                      className={`px-3 py-2 rounded-md transition-colors ${currentPage === pageNum
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "hover:bg-muted"
+                        }`}
                     >
                       {pageNum}
                     </button>

@@ -14,16 +14,20 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const animes = await searchAnimes(query);
+        const { data: animes, pagination } = await searchAnimes(query);
 
-        // Convert to match kazuna-api response format for compatibility
+        const totalPages = pagination?.totalPages || (pagination?.items?.total
+            ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20))
+            : (pagination?.lastVisiblePage || 1));
+
         const data = {
             status: "success",
             data: animes,
-            total_item: animes.length,
-            has_next: { has_next_page: false },
-            has_prev: { has_prev_page: false },
-            current_page: page,
+            total_item: pagination?.items?.total || animes.length,
+            hasNext: pagination?.hasNextPage ?? false,
+            hasPrev: pagination?.hasPrevPage ?? false,
+            current_page: pagination?.currentPage || page,
+            totalPages: totalPages,
         };
 
         return NextResponse.json(data);

@@ -18,7 +18,7 @@ interface Anime {
 interface ApiResponse {
   status: string;
   data: Anime[];
-  has_next: { has_next_page: boolean };
+  hasNext: boolean;
   current_page: number;
 }
 
@@ -31,12 +31,11 @@ export default function MoviesPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>({
-    search: "",
     type: "movie",
-    status: "all",
-    genre: "all",
-    sortBy: "latest",
+    genre: "",
+    order: "updated",
   });
 
   const fetchAnimes = useCallback(
@@ -51,11 +50,10 @@ export default function MoviesPage() {
         const params = new URLSearchParams();
         params.append("page", page.toString());
         params.append("type", "movie");
-        
-        if (filters.search) params.append("search", filters.search);
-        if (filters.status !== "all") params.append("status", filters.status);
-        if (filters.genre !== "all") params.append("genre", filters.genre);
-        if (filters.sortBy) params.append("sortBy", filters.sortBy);
+
+        if (searchQuery) params.append("search", searchQuery);
+        if (filters.genre) params.append("genre", filters.genre);
+        if (filters.order) params.append("order", filters.order);
 
         const response = await fetch(`/api/anime?${params.toString()}`);
 
@@ -71,7 +69,7 @@ export default function MoviesPage() {
           setAnimes(data.data.map((anime: Anime) => ({ ...anime, type: ["Movie"] })));
         }
 
-        setHasMore(data.has_next?.has_next_page ?? false);
+        setHasMore(data.hasNext ?? false);
         setCurrentPage(page);
       } catch (error) {
         console.error("Error fetching animes:", error);
@@ -80,7 +78,7 @@ export default function MoviesPage() {
         setLoadingMore(false);
       }
     },
-    [filters]
+    [filters, searchQuery]
   );
 
   useEffect(() => {
@@ -89,6 +87,10 @@ export default function MoviesPage() {
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters({ ...newFilters, type: "movie" });
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   const handleLoadMore = () => {
@@ -119,9 +121,9 @@ export default function MoviesPage() {
       <div className="flex gap-6 mt-8">
         <div className="flex-1">
           <SearchFilter
-            filters={{ ...filters, type: "movie" }}
+            onSearch={handleSearch}
             onFilterChange={handleFilterChange}
-            hideTypeFilter={true}
+            className="mb-6"
           />
 
           <div className="mt-6">

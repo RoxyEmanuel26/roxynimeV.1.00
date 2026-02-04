@@ -1,4 +1,4 @@
-import { sankaClient, SankaAnime, SankaEpisode, SankaStreamServer } from "./sankaClient";
+import { sankaClient, SankaAnime, SankaEpisode, SankaStreamServer, PaginationInfo } from "./sankaClient";
 
 // Interfaces to match the UI expectations
 export interface Anime {
@@ -37,24 +37,41 @@ export interface StreamingData {
     servers?: SankaStreamServer[];
 }
 
+export interface AnimeListResponse {
+    data: Anime[];
+    pagination?: PaginationInfo;
+}
+
 // Wrapper functions using Sanka Client
 export async function getTrendingAnime(): Promise<Anime[]> {
     const data = await sankaClient.getHome();
     return data.map(mapSankaToAnime);
 }
 
-export async function getOngoingAnimeList(page: number = 1): Promise<Anime[]> {
-    const data = await sankaClient.getOngoing(page);
-    return data.map(mapSankaToAnime);
+export async function getOngoingAnimeList(page: number = 1): Promise<AnimeListResponse> {
+    const response = await sankaClient.getOngoing(page);
+    return {
+        data: response.data.map(mapSankaToAnime),
+        pagination: response.pagination
+    };
 }
 
-export async function getCompletedAnimeList(page: number = 1): Promise<Anime[]> {
-    const data = await sankaClient.getCompleted(page);
-    return data.map(mapSankaToAnime);
+export async function getCompletedAnimeList(page: number = 1): Promise<AnimeListResponse> {
+    const response = await sankaClient.getCompleted(page);
+    return {
+        data: response.data.map(mapSankaToAnime),
+        pagination: response.pagination
+    };
 }
 
-export async function getMoviesList(page: number = 1): Promise<Anime[]> {
-  const data = await sankaClient.search("movie");}
+export async function getMoviesList(page: number = 1): Promise<AnimeListResponse> {
+    // Movies are currently fetched via search("movie"), likely returns paginated now
+    const response = await sankaClient.search("movie");
+    return {
+        data: response.data.map(mapSankaToAnime),
+        pagination: response.pagination
+    };
+}
 
 export async function getAnimeInfo(id: string): Promise<AnimeDetail> {
     const data = await sankaClient.getDetail(id);
@@ -103,9 +120,12 @@ export async function getEpisodeStreams(episodeId: string): Promise<StreamingDat
     }
 }
 
-export async function searchAnimes(query: string): Promise<Anime[]> {
-    const data = await sankaClient.search(query);
-    return data.map(mapSankaToAnime);
+export async function searchAnimes(query: string): Promise<AnimeListResponse> {
+    const response = await sankaClient.search(query);
+    return {
+        data: response.data.map(mapSankaToAnime),
+        pagination: response.pagination
+    };
 }
 
 // Helper mapper

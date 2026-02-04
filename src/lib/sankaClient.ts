@@ -42,6 +42,24 @@ export type SankaSearchResult = {
     score: string;
 };
 
+export interface PaginationInfo {
+    currentPage: number;
+    lastVisiblePage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    totalPages?: number; // Added to support direct totalPages from API
+    items: {
+        count: number;
+        total: number;
+        per_page: number;
+    };
+}
+
+export interface PaginatedResponse<T> {
+    data: T;
+    pagination?: PaginationInfo;
+}
+
 // --- API Client ---
 
 export const sankaClient = {
@@ -49,7 +67,7 @@ export const sankaClient = {
      * Get home/trending anime
      */
     getHome: async (): Promise<SankaAnime[]> => {
-        return getCachedData("sanka_home", async () => {
+        return getCachedData("sanka_home_v2", async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/home`);
                 if (!res.ok) {
@@ -88,17 +106,25 @@ export const sankaClient = {
     /**
      * Get Ongoing Anime (Paginated)
      */
-    getOngoing: async (page: number = 1): Promise<SankaAnime[]> => {
-        return getCachedData(`sanka_ongoing_${page}`, async () => {
+    getOngoing: async (page: number = 1): Promise<PaginatedResponse<SankaAnime[]>> => {
+        return getCachedData(`sanka_ongoing_v4_${page}`, async () => {
             try {
-                const res = await fetch(`${SANKA_API_BASE}/anime/ongoing-anime?page=${page}`);
-                if (!res.ok) return [];
+                const res = await fetch(`${SANKA_API_BASE}/anime/ongoing-anime?page=${page}`, {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "application/json"
+                    }
+                });
+                if (!res.ok) return { data: [] };
                 const data = await res.json();
+
                 // Actual structure: { data: { animeList: [...] } }
                 const rawList = data.data?.animeList || [];
-                if (!Array.isArray(rawList) || rawList.length === 0) return [];
+                const pagination = data.pagination || data.data?.pagination;
 
-                return rawList.map((item: any) => ({
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
+
+                const animeList = rawList.map((item: any) => ({
                     id: item.animeId || item.id || item.slug,
                     slug: item.animeId || item.slug || item.id,
                     title: item.title,
@@ -106,13 +132,15 @@ export const sankaClient = {
                     synopsis: "",
                     genres: [],
                     type: "TV",
-                    status: "Ongoing",
+                    status: item.status || "Ongoing", // Keep original status if available
                     totalEpisodes: item.episodes || item.episode || item.total_episode,
                     rating: item.score ? parseFloat(item.score) : undefined
-                }));
+                })).filter((item: any) => !item.status || item.status.toLowerCase() === 'ongoing'); // Strict filter
+
+                return { data: animeList, pagination };
             } catch (e) {
                 console.error("Sanka Ongoing Error:", e);
-                return [];
+                return { data: [] };
             }
         });
     },
@@ -120,17 +148,28 @@ export const sankaClient = {
     /**
      * Get Completed Anime (Paginated)
      */
-    getCompleted: async (page: number = 1): Promise<SankaAnime[]> => {
-        return getCachedData(`sanka_completed_${page}`, async () => {
+    getCompleted: async (page: number = 1): Promise<PaginatedResponse<SankaAnime[]>> => {
+        return getCachedData(`sanka_completed_v3_${page}`, async () => {
             try {
-                const res = await fetch(`${SANKA_API_BASE}/anime/complete-anime/${page}`);
-                if (!res.ok) return [];
-                const data = await res.json();
-                // Actual structure: { data: { animeList: [...] } }
-                const rawList = data.data?.animeList || [];
-                if (!Array.isArray(rawList) || rawList.length === 0) return [];
+                const url = `${SANKA_API_BASE}/anime/complete-anime?page=${page}`;
 
-                return rawList.map((item: any) => ({
+                const res = await fetch(url, {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "application/json"
+                    }
+                });
+
+                if (!res.ok) return { data: [] };
+
+                const data = await res.json();
+                const rawList = data.data?.animeList || [];
+
+                const pagination = data.pagination || data.data?.pagination;
+
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
+
+                const animeList = rawList.map((item: any) => ({
                     id: item.animeId || item.id || item.slug,
                     slug: item.animeId || item.slug || item.id,
                     title: item.title,
@@ -142,9 +181,11 @@ export const sankaClient = {
                     totalEpisodes: item.episodes || item.episode || item.total_episode,
                     rating: item.score ? parseFloat(item.score) : undefined
                 }));
+
+                return { data: animeList, pagination };
             } catch (e) {
                 console.error("Sanka Completed Error:", e);
-                return [];
+                return { data: [] };
             }
         });
     },
@@ -152,19 +193,26 @@ export const sankaClient = {
     /**
      * Search anime
      */
-    search: async (query: string): Promise<SankaAnime[]> => {
+    search: async (query: string): Promise<PaginatedResponse<SankaAnime[]>> => {
         // Search usually shouldn't be heavily cached or short TTL, but acceptable for fuzzy terms
-        return getCachedData(`sanka_search_${query}`, async () => {
+        return getCachedData(`sanka_search_v3_${query}`, async () => {
             try {
-                const res = await fetch(`${SANKA_API_BASE}/anime/search/${encodeURIComponent(query)}`);
-                if (!res.ok) return []; // Return empty on error or 404
+                const res = await fetch(`${SANKA_API_BASE}/anime/search/${encodeURIComponent(query)}`, {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "application/json"
+                    }
+                });
+                if (!res.ok) return { data: [] }; // Return empty on error or 404
                 const data = await res.json();
 
                 // Actual structure might be { data: { animeList: [...] } } or { data: [...] }
                 const rawList = data.data?.animeList || data.data || [];
-                if (!Array.isArray(rawList) || rawList.length === 0) return [];
+                const pagination = data.pagination || data.data?.pagination;
 
-                return rawList.map((item: any) => ({
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
+
+                const animeList = rawList.map((item: any) => ({
                     id: item.animeId || item.id || item.slug,
                     slug: item.animeId || item.slug || item.id,
                     title: item.title,
@@ -175,9 +223,11 @@ export const sankaClient = {
                     status: item.status || "Unknown",
                     rating: item.score ? parseFloat(item.score) : undefined
                 }));
+
+                return { data: animeList, pagination };
             } catch (e) {
                 console.error("Sanka Search Error:", e);
-                return [];
+                return { data: [] };
             }
         });
     },
@@ -186,7 +236,7 @@ export const sankaClient = {
      * Get Anime Detail
      */
     getDetail: async (slug: string): Promise<SankaAnime & { episodes: SankaEpisode[] }> => {
-        return getCachedData(`sanka_detail_${slug}`, async () => {
+        return getCachedData(`sanka_detail_v2_${slug}`, async () => {
             try {
                 // Docs: /anime/anime/{id} or /anime/detail/{id}
                 const res = await fetch(`${SANKA_API_BASE}/anime/anime/${slug}`);
@@ -249,101 +299,8 @@ export const sankaClient = {
     /**
      * Get Streaming Links
      */
-    // getStreams: async (episodeSlug: string): Promise<SankaStreamServer[]> => {
-    //     return getCachedData(`sanka_stream_${episodeSlug}`, async () => {
-    //         try {
-    //             // Docs: /anime/episode/{id}
-    //             // Docs: /anime/episode/{id}
-    //             const url = `${SANKA_API_BASE}/anime/episode/${episodeSlug}`;
-    //             const res = await fetch(url);
-    //             if (!res.ok) {
-    //                 console.error(`Sanka Stream Fetch Failed for ${url}: ${res.status} ${res.statusText}`);
-    //                 try {
-    //                     const errorBody = await res.text();
-    //                     console.error('Error Body:', errorBody);
-    //                 } catch (e) { /* ignore */ }
-    //                 throw new Error(`Episode not found: ${res.status}`);
-    //             }
-    //             const response = await res.json();
-
-    //             // DEBUG: Log raw response
-    //             console.log('=== SANKA STREAMING RAW RESPONSE ===');
-    //             console.log('Episode Slug:', episodeSlug);
-    //             console.log('Response keys:', Object.keys(response));
-    //             console.log('Response data:', JSON.stringify(response, null, 2));
-    //             console.log('====================================');
-
-    //             // CRITICAL: API returns nested structure { data: { data: {...} } }
-    //             const data = response.data;
-
-    //             if (!data) {
-    //                 console.error('No data in streaming response');
-    //                 return [];
-    //             }
-
-    //             const servers: SankaStreamServer[] = [];
-
-    //             // 1. Check for 'mirror' field (Confirmed source)
-    //             // Structure: { "mirror": { "720p": [ { "title": "mega", "href": "/anime/server/..." } ] } }
-    //             if (data.mirror) {
-    //                 Object.entries(data.mirror).forEach(([quality, serverList]) => {
-    //                     if (Array.isArray(serverList)) {
-    //                         serverList.forEach((srv: any) => {
-    //                             let streamUrl = srv.href || srv.url || srv.serverId;
-
-    //                             // Handle relative URLs for server endpoints
-    //                             if (streamUrl && streamUrl.startsWith('/')) {
-    //                                 streamUrl = `${SANKA_API_BASE}${streamUrl}`;
-    //                             } else if (srv.serverId) {
-    //                                 // Construct URL if we have serverId
-    //                                 streamUrl = `${SANKA_API_BASE}/anime/server/${srv.serverId}`;
-    //                             }
-
-    //                             servers.push({
-    //                                 name: srv.title || srv.name || 'Server',
-    //                                 quality: quality, // e.g., "720p", "480p", "mkv"
-    //                                 streamUrl: streamUrl
-    //                             });
-    //                         });
-    //                     }
-    //                 });
-    //             }
-
-    //             // 2. Fallback: check for streamList/servers/stream_link
-    //             if (servers.length === 0) {
-    //                 if (data.streamList && Array.isArray(data.streamList)) {
-    //                     data.streamList.forEach((srv: any) => {
-    //                         servers.push({
-    //                             name: srv.server || srv.name || 'Unknown',
-    //                             quality: srv.quality || srv.resolution,
-    //                             streamUrl: srv.url || srv.link || ''
-    //                         });
-    //                     });
-    //                 }
-
-    //                 if (data.stream_link) {
-    //                     servers.push({
-    //                         name: "Default",
-    //                         quality: "default",
-    //                         streamUrl: data.stream_link
-    //                     });
-    //                 }
-    //             }
-
-    //             console.log('=== PARSED STREAMS ===');
-    //             console.log('Stream count:', servers.length);
-    //             console.log('Servers:', servers);
-    //             console.log('======================');
-
-    //             return servers;
-    //         } catch (e) {
-    //             console.error("Sanka Stream Error:", e);
-    //             return [];
-    //         }
-    //     });
-    // }
     getStreams: async (episodeSlug: string): Promise<SankaStreamServer[]> => {
-        return getCachedData(`sanka_stream_${episodeSlug}`, async () => {
+        return getCachedData(`sanka_stream_v2_${episodeSlug}`, async () => {
             try {
                 console.log("🌐 [SankaClient] getStreams called with:", episodeSlug);
 
