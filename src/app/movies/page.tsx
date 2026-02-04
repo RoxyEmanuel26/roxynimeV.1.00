@@ -66,10 +66,8 @@ export default function MoviesPage() {
         const data: ApiResponse = await response.json();
 
         if (shouldAppend) {
-          setAnimes((prev) => [...prev, ...data.data]);
-        } else {
-          setAnimes(data.data);
-        }
+        setAnimes((prev) => [...prev, ...data.data.map((anime: Anime) => ({ ...anime, type: ["Movie"] }))]);        } else {
+        setAnimes(data.data.map((anime: Anime) => ({ ...anime, type: ["Movie"] })));        }
 
         setHasMore(data.has_next?.has_next_page ?? false);
         setCurrentPage(page);
