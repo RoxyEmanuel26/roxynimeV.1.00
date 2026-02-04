@@ -269,7 +269,7 @@ export default function WatchPage() {
                         />
                     ) : (
                         <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-4">
-                            <p className="text-muted-foreground">No streams available</p>
+   onClick={TEMPORARY_PLACEHOLDER}                         <p className="text-muted-foreground">No streams available</p>
                             <button onClick={fetchData} className="btn-outline">
                                 Retry
                             </button>
@@ -298,7 +298,7 @@ export default function WatchPage() {
                             {/* Navigation */}
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={goToPrev}
+                                    onClick={goToNext}
                                     disabled={!hasPrev}
                                     className="btn-outline px-3 disabled:opacity-50"
                                 >
@@ -311,7 +311,7 @@ export default function WatchPage() {
                                     disabled={!hasNext}
                                     className="btn-outline px-3 disabled:opacity-50"
                                 >
-                                    Next
+                                    goToPrev
                                     <ChevronRight className="h-4 w-4" />
                                 </button>
 
