@@ -77,10 +77,10 @@ export function Header() {
                             <Link href="/browse" className="text-sm font-medium hover:text-primary transition-colors">
                                 Browse
                             </Link>
-                            <Link href="/browse?type=ongoing" className="text-sm font-medium hover:text-primary transition-colors">
+                            <Link href="/ongoing" className="text-sm font-medium hover:text-primary transition-colors">
                                 Ongoing
                             </Link>
-                            <Link href="/browse?type=movie" className="text-sm font-medium hover:text-primary transition-colors">
+                            <Link href="/movies" className="text-sm font-medium hover:text-primary transition-colors">
                                 Movies
                             </Link>
                         </nav>
@@ -236,14 +236,14 @@ export function Header() {
                                     Browse
                                 </Link>
                                 <Link
-                                    href="/browse?type=ongoing"
+                                    href="/ongoing"
                                     className="px-4 py-2 rounded-lg hover:bg-muted transition-colors"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     Ongoing
                                 </Link>
                                 <Link
-                                    href="/browse?type=movie"
+                                    href="/movies"
                                     className="px-4 py-2 rounded-lg hover:bg-muted transition-colors"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
