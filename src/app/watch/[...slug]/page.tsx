@@ -205,178 +205,179 @@ export default function WatchPage() {
     };
 
     // Navigation
-      // Navigation
-  const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-  const hasPrev = currentIdx > 0;
-  const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
+    // Navigation
+    const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
+    const hasPrev = currentIdx > 0;
+    const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
 
-  const goToPrev = () => {
-    if (hasPrev && currentIdx > 0) {
-      const prevEp = episodes[currentIdx - 1];
-      router.push(`/watch/${animeId}/${prevEp.slug}`);
-    }
-  };
-
-
-  const goToNext = () => {
-    if (hasNext && currentIdx < episodes.length - 1) {
-      const nextEp = episodes[currentIdx + 1];
-      router.push(`/watch/${animeId}/${nextEp.slug}`);
-    }
-
-
-    const handleEpisodeSelect = (episode: Episode) => {
-        router.push(`/watch/${animeId}/${episode.slug}`);
-        setShowEpisodeList(false);
+    const goToPrev = () => {
+        if (hasPrev && currentIdx > 0) {
+            const prevEp = episodes[currentIdx - 1];
+            router.push(`/watch/${animeId}/${prevEp.slug}`);
+        }
     };
 
-    if (error) {
+
+    const goToNext = () => {
+        if (hasNext && currentIdx < episodes.length - 1) {
+            const nextEp = episodes[currentIdx + 1];
+            router.push(`/watch/${animeId}/${nextEp.slug}`);
+        }
+
+
+        const handleEpisodeSelect = (episode: Episode) => {
+            router.push(`/watch/${animeId}/${episode.slug}`);
+            setShowEpisodeList(false);
+        };
+
+        if (error) {
+            return (
+                <div className="container mx-auto px-4 py-8">
+                    <div className="glass-card p-8 text-center">
+                        <p className="text-lg font-medium text-destructive mb-4">{error}</p>
+                        <button onClick={fetchData} className="btn-primary">
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
         return (
-            <div className="container mx-auto px-4 py-8">
-                <div className="glass-card p-8 text-center">
-                    <p className="text-lg font-medium text-destructive mb-4">{error}</p>
-                    <button onClick={fetchData} className="btn-primary">
-                        Try Again
+            <div className="min-h-screen bg-black">
+                {/* Interstitial Ad */}
+                <InterstitialAd show={showAd} onClose={handleAdClose} />
+
+                {/* Video Player Section */}
+                <div className="relative">
+                    {loading ? (
+                        <div className="container mx-auto px-4 py-4">
+                            <VideoPlayerSkeleton />
+                        </div>
+                    ) : streamData?.streams && streamData.streams.length > 0 ? (
+                        <VideoPlayer
+                            streams={streamData.streams}
+                            title={animeInfo?.title || ""}
+                            episodeTitle={`Episode ${currentEpisode}`}
+                            onProgress={handleProgress}
+                            onEnded={handleEpisodeEnd}
+                            onPrev={goToPrev}
+                            onNext={goToNext}
+                            hasPrev={hasPrev}
+                            hasNext={hasNext}
+                        />
+                    ) : (
+                        <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-4">
+                            <p className="text-muted-foreground">No streams available</p>
+                            <button onClick={fetchData} className="btn-outline">
+                                Retry
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Controls Bar */}
+                <div className="bg-card border-t border-border">
+                    <div className="container mx-auto px-4">
+                        <div className="flex items-center justify-between py-4">
+                            {/* Title & Episode */}
+                            <div className="flex-1 min-w-0">
+                                <Link
+                                    href={`/anime/${animeId}`}
+                                    className="font-semibold hover:text-primary transition-colors truncate block"
+                                >
+                                    {animeInfo?.title || "Loading..."}
+                                </Link>
+                                <p className="text-sm text-muted-foreground">
+                                    Episode {currentEpisode}
+                                    {episodes.length > 0 && ` of ${episodes.length}`}
+                                </p>
+                            </div>
+
+                            {/* Navigation */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={goToPrev}
+                                    disabled={!hasPrev}
+                                    className="btn-outline px-3 disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Prev
+                                </button>
+
+                                <button
+                                    onClick={goToNext}
+                                    disabled={!hasNext}
+                                    className="btn-outline px-3 disabled:opacity-50"
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+
+                                <button
+                                    onClick={() => setShowEpisodeList(!showEpisodeList)}
+                                    className={cn(
+                                        "btn-outline px-3",
+                                        showEpisodeList && "bg-primary text-white"
+                                    )}
+                                >
+                                    <List className="h-4 w-4" />
+                                    Episodes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Episode List Panel */}
+                {showEpisodeList && (
+                    <div className="bg-card border-t border-border">
+                        <div className="container mx-auto px-4 py-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-semibold">Episodes</h3>
+                                <button
+                                    onClick={() => setShowEpisodeList(false)}
+                                    className="btn-ghost p-2"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <EpisodeList
+                                    episodes={episodes}
+                                    currentEpisode={currentEpisode}
+                                    onSelect={handleEpisodeSelect}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Quick Episode Navigation (Mobile) */}
+                <div className="lg:hidden fixed bottom-4 right-4 flex flex-col gap-2 z-40">
+                    <button
+                        onClick={goToPrev}
+                        disabled={!hasPrev}
+                        className="w-12 h-12 rounded-full bg-primary shadow-lg flex items-center justify-center disabled:opacity-50"
+                    >
+                        <ChevronUp className="h-6 w-6 text-white" />
                     </button>
+                    <button
+                        onClick={goToNext}
+                        disabled={!hasNext}
+                        className="w-12 h-12 rounded-full bg-primary shadow-lg flex items-center justify-center disabled:opacity-50"
+                    >
+                        <ChevronDown className="h-6 w-6 text-white" />
+                    </button>
+                </div>
+
+                {/* Content Below Player */}
+                <div className="bg-background">
+                    <div className="container mx-auto px-4 py-8">
+                        <BannerAd />
+                    </div>
                 </div>
             </div>
         );
     }
-
-    return (
-        <div className="min-h-screen bg-black">
-            {/* Interstitial Ad */}
-            <InterstitialAd show={showAd} onClose={handleAdClose} />
-
-            {/* Video Player Section */}
-            <div className="relative">
-                {loading ? (
-                    <div className="container mx-auto px-4 py-4">
-                        <VideoPlayerSkeleton />
-                    </div>
-                ) : streamData?.streams && streamData.streams.length > 0 ? (
-                    <VideoPlayer
-                        streams={streamData.streams}
-                        title={animeInfo?.title || ""}
-                        episodeTitle={`Episode ${currentEpisode}`}
-                        onProgress={handleProgress}
-                        onEnded={handleEpisodeEnd}
-                        onPrev={goToPrev}
-                        onNext={goToNext}
-                        hasPrev={hasPrev}
-                        hasNext={hasNext}
-                    />
-                ) : (
-                    <div className="aspect-video bg-muted flex items-center justify-center flex-col gap-4">
-                        <p className="text-muted-foreground">No streams available</p>
-                        <button onClick={fetchData} className="btn-outline">
-                            Retry
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Controls Bar */}
-            <div className="bg-card border-t border-border">
-                <div className="container mx-auto px-4">
-                    <div className="flex items-center justify-between py-4">
-                        {/* Title & Episode */}
-                        <div className="flex-1 min-w-0">
-                            <Link
-                                href={`/anime/${animeId}`}
-                                className="font-semibold hover:text-primary transition-colors truncate block"
-                            >
-                                {animeInfo?.title || "Loading..."}
-                            </Link>
-                            <p className="text-sm text-muted-foreground">
-                                Episode {currentEpisode}
-                                {episodes.length > 0 && ` of ${episodes.length}`}
-                            </p>
-                        </div>
-
-                        {/* Navigation */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={goToPrev}
-                                disabled={!hasPrev}
-                                className="btn-outline px-3 disabled:opacity-50"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Prev
-                            </button>
-
-                            <button
-                                onClick={goToNext}
-                                disabled={!hasNext}
-                                className="btn-outline px-3 disabled:opacity-50"
-                            >
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-
-                            <button
-                                onClick={() => setShowEpisodeList(!showEpisodeList)}
-                                className={cn(
-                                    "btn-outline px-3",
-                                    showEpisodeList && "bg-primary text-white"
-                                )}
-                            >
-                                <List className="h-4 w-4" />
-                                Episodes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Episode List Panel */}
-            {showEpisodeList && (
-                <div className="bg-card border-t border-border">
-                    <div className="container mx-auto px-4 py-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold">Episodes</h3>
-                            <button
-                                onClick={() => setShowEpisodeList(false)}
-                                className="btn-ghost p-2"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        </div>
-                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                            <EpisodeList
-                                episodes={episodes}
-                                currentEpisode={currentEpisode}
-                                onSelect={handleEpisodeSelect}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Quick Episode Navigation (Mobile) */}
-            <div className="lg:hidden fixed bottom-4 right-4 flex flex-col gap-2 z-40">
-                <button
-                    onClick={goToPrev}
-                    disabled={!hasPrev}
-                    className="w-12 h-12 rounded-full bg-primary shadow-lg flex items-center justify-center disabled:opacity-50"
-                >
-                    <ChevronUp className="h-6 w-6 text-white" />
-                </button>
-                <button
-                    onClick={goToNext}
-                    disabled={!hasNext}
-                    className="w-12 h-12 rounded-full bg-primary shadow-lg flex items-center justify-center disabled:opacity-50"
-                >
-                    <ChevronDown className="h-6 w-6 text-white" />
-                </button>
-            </div>
-
-            {/* Content Below Player */}
-            <div className="bg-background">
-                <div className="container mx-auto px-4 py-8">
-                    <BannerAd />
-                </div>
-            </div>
-        </div>
-    );
 }
