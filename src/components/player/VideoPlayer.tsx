@@ -66,7 +66,7 @@ export function VideoPlayer({
     const [error, setError] = useState<string | null>(null);
     const [selectedServer, setSelectedServer] = useState<string | null>(null);
     const [selectedQuality, setSelectedQuality] = useState<string | null>(null);
-    const [selectedStreamUrl, setSelectedStreamUrl] = useState<string>("");
+    const [selectedStreamUrl, setSelectedStreamUrl] = useState<string | null>(null);
 
     // Group streams by server name (from stream.name field)
     const serverGroups = useMemo(() => {
@@ -376,7 +376,7 @@ export function VideoPlayer({
                 )}
             >
                 <iframe
-                    src={selectedStreamUrl}
+                    src={selectedStreamUrl || undefined}
                     className="w-full h-full bg-black"
                     allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

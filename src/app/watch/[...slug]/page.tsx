@@ -189,6 +189,29 @@ export default function WatchPage() {
         [session, animeId, currentEpisode, animeInfo]
     );
 
+    // Navigation logic with auto-detection of sort order
+    const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
+    const isAscending = episodes.length > 1 && episodes[0].number < episodes[episodes.length - 1].number;
+
+    const prevIndex = isAscending ? currentIdx - 1 : currentIdx + 1;
+    const nextIndex = isAscending ? currentIdx + 1 : currentIdx - 1;
+
+    // Check bounds
+    const hasPrev = prevIndex >= 0 && prevIndex < episodes.length;
+    const hasNext = nextIndex >= 0 && nextIndex < episodes.length;
+
+    const goToPrev = () => {
+        if (hasPrev) {
+            router.push(`/watch/${animeId}/${episodes[prevIndex].slug}`);
+        }
+    };
+
+    const goToNext = () => {
+        if (hasNext) {
+            router.push(`/watch/${animeId}/${episodes[nextIndex].slug}`);
+        }
+    };
+
     // Handle episode end - show ad then go to next
     const handleEpisodeEnd = useCallback(() => {
         setShowAd(true);
@@ -196,32 +219,8 @@ export default function WatchPage() {
 
     const handleAdClose = () => {
         setShowAd(false);
-        // Go to next episode if available
-        const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-        if (currentIdx < episodes.length - 1) {
-            const nextEp = episodes[currentIdx + 1];
-            router.push(`/watch/${animeId}/${nextEp.slug}`);
-        }
-    };
-
-    // Navigation
-    // Navigation
-    const currentIdx = episodes.findIndex((ep) => ep.number === currentEpisode);
-    const hasPrev = currentIdx > 0;
-    const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
-
-    const goToPrev = () => {
-        if (hasPrev && currentIdx > 0) {
-            const prevEp = episodes[currentIdx - 1];
-            router.push(`/watch/${animeId}/${prevEp.slug}`);
-        }
-    };
-
-
-    const goToNext = () => {
-        if (hasNext && currentIdx < episodes.length - 1) {
-            const nextEp = episodes[currentIdx + 1];
-            router.push(`/watch/${animeId}/${nextEp.slug}`);
+        if (hasNext) {
+            goToNext();
         }
     };
 
