@@ -211,18 +211,18 @@ export default function WatchPage() {
     const hasNext = currentIdx >= 0 && currentIdx < episodes.length - 1;
 
     const goToPrev = () => {
-        if (hasPrev && currentIdx > 0) {
-            const prevEp = episodes[currentIdx - 1];
-            router.push(`/watch/${animeId}/${prevEp.slug}`);
-        }
+            if (hasNext && currentIdx < episodes.length - 1) {
+      const nextEp = episodes[currentIdx + 1];
+      router.push(`/watch/${animeId}/${nextEp.slug}`);
+    }
     };
 
 
     const goToNext = () => {
-        if (hasNext && currentIdx < episodes.length - 1) {
-            const nextEp = episodes[currentIdx + 1];
-            router.push(`/watch/${animeId}/${nextEp.slug}`);
-        }
+            if (hasPrev && currentIdx > 0) {
+      const prevEp = episodes[currentIdx - 1];
+      router.push(`/watch/${animeId}/${prevEp.slug}`);
+    }
           };
 
 
