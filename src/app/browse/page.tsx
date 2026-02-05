@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd } from "@/components/ads";
@@ -23,7 +23,28 @@ interface ApiResponse {
   totalPages: number;
 }
 
+// Loading fallback
+function BrowseLoading() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    </div>
+  );
+}
+
+// Main wrapper with Suspense
 export default function BrowsePage() {
+  return (
+    <Suspense fallback={<BrowseLoading />}>
+      <BrowseContent />
+    </Suspense>
+  );
+}
+
+// Actual content
+function BrowseContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 

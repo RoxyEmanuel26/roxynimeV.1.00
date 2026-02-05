@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd } from "@/components/ads";
@@ -22,7 +22,28 @@ interface ApiResponse {
   current_page: number;
 }
 
+// Loading fallback component
+function MoviesLoading() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    </div>
+  );
+}
+
+// Main page wrapper with Suspense
 export default function MoviesPage() {
+  return (
+    <Suspense fallback={<MoviesLoading />}>
+      <MoviesContent />
+    </Suspense>
+  );
+}
+
+// Actual content component
+function MoviesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 

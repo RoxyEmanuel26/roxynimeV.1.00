@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -26,7 +26,26 @@ interface FavoriteItem {
     createdAt: string;
 }
 
+// Loading fallback
+function ProfileLoading() {
+    return (
+        <div className="min-h-[80vh] flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+}
+
+// Main wrapper with Suspense
 export default function ProfilePage() {
+    return (
+        <Suspense fallback={<ProfileLoading />}>
+            <ProfileContent />
+        </Suspense>
+    );
+}
+
+// Actual content
+function ProfileContent() {
     const { data: session, status } = useSession();
     const searchParams = useSearchParams();
     const router = useRouter();
