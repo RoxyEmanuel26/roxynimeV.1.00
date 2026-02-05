@@ -13,11 +13,9 @@ export function BannerAd({ className }: BannerAdProps) {
     const isScriptLoaded = useRef(false);
 
     useEffect(() => {
-        // Pastikan script hanya dimuat sekali per instance
         if (isScriptLoaded.current || !containerRef.current) return;
 
         try {
-            // Set atOptions ke window object
             // @ts-ignore
             window.atOptions = {
                 key: "1d4f1463e95b8d3fb84adadeb3a2f170",
@@ -27,13 +25,10 @@ export function BannerAd({ className }: BannerAdProps) {
                 params: {}
             };
 
-            // Buat dan inject script Adsterra
             const script = document.createElement("script");
             script.type = "text/javascript";
             script.src = "https://www.highperformanceformat.com/1d4f1463e95b8d3fb84adadeb3a2f170/invoke.js";
             script.async = true;
-
-            // Append script ke container
             containerRef.current.appendChild(script);
             isScriptLoaded.current = true;
         } catch (error) {
@@ -46,17 +41,12 @@ export function BannerAd({ className }: BannerAdProps) {
             {/* Desktop Banner 728x90 */}
             <div
                 ref={containerRef}
-                className="hidden lg:flex justify-center items-center min-h-[90px] bg-gray-800/30 rounded-lg"
+                className="hidden lg:flex justify-center items-center min-h-[90px]"
                 id={`adsterra-banner-${uniqueId}`}
-            >
-                {/* Fallback content jika iklan tidak load */}
-                <span className="text-xs text-gray-500">Advertisement 728x90</span>
-            </div>
+            />
 
-            {/* Mobile Banner - Visible placeholder */}
-            <div className="lg:hidden flex justify-center items-center min-h-[50px] bg-gray-800/30 rounded-lg border border-gray-700/50">
-                <span className="text-xs text-gray-400">Advertisement 320x50</span>
-            </div>
+            {/* Mobile Banner - Create separate unit in Adsterra for 320x50 */}
+            <div className="lg:hidden flex justify-center items-center min-h-[50px] bg-gray-800/30 rounded-lg" />
         </div>
     );
 }
