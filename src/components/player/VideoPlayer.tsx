@@ -444,7 +444,7 @@ export function VideoPlayer({
                                             onClick={() => handleQualityClick(stream)}
                                             className={cn(
                                                 "px-4 py-2 rounded-md font-medium transition-all text-sm",
-                                                selectedQuality === stream.quality && selectedStreamUrl === stream.url
+                                                selectedQuality === stream.quality  // ✅ 'stream' available here
                                                     ? "bg-primary text-white shadow-md"
                                                     : "bg-background hover:bg-muted text-foreground border border-border"
                                             )}
@@ -452,6 +452,7 @@ export function VideoPlayer({
                                             {stream.quality}
                                         </button>
                                     ))}
+
                                 </div>
                             </div>
                         )}
