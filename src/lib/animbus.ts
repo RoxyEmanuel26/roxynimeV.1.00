@@ -67,6 +67,30 @@ export async function getCompletedAnimeList(page: number = 1): Promise<AnimeList
 export async function getMoviesList(page: number = 1): Promise<AnimeListResponse> {
     // Movies are currently fetched via search("movie"), likely returns paginated now
     const response = await sankaClient.search("movie");
+
+    // Strict filter for Movies
+    const filteredData = response.data.map(mapSankaToAnime).filter(anime => {
+        const type = anime.type?.toLowerCase() || "";
+        const status = anime.status?.toLowerCase() || "";
+        const isMovie = type.includes("movie") || type.includes("film");
+        const isUnknown = type === "unknown";
+
+        // Relaxed filter: Allow Unknown types even if status is ongoing (fallback to previous behavior)
+        // because users reported empty list with strict status check.
+        // We prefer showing some non-movies over showing nothing.
+        return isMovie || isUnknown;
+    });
+
+    console.log(`[animbus] getMoviesList: ${response.data.length} raw -> ${filteredData.length} filtered`);
+
+    return {
+        data: filteredData,
+        pagination: response.pagination
+    };
+}
+
+export async function getAnimeByGenre(genre: string, page: number = 1): Promise<AnimeListResponse> {
+    const response = await sankaClient.getByGenre(genre, page);
     return {
         data: response.data.map(mapSankaToAnime),
         pagination: response.pagination

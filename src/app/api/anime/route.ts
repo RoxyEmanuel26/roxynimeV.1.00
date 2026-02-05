@@ -3,12 +3,14 @@ import {
     getOngoingAnimeList,
     getCompletedAnimeList,
     getMoviesList,
+    getAnimeByGenre,
     Anime,
 } from "@/lib/animbus";
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get("type") || "completed";
+    const genre = searchParams.get("genre");
     const page = parseInt(searchParams.get("page") || "1");
 
     try {
@@ -17,23 +19,32 @@ export async function GET(request: NextRequest) {
         let animeList: Anime[] = [];
         let pagination;
 
-        switch (type) {
-            case "completed":
-                const completedRes = await getCompletedAnimeList(page);
-                animeList = completedRes.data;
-                pagination = completedRes.pagination;
-                break;
-            case "movie":
-                const movieRes = await getMoviesList(page);
-                animeList = movieRes.data;
-                pagination = movieRes.pagination;
-                break;
-            case "ongoing":
-            default:
-                const ongoingRes = await getOngoingAnimeList(page);
-                animeList = ongoingRes.data;
-                pagination = ongoingRes.pagination;
-                break;
+        // If genre is specified, use genre endpoint
+        if (genre) {
+            console.log(`[API] Fetching by genre: ${genre}, page: ${page}`);
+            const genreRes = await getAnimeByGenre(genre, page);
+            animeList = genreRes.data;
+            pagination = genreRes.pagination;
+        } else {
+            // Otherwise use type-based endpoints
+            switch (type) {
+                case "completed":
+                    const completedRes = await getCompletedAnimeList(page);
+                    animeList = completedRes.data;
+                    pagination = completedRes.pagination;
+                    break;
+                case "movie":
+                    const movieRes = await getMoviesList(page);
+                    animeList = movieRes.data;
+                    pagination = movieRes.pagination;
+                    break;
+                case "ongoing":
+                default:
+                    const ongoingRes = await getOngoingAnimeList(page);
+                    animeList = ongoingRes.data;
+                    pagination = ongoingRes.pagination;
+                    break;
+            }
         }
 
         // Handle case when animeList is undefined

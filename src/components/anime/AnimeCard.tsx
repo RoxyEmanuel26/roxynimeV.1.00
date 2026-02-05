@@ -79,9 +79,9 @@ export function AnimeCard({
                         </div>
                     )}
 
-                    {/* Rating Badge */}
+                    {/* Rating Badge - Bottom Right */}
                     {hasValidRating && (
-                        <div className="absolute top-2 right-2 z-20 rating-badge">
+                        <div className="absolute bottom-2 right-2 z-20 rating-badge">
                             <Star className="h-3 w-3 fill-current" />
                             <span>{ratingNum!.toFixed(1)}</span>
                         </div>
@@ -94,10 +94,12 @@ export function AnimeCard({
                         </div>
                     </div>
 
-                    {/* Episode Info */}
+                    {/* Episode Info - Bottom Left with border */}
                     {episode && (
-                        <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                            <span className="text-xs text-white/80">{episode}</span>
+                        <div className="absolute bottom-2 left-2 z-20">
+                            <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-black/70 text-white border border-white/30">
+                                {episode}
+                            </span>
                         </div>
                     )}
                 </div>

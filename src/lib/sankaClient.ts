@@ -107,7 +107,7 @@ export const sankaClient = {
      * Get Ongoing Anime (Paginated)
      */
     getOngoing: async (page: number = 1): Promise<PaginatedResponse<SankaAnime[]>> => {
-        return getCachedData(`sanka_ongoing_v4_${page}`, async () => {
+        return getCachedData(`sanka_ongoing_v5_${page}`, async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/ongoing-anime?page=${page}`, {
                     headers: {
@@ -130,7 +130,7 @@ export const sankaClient = {
                     title: item.title,
                     poster: item.poster || item.image || item.thumb || "",
                     synopsis: "",
-                    genres: [],
+                    genres: item.genres || item.genre || [],
                     type: "TV",
                     status: item.status || "Ongoing", // Keep original status if available
                     totalEpisodes: item.episodes || item.episode || item.total_episode,
@@ -149,7 +149,7 @@ export const sankaClient = {
      * Get Completed Anime (Paginated)
      */
     getCompleted: async (page: number = 1): Promise<PaginatedResponse<SankaAnime[]>> => {
-        return getCachedData(`sanka_completed_v3_${page}`, async () => {
+        return getCachedData(`sanka_completed_v4_${page}`, async () => {
             try {
                 const url = `${SANKA_API_BASE}/anime/complete-anime?page=${page}`;
 
@@ -175,12 +175,12 @@ export const sankaClient = {
                     title: item.title,
                     poster: item.poster || item.image || item.thumb || "",
                     synopsis: "",
-                    genres: [],
+                    genres: item.genres || item.genre || [],
                     type: "TV",
                     status: "Completed",
                     totalEpisodes: item.episodes || item.episode || item.total_episode,
                     rating: item.score ? parseFloat(item.score) : undefined
-                }));
+                })).filter((item: any) => !item.status || item.status.toLowerCase() === 'completed');
 
                 return { data: animeList, pagination };
             } catch (e) {
@@ -191,11 +191,86 @@ export const sankaClient = {
     },
 
     /**
+     * Get Anime by Genre (Paginated) - fetches 2 API pages to get ~25 items
+     */
+    getByGenre: async (genre: string, page: number = 1): Promise<PaginatedResponse<SankaAnime[]>> => {
+        return getCachedData(`sanka_genre_v2_${genre}_${page}`, async () => {
+            try {
+                // API returns 15 items per page, so fetch 2 pages to get ~25 items
+                const apiPage1 = (page - 1) * 2 + 1; // Page 1 -> API pages 1,2; Page 2 -> API pages 3,4
+                const apiPage2 = apiPage1 + 1;
+
+                const fetchPage = async (p: number) => {
+                    const url = `${SANKA_API_BASE}/anime/genre/${encodeURIComponent(genre)}?page=${p}`;
+                    const res = await fetch(url, {
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Accept": "application/json"
+                        }
+                    });
+                    if (!res.ok) return [];
+                    const data = await res.json();
+                    return data.data?.animeList || data.data || [];
+                };
+
+                // Fetch both pages in parallel
+                const [rawList1, rawList2] = await Promise.all([
+                    fetchPage(apiPage1),
+                    fetchPage(apiPage2)
+                ]);
+
+                const rawList = [...rawList1, ...rawList2];
+
+                // If both pages are empty, return empty with no next page
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    return {
+                        data: [],
+                        pagination: {
+                            currentPage: page,
+                            hasNextPage: false,
+                            hasPrevPage: page > 1,
+                            lastVisiblePage: page,
+                            items: { count: 0, total: 0, per_page: 30 }
+                        }
+                    };
+                }
+
+                const animeList = rawList.map((item: any) => ({
+                    id: item.animeId || item.id || item.slug,
+                    slug: item.animeId || item.slug || item.id,
+                    title: item.title,
+                    poster: item.poster || item.image || item.thumb || "",
+                    synopsis: "",
+                    genres: item.genres || item.genre || [],
+                    type: item.type || "TV",
+                    status: item.status || "Unknown",
+                    totalEpisodes: item.episodes || item.episode || item.total_episode,
+                    rating: item.score ? parseFloat(item.score) : undefined
+                }));
+
+                // Pagination: hasNextPage only if second page has full 15 items AND we got results
+                const paginationInfo = {
+                    currentPage: page,
+                    hasNextPage: rawList2.length >= 15, // Only true if second page is full
+                    hasPrevPage: page > 1,
+                    lastVisiblePage: rawList2.length >= 15 ? page + 1 : page,
+                    items: { count: rawList.length, total: rawList.length, per_page: 30 }
+                };
+
+                return { data: animeList, pagination: paginationInfo };
+            } catch (e) {
+                console.error("Sanka Genre Error:", e);
+                return { data: [] };
+            }
+        });
+    },
+
+    /**
      * Search anime
      */
     search: async (query: string): Promise<PaginatedResponse<SankaAnime[]>> => {
         // Search usually shouldn't be heavily cached or short TTL, but acceptable for fuzzy terms
-        return getCachedData(`sanka_search_v3_${query}`, async () => {
+        return getCachedData(`sanka_search_v5_${query}`, async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/search/${encodeURIComponent(query)}`, {
                     headers: {
@@ -219,7 +294,7 @@ export const sankaClient = {
                     poster: item.poster || item.image || item.thumb || "",
                     synopsis: "",
                     genres: item.genres || [],
-                    type: item.type || "TV",
+                    type: item.type || "Unknown", // Default to Unknown so filters can decide
                     status: item.status || "Unknown",
                     rating: item.score ? parseFloat(item.score) : undefined
                 }));

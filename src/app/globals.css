@@ -172,10 +172,14 @@
     @apply opacity-100;
   }
 
-  /* Rating badge */
+  /* Rating badge - yellow star visible on top-right */
   .rating-badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
-    @apply bg-warning/20 text-warning-foreground;
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium;
+    @apply bg-yellow-500 text-white;
+  }
+
+  .rating-badge svg {
+    @apply text-white fill-current h-2.5 w-2.5;
   }
 
   /* Genre tag */
@@ -333,7 +337,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

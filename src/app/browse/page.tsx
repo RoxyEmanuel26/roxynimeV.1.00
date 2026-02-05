@@ -52,25 +52,77 @@ export default function BrowsePage() {
         const type = filters.type || "completed"; // Default to completed
         let url = `/api/anime?type=${type}&page=${pageNum}`;
 
+        // Debug: Log current filter state
+        console.log("[Browse] Filter State:", {
+          type: filters.type,
+          genre: filters.genre,
+          order: filters.order,
+          searchQuery
+        });
+
+        // If search query is present, use search endpoint
         if (searchQuery) {
           url = `/api/anime/search?q=${encodeURIComponent(
             searchQuery
           )}&page=${pageNum}`;
         }
+        // If genre filter is selected, use genre endpoint
+        else if (filters.genre) {
+          url = `/api/anime?genre=${encodeURIComponent(
+            filters.genre
+          )}&page=${pageNum}`;
+        }
+
+        console.log("[Browse] Fetching URL:", url);
 
         const response = await fetch(url);
         const data: ApiResponse = await response.json();
 
+        console.log("[Browse] API Response:", {
+          status: data.status,
+          count: data.data?.length,
+          hasNext: data.hasNext,
+          totalPages: data.totalPages
+        });
+
         // Process anime to match UI requirements
-        const processedAnimes = data.data.map((anime: any) => ({
+        let processedAnimes = data.data.map((anime: any) => ({
           ...anime,
           id: anime.id || anime.slug || "",
           // If viewing completed or anime is completed, override type to show "Completed" badge
-          type: (type === 'completed' || anime.status === 'Completed') ? ['Completed'] : anime.type
+          type: (type === 'completed' || anime.status === 'Completed') ? ['Completed'] : anime.type,
+          // Ensure genres array exists for filtering
+          genres: anime.genres || []
         }));
 
+        // Note: Genre filter is now handled by using genre as search query above
+        // No additional client-side filtering needed since API doesn't return genre data
+
+        // Client-side Sorting
+        if (filters.order) {
+          switch (filters.order) {
+            case "rating":
+              // Sort by rating descending (highest first)
+              processedAnimes.sort((a: any, b: any) => {
+                const ratingA = parseFloat(a.rating || a.score || "0") || 0;
+                const ratingB = parseFloat(b.rating || b.score || "0") || 0;
+                return ratingB - ratingA;
+              });
+              break;
+            case "popular":
+              // Sort by popularity (we can use rating as proxy, or just leave as-is since API might already sort by popular)
+              // For now, stable sort (no change)
+              break;
+            case "updated":
+            default:
+              // Assume API already returns "updated" order, no changes needed
+              break;
+          }
+        }
+
         setAnimes(processedAnimes);
-        setHasMore(data.hasNext ?? false);
+        // Only hasMore if API says so AND we actually got results
+        setHasMore((data.hasNext ?? false) && processedAnimes.length > 0);
         setTotalPages(data.totalPages || 1);
       } catch (error) {
         console.error("Error fetching anime:", error);
@@ -78,7 +130,7 @@ export default function BrowsePage() {
         setLoading(false);
       }
     },
-    [filters.type, searchQuery]
+    [filters.type, filters.genre, filters.order, searchQuery]
   );
 
   // Initial fetch and filter changes
@@ -134,14 +186,47 @@ export default function BrowsePage() {
   const generatePaginationNumbers = () => {
     const pages: (number | string)[] = [];
 
+    // Special handling for genre filter - API doesn't give total pages
+    // Show current page, surrounding pages, and "..." if there's more
+    if (filters.genre) {
+      // Always show page 1
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push("...");
+      }
+
+      // Determine max page to show based on hasMore
+      // If hasMore is true, show up to currentPage + 2
+      // If hasMore is false, only show up to currentPage (no pages beyond that exist)
+      const maxPageToShow = hasMore ? currentPage + 2 : currentPage;
+
+      // Show pages around current page
+      for (let i = Math.max(2, currentPage - 1); i <= maxPageToShow; i++) {
+        if (i > 1) {
+          pages.push(i);
+        }
+      }
+
+      // If there's more, show "..." at the end
+      if (hasMore) {
+        pages.push("...");
+      }
+
+      return pages;
+    }
+
+    // Normal pagination for non-genre filters
+    let effectiveTotalPages = totalPages;
+
     // If we don't have totalPages or it's 1, just return [1]
-    if (totalPages <= 1) return [1];
+    if (effectiveTotalPages <= 1) return [1];
 
     const maxVisible = 5; // number of buttons to show in the main block
 
-    if (totalPages <= maxVisible + 2) {
+    if (effectiveTotalPages <= maxVisible + 2) {
       // If total pages is small, show all
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
+      return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
     }
 
     // Always show first page
@@ -153,7 +238,7 @@ export default function BrowsePage() {
 
     // Calculate start and end of visible range around current page
     let start = Math.max(2, currentPage - 1);
-    let end = Math.min(totalPages - 1, currentPage + 1);
+    let end = Math.min(effectiveTotalPages - 1, currentPage + 1);
 
     // Adjust if at the very beginning
     if (currentPage < 3) {
@@ -161,22 +246,22 @@ export default function BrowsePage() {
     }
 
     // Adjust if at the very end
-    if (currentPage > totalPages - 2) {
-      start = totalPages - 3;
+    if (currentPage > effectiveTotalPages - 2) {
+      start = effectiveTotalPages - 3;
     }
 
     for (let i = start; i <= end; i++) {
-      if (i > 1 && i < totalPages) {
+      if (i > 1 && i < effectiveTotalPages) {
         pages.push(i);
       }
     }
 
-    if (currentPage < totalPages - 2) {
+    if (currentPage < effectiveTotalPages - 2) {
       pages.push("...");
     }
 
     // Always show last page
-    pages.push(totalPages);
+    pages.push(effectiveTotalPages);
 
     return pages;
   };

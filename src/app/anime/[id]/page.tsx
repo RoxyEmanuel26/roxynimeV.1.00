@@ -34,6 +34,9 @@ export default async function AnimeDetailPage({
         hasEpisodes: !!anime.episodes,
         episodeCount: anime.episodes?.length || 0,
         hasImage: !!(anime.poster || anime.image),
+        status: anime.status,
+        count: anime.episodes?.length,
+        genres: anime.genres,
     });
 
     // Get episodes list
