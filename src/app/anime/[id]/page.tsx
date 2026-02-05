@@ -147,6 +147,9 @@ export default async function AnimeDetailPage({
                             </Link>
                         )}
 
+                        {/* Banner Ad - Before Episodes */}
+                        <BannerAd className="my-4" />
+
                         {/* Episodes List */}
                         {episodes.length > 0 && (
                             <div className="pt-4 sm:pt-6">

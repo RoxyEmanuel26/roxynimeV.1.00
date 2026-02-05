@@ -67,6 +67,11 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Banner Ad - After Hero */}
+      <div className="container mx-auto px-4 max-w-7xl py-4">
+        <BannerAd />
+      </div>
+
       {/* TRENDING NOW SECTION - STYLED LIKE "YOU MAY ALSO LIKE" */}
       {ongoingData.length > 0 && (
         <section className="py-8 sm:py-12 md:py-16 bg-muted/30">
@@ -110,6 +115,11 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Banner Ad - Between Sections */}
+      <div className="container mx-auto px-4 max-w-7xl py-4">
+        <BannerAd />
+      </div>
+
       {/* Quick Links Section */}
       <section className="py-8 sm:py-12 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -150,6 +160,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Banner Ad - Page Bottom */}
+      <div className="container mx-auto px-4 max-w-7xl py-6">
+        <BannerAd />
+      </div>
     </div>
   );
 }

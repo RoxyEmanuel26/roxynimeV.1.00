@@ -311,63 +311,93 @@ export const sankaClient = {
      * Get Anime Detail
      */
     getDetail: async (slug: string): Promise<SankaAnime & { episodes: SankaEpisode[] }> => {
-        return getCachedData(`sanka_detail_v2_${slug}`, async () => {
+        return getCachedData(`sanka_detail_v3_${slug}`, async () => {
+            // Try Sanka API first
             try {
-                // Docs: /anime/anime/{id} or /anime/detail/{id}
                 const res = await fetch(`${SANKA_API_BASE}/anime/anime/${slug}`);
-                if (!res.ok) throw new Error("Anime not found");
-                const response = await res.json();
+                if (res.ok) {
+                    const response = await res.json();
+                    const data = response.data;
 
-                // DEBUG: Log raw response
-                console.log('=== SANKA API RAW RESPONSE ===');
-                console.log('Slug:', slug);
-                console.log('Response keys:', Object.keys(response));
-                console.log('Response data:', JSON.stringify(response, null, 2));
-                console.log('================================');
+                    // Extract genres from genreList
+                    const genres = (data.genreList || []).map((g: any) => g.title || g);
 
-                // CRITICAL: API returns nested structure { data: { data: {...} } }
-                const data = response.data;
+                    const anime: SankaAnime = {
+                        id: slug,
+                        slug: slug,
+                        title: data.title,
+                        poster: data.poster || "",
+                        synopsis: data.synopsis?.paragraphs?.join('\n\n') || "",
+                        genres: genres,
+                        type: data.type || "TV",
+                        status: data.status || "Unknown",
+                        totalEpisodes: data.episodes,
+                        rating: parseFloat(data.score) || undefined,
+                        releaseDate: data.aired,
+                        studio: data.studios
+                    };
 
-                // Extract genres from genreList
-                const genres = (data.genreList || []).map((g: any) => g.title || g);
+                    const episodes: SankaEpisode[] = (data.episodeList || []).map((ep: any) => ({
+                        id: ep.episodeId,
+                        number: ep.eps,
+                        title: ep.title,
+                        urlSlug: ep.episodeId,
+                        date: ep.date
+                    })).sort((a: any, b: any) => b.number - a.number);
 
-                // Normalize
-                const anime: SankaAnime = {
-                    id: slug,
-                    slug: slug,
-                    title: data.title,
-                    poster: data.poster || "",
-                    synopsis: data.synopsis?.paragraphs?.join('\n\n') || "",
-                    genres: genres,
-                    type: data.type || "TV",
-                    status: data.status || "Unknown",
-                    totalEpisodes: data.episodes,
-                    rating: parseFloat(data.score) || undefined,
-                    releaseDate: data.aired,
-                    studio: data.studios
-                };
-
-                // Parse episodes from episodeList
-                const episodes: SankaEpisode[] = (data.episodeList || []).map((ep: any) => ({
-                    id: ep.episodeId,
-                    number: ep.eps,
-                    title: ep.title,
-                    urlSlug: ep.episodeId,
-                    date: ep.date
-                })).sort((a: any, b: any) => b.number - a.number); // sort desc
-
-                console.log('=== PARSED ANIME ===');
-                console.log('Title:', anime.title);
-                console.log('Poster:', anime.poster);
-                console.log('Episodes count:', episodes.length);
-                console.log('First episode:', episodes[0]);
-                console.log('====================');
-
-                return { ...anime, episodes };
+                    console.log(`✅ [Sanka] Found anime: ${anime.title}`);
+                    return { ...anime, episodes };
+                }
             } catch (e) {
-                console.error("Sanka Detail Error:", e);
-                throw e;
+                console.log(`⚠️ [Sanka] Failed for ${slug}, trying Jikan fallback...`);
             }
+
+            // Fallback to Jikan API (MyAnimeList)
+            try {
+                console.log(`🔄 [Jikan] Searching for: ${slug}`);
+
+                // Extract search term from slug (remove sub-indo, episode numbers etc)
+                const searchTerm = slug
+                    .replace(/-sub-indo$/i, '')
+                    .replace(/-episode-\d+$/i, '')
+                    .replace(/-/g, ' ')
+                    .trim();
+
+                const jikanRes = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchTerm)}&limit=1`);
+
+                if (jikanRes.ok) {
+                    const jikanData = await jikanRes.json();
+                    const match = jikanData.data?.[0];
+
+                    if (match) {
+                        console.log(`✅ [Jikan] Found: ${match.title}`);
+
+                        const anime: SankaAnime = {
+                            id: slug,
+                            slug: slug,
+                            title: match.title || match.title_english || searchTerm,
+                            poster: match.images?.jpg?.large_image_url || match.images?.jpg?.image_url || "",
+                            synopsis: match.synopsis || "",
+                            genres: (match.genres || []).map((g: any) => g.name),
+                            type: match.type || "TV",
+                            status: match.status || "Unknown",
+                            totalEpisodes: match.episodes,
+                            rating: match.score,
+                            releaseDate: match.aired?.string,
+                            studio: (match.studios || []).map((s: any) => s.name).join(', ')
+                        };
+
+                        // Jikan doesn't have streaming episodes, return empty array
+                        // User can still see anime info but won't be able to stream
+                        return { ...anime, episodes: [] };
+                    }
+                }
+            } catch (e) {
+                console.error("❌ [Jikan] Fallback failed:", e);
+            }
+
+            // If both APIs fail, throw error
+            throw new Error("Anime not found in both Sanka and Jikan APIs");
         });
     },
 

@@ -354,6 +354,16 @@ export default function BrowsePage() {
             </div>
           )}
 
+          {/* Banner Ad - After Pagination */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <BannerAd />
+            <BannerAd />
+            <BannerAd />
+            <BannerAd />
+            <BannerAd />
+            <BannerAd />
+          </div>
+
           {/* No Results */}
           {!loading && animes.length === 0 && (
             <p className="text-center text-muted-foreground py-12">
@@ -370,8 +380,9 @@ export default function BrowsePage() {
 
       {/* Mobile Bottom Ad */}
       <div className="lg:hidden mt-8">
-        <SidebarAd className="w-full h-[100px]" />
+        <BannerAd />
       </div>
+
     </div>
   );
 }
