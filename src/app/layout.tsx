@@ -3,6 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header, Footer } from "@/components/layout";
+import { PopunderAd } from "@/components/ads";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -69,6 +70,7 @@ export default function RootLayout({
         className={`${inter.variable} ${outfit.variable} antialiased min-h-screen flex flex-col`}
       >
         <Providers>
+          <PopunderAd />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
