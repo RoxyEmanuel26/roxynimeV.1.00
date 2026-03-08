@@ -76,6 +76,7 @@ function MoviesContent() {
 
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
+  const currentPageRef = useRef(1);
 
   const buildUrl = (page: number, query: string, f: FilterState, src: string): string => {
     const params = new URLSearchParams();
@@ -101,8 +102,7 @@ function MoviesContent() {
 
     setLoading(true);
     setError(null);
-    setAnimes([]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // FIXED: Pertahankan data lama saat loading agar grid tidak kosong
 
     try {
       let url: string;
@@ -148,6 +148,12 @@ function MoviesContent() {
       setHasPrev(data.hasPrev ?? pageNum > 1);
       setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
       setCurrentPage(pageNum);
+
+      // FIXED: scroll hanya setelah data berhasil dimuat, bukan saat mulai fetch
+      if (pageNum !== currentPageRef.current) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      currentPageRef.current = pageNum;
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       console.error("[Movies] Fetch error:", err);

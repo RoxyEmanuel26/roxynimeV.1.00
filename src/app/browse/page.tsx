@@ -78,6 +78,7 @@ function BrowseContent() {
   // ── Refs ───────────────────────────────────────────────────────────────────
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
+  const currentPageRef = useRef(1);
 
   // ── Build browse URL from current params ───────────────────────────────────
   const buildBrowseUrl = (
@@ -112,8 +113,7 @@ function BrowseContent() {
 
     setLoading(true);
     setError(null);
-    setAnimes([]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // FIXED: Pertahankan data lama saat loading agar grid tidak kosong
 
     try {
       let url: string;
@@ -167,6 +167,12 @@ function BrowseContent() {
       setHasPrev(data.hasPrev ?? pageNum > 1);
       setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
       setCurrentPage(pageNum);
+
+      // FIXED: scroll hanya setelah data berhasil dimuat, bukan saat mulai fetch
+      if (pageNum !== currentPageRef.current) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      currentPageRef.current = pageNum;
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       console.error("[Browse] Fetch error:", err);

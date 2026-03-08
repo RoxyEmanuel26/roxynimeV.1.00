@@ -19,15 +19,9 @@ export async function GET(request: NextRequest) {
     try {
         // If source is "all" or not specified, search ALL providers
         if (!source || source === "all") {
+            const providers = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
             const results = await Promise.allSettled(
-                ALL_PROVIDERS.map(async (provider) => {
-                    try {
-                        const { data } = await searchAnimes(query, provider);
-                        return data.map((a) => ({ ...a, _source: provider }));
-                    } catch {
-                        return [];
-                    }
-                })
+                providers.map(p => searchAnimes(query, p).catch(() => ({ data: [] })))
             );
 
             // Merge and deduplicate
@@ -35,8 +29,8 @@ export async function GET(request: NextRequest) {
             const seenTitles = new Set<string>();
 
             results.forEach((result) => {
-                if (result.status === "fulfilled" && Array.isArray(result.value)) {
-                    result.value.forEach((anime: any) => {
+                if (result.status === "fulfilled" && (result.value as any)?.data) {
+                    ((result.value as any).data || []).forEach((anime: any) => {
                         const key = anime.title?.toLowerCase().trim();
                         if (key && !seenTitles.has(key)) {
                             seenTitles.add(key);
@@ -46,14 +40,19 @@ export async function GET(request: NextRequest) {
                 }
             });
 
+            // Pagination untuk search hasil gabungan
+            const perPage = 20;
+            const start = (page - 1) * perPage;
+            const paged = allAnimes.slice(start, start + perPage);
+
             return NextResponse.json({
                 status: "success",
-                data: allAnimes,
+                data: paged,
                 total_item: allAnimes.length,
-                hasNext: false,
-                hasPrev: false,
-                current_page: 1,
-                totalPages: 1,
+                hasNext: allAnimes.length > start + perPage,
+                hasPrev: page > 1,
+                current_page: page,
+                totalPages: Math.max(1, Math.ceil(allAnimes.length / perPage)),
             });
         }
 

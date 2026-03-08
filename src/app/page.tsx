@@ -4,6 +4,7 @@ import { Play, TrendingUp, Calendar, Film } from "lucide-react";
 import { BannerAd, InFeedAd } from "@/components/ads";
 import { HeroSection } from "@/components/home/HeroSection";
 import { TrendingSection } from "@/components/home/TrendingSection";
+import { getOngoingAnimeList } from "@/lib/animbus";
 import type { Anime } from "@/components/home/HeroSection";
 
 export const metadata: Metadata = {
@@ -17,8 +18,6 @@ export const metadata: Metadata = {
     siteName: "RoxyNime",
   },
 };
-
-import { getOngoingAnimeList } from "@/lib/animbus";
 
 const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
 
@@ -40,6 +39,10 @@ export default async function HomePage() {
   );
 
   const results = await Promise.allSettled(fetchPromises);
+
+  let hasNetworkError = false;
+  const successCount = results.filter((r) => r.status === "fulfilled").length;
+  if (successCount === 0) hasNetworkError = true;
 
   const allAnimes: Anime[] = [];
   const seenTitles = new Set<string>();
@@ -74,11 +77,15 @@ export default async function HomePage() {
       <div className="min-h-screen flex flex-col items-center justify-center py-20 px-4 text-center">
         <div className="max-w-md w-full space-y-6">
           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">📡</span>
+            <span className="text-4xl">{hasNetworkError ? "📡" : "😕"}</span>
           </div>
-          <h2 className="text-3xl font-bold">Koneksi Terputus</h2>
+          <h2 className="text-3xl font-bold">
+            {hasNetworkError ? "Koneksi Bermasalah" : "Tidak Ada Konten"}
+          </h2>
           <p className="text-muted-foreground text-lg">
-            Gagal menyambung ke server provider anime. Silakan coba beberapa saat lagi.
+            {hasNetworkError
+              ? "Gagal menyambung ke server provider anime. Silakan coba beberapa saat lagi."
+              : "Semua provider tidak mengembalikan data saat ini."}
           </p>
           <div className="pt-6">
             <a href="/" className="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform">

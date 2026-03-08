@@ -141,9 +141,17 @@ export async function getAnimeByGenre(genre: string, page = 1, source?: string):
 
     // Fallback: search with genre name
     const response = await provider.search(genre);
+    const mappedData = response.data.map(toAnime);
     return {
-        data: response.data.map(toAnime),
-        pagination: response.pagination,
+        data: mappedData,
+        pagination: response.pagination || {
+            currentPage: page,
+            hasNextPage: false,
+            hasPrevPage: page > 1,
+            totalPages: page,
+            lastVisiblePage: page,
+            items: { count: mappedData.length, total: mappedData.length, per_page: 20 }
+        },
     };
 }
 
@@ -183,7 +191,16 @@ export async function searchAnimes(query: string, source?: string): Promise<Anim
         console.log(`[animbus] Searching Jikan API fallback for: ${query}`);
         try {
             // Kita fetch 10 hasil dari Jikan
-            const jikanRes = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=10`);
+            const jikanRes = await fetch(
+                `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=10`,
+                { signal: AbortSignal.timeout(5000) }
+            );
+
+            if (jikanRes.status === 429) {
+                console.warn("[animbus] Jikan rate limited, skipping fallback");
+                return { data: response.data.map(toAnime), pagination: response.pagination };
+            }
+
             if (jikanRes.ok) {
                 const jikanData = await jikanRes.json();
                 const jikanItems = jikanData.data || [];
@@ -220,6 +237,8 @@ export async function searchAnimes(query: string, source?: string): Promise<Anim
                         }
                     };
                 }
+            } else {
+                throw new Error(`Jikan HTTP ${jikanRes.status}`);
             }
         } catch (error) {
             console.error("[animbus] Jikan fallback search error:", error);
