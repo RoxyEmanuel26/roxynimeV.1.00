@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
     Search,
     Menu,
@@ -17,8 +17,20 @@ import {
     Heart,
     History,
     ChevronDown,
+    Compass,
+    Play,
+    Film,
+    Home,
+    Sparkles,
 } from "lucide-react";
 import { BannerAd } from "../ads/BannerAd";
+
+const NAV_LINKS = [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/browse", label: "Browse", icon: Compass },
+    { href: "/ongoing", label: "Ongoing", icon: Play },
+    { href: "/movies", label: "Movies", icon: Film },
+];
 
 export function Header() {
     const { data: session } = useSession();
@@ -27,10 +39,29 @@ export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [scrolled, setScrolled] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
+    const userMenuRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => setMounted(true), []);
+
+    // Track scroll for header shadow
     useEffect(() => {
-        setMounted(true);
+        const onScroll = () => setScrolled(window.scrollY > 8);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    // Close user menu on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+                setUserMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -42,8 +73,11 @@ export function Header() {
         }
     };
 
-    const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
+    const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+
+    const isActive = (href: string) => {
+        if (href === "/") return pathname === "/";
+        return pathname.startsWith(href);
     };
 
     return (
@@ -51,77 +85,85 @@ export function Header() {
             {/* Top Ad Banner */}
             <BannerAd className="hidden lg:flex" />
 
-            {/* Main Header */}
-            <div className="bg-background/80 backdrop-blur-lg border-b border-border">
+            {/* ─── Main Header ─── */}
+            <div
+                className={`
+                    border-b transition-all duration-300
+                    ${scrolled
+                        ? "bg-background/90 backdrop-blur-xl border-border shadow-sm"
+                        : "bg-background/70 backdrop-blur-lg border-transparent"
+                    }
+                `}
+            >
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
-                        {/* Logo */}
-                        <Link href="/" className="flex items-center gap-2">
-                            <div className="relative w-10 h-10">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-lg animate-pulse" />
-                                <div className="absolute inset-0.5 bg-background rounded-lg flex items-center justify-center">
-                                    <span className="text-xl font-bold gradient-text">R</span>
+
+                        {/* ─── Logo ─── */}
+                        <Link href="/" className="flex items-center gap-2.5 group">
+                            <div className="relative w-9 h-9">
+                                {/* Animated glow ring */}
+                                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary opacity-80 group-hover:opacity-100 transition-opacity duration-300 pulse-glow" />
+                                {/* Inner box */}
+                                <div className="absolute inset-[2px] bg-background rounded-[10px] flex items-center justify-center">
+                                    <Sparkles className="h-4 w-4 text-primary" />
                                 </div>
                             </div>
-                            <span className="text-xl font-bold hidden sm:block">
+                            <span className="text-xl font-extrabold tracking-tight hidden sm:block" style={{ fontFamily: "var(--font-heading)" }}>
                                 <span className="gradient-text">Roxy</span>
                                 <span className="text-foreground">Nime</span>
                             </span>
                         </Link>
 
-                        {/* Desktop Navigation */}
-                        <nav className="hidden md:flex items-center gap-6">
-                            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
-                                Home
-                            </Link>
-                            <Link href="/browse" className="text-sm font-medium hover:text-primary transition-colors">
-                                Browse
-                            </Link>
-                            <Link href="/ongoing" className="text-sm font-medium hover:text-primary transition-colors">
-                                Ongoing
-                            </Link>
-                            <Link href="/movies" className="text-sm font-medium hover:text-primary transition-colors">
-                                Movies
-                            </Link>
+                        {/* ─── Desktop Nav ─── */}
+                        <nav className="hidden md:flex items-center gap-1">
+                            {NAV_LINKS.map((link) => (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={`nav-link px-3 py-1.5 rounded-lg ${isActive(link.href) ? "active text-primary" : ""}`}
+                                >
+                                    {link.label}
+                                </Link>
+                            ))}
                         </nav>
 
-                        {/* Search Bar - Desktop */}
-                        <form onSubmit={handleSearch} className="hidden md:flex items-center flex-1 max-w-md mx-6">
+                        {/* ─── Desktop Search ─── */}
+                        <form onSubmit={handleSearch} className="hidden md:flex items-center flex-1 max-w-sm mx-4">
                             <div className="relative w-full">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <input
                                     type="text"
-                                    placeholder="Search anime..."
+                                    placeholder="Cari anime..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="input pl-10 h-10"
+                                    className="input pl-10 h-10 text-sm"
                                 />
                             </div>
                         </form>
 
-                        {/* Right Actions */}
-                        <div className="flex items-center gap-3">
+                        {/* ─── Right Actions ─── */}
+                        <div className="flex items-center gap-1.5">
                             {/* Theme Toggle */}
                             {mounted && (
                                 <button
                                     onClick={toggleTheme}
-                                    className="btn-ghost p-2 rounded-lg"
+                                    className="theme-toggle"
                                     aria-label="Toggle theme"
                                 >
                                     {theme === "dark" ? (
-                                        <Sun className="h-5 w-5" />
+                                        <Sun className="h-5 w-5 text-warning" />
                                     ) : (
-                                        <Moon className="h-5 w-5" />
+                                        <Moon className="h-5 w-5 text-primary" />
                                     )}
                                 </button>
                             )}
 
                             {/* User Menu */}
                             {session ? (
-                                <div className="relative">
+                                <div className="relative" ref={userMenuRef}>
                                     <button
                                         onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                        className="flex items-center gap-2 btn-ghost p-1.5 rounded-lg"
+                                        className="flex items-center gap-2 btn-ghost p-1.5 rounded-xl"
                                     >
                                         {session.user.image ? (
                                             <Image
@@ -129,59 +171,52 @@ export function Header() {
                                                 alt={session.user.name || "User"}
                                                 width={32}
                                                 height={32}
-                                                className="rounded-full"
+                                                className="rounded-full ring-2 ring-primary/30"
                                             />
                                         ) : (
-                                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                                <User className="h-4 w-4" />
+                                            <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                                                <User className="h-4 w-4 text-primary" />
                                             </div>
                                         )}
-                                        <ChevronDown className="h-4 w-4 hidden sm:block" />
+                                        <ChevronDown className={`h-4 w-4 hidden sm:block transition-transform duration-200 ${userMenuOpen ? "rotate-180" : ""}`} />
                                     </button>
 
-                                    {/* Dropdown Menu */}
+                                    {/* User Dropdown */}
                                     {userMenuOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 glass-card py-2 shadow-lg">
-                                            <div className="px-4 py-2 border-b border-border">
-                                                <p className="font-medium truncate">{session.user.name}</p>
+                                        <div className="absolute right-0 mt-2 w-52 glass-card py-1 shadow-lg scale-in overflow-hidden">
+                                            <div className="px-4 py-3 border-b border-border">
+                                                <p className="font-semibold text-sm truncate">{session.user.name}</p>
                                                 <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
                                             </div>
-                                            <Link
-                                                href="/profile"
-                                                className="flex items-center gap-2 px-4 py-2 hover:bg-muted transition-colors"
-                                                onClick={() => setUserMenuOpen(false)}
-                                            >
-                                                <User className="h-4 w-4" />
-                                                Profile
-                                            </Link>
-                                            <Link
-                                                href="/profile?tab=history"
-                                                className="flex items-center gap-2 px-4 py-2 hover:bg-muted transition-colors"
-                                                onClick={() => setUserMenuOpen(false)}
-                                            >
-                                                <History className="h-4 w-4" />
-                                                Watch History
-                                            </Link>
-                                            <Link
-                                                href="/profile?tab=favorites"
-                                                className="flex items-center gap-2 px-4 py-2 hover:bg-muted transition-colors"
-                                                onClick={() => setUserMenuOpen(false)}
-                                            >
-                                                <Heart className="h-4 w-4" />
-                                                Favorites
-                                            </Link>
-                                            <button
-                                                onClick={() => signOut()}
-                                                className="flex items-center gap-2 w-full px-4 py-2 hover:bg-muted transition-colors text-destructive"
-                                            >
-                                                <LogOut className="h-4 w-4" />
-                                                Sign Out
-                                            </button>
+                                            {[
+                                                { href: "/profile", icon: User, label: "Profile" },
+                                                { href: "/profile?tab=history", icon: History, label: "Watch History" },
+                                                { href: "/profile?tab=favorites", icon: Heart, label: "Favorites" },
+                                            ].map((item) => (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-muted/60 transition-colors"
+                                                    onClick={() => setUserMenuOpen(false)}
+                                                >
+                                                    <item.icon className="h-4 w-4 text-muted-foreground" />
+                                                    {item.label}
+                                                </Link>
+                                            ))}
+                                            <div className="border-t border-border mt-1 pt-1">
+                                                <button
+                                                    onClick={() => signOut()}
+                                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                                                >
+                                                    <LogOut className="h-4 w-4" />
+                                                    Sign Out
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             ) : (
-                                <Link href="/auth/signin" className="btn-primary text-sm">
+                                <Link href="/auth/signin" className="btn-primary text-sm px-4 py-2">
                                     Sign In
                                 </Link>
                             )}
@@ -189,7 +224,8 @@ export function Header() {
                             {/* Mobile Menu Toggle */}
                             <button
                                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="md:hidden btn-ghost p-2 rounded-lg"
+                                className="md:hidden theme-toggle"
+                                aria-label="Toggle menu"
                             >
                                 {mobileMenuOpen ? (
                                     <X className="h-5 w-5" />
@@ -201,17 +237,17 @@ export function Header() {
                     </div>
                 </div>
 
-                {/* Mobile Menu */}
+                {/* ─── Mobile Menu ─── */}
                 {mobileMenuOpen && (
-                    <div className="md:hidden border-t border-border bg-background">
-                        <div className="container mx-auto px-4 py-4 space-y-4">
+                    <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-xl fade-in">
+                        <div className="container mx-auto px-4 py-4 space-y-3">
                             {/* Mobile Search */}
                             <form onSubmit={handleSearch}>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <input
                                         type="text"
-                                        placeholder="Search anime..."
+                                        placeholder="Cari anime..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="input pl-10"
@@ -220,35 +256,24 @@ export function Header() {
                             </form>
 
                             {/* Mobile Nav Links */}
-                            <nav className="flex flex-col gap-2">
-                                <Link
-                                    href="/"
-                                    className="px-4 py-2 rounded-lg hover:bg-muted transition-colors"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    Home
-                                </Link>
-                                <Link
-                                    href="/browse"
-                                    className="px-4 py-2 rounded-lg hover:bg-muted transition-colors"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    Browse
-                                </Link>
-                                <Link
-                                    href="/ongoing"
-                                    className="px-4 py-2 rounded-lg hover:bg-muted transition-colors"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    Ongoing
-                                </Link>
-                                <Link
-                                    href="/movies"
-                                    className="px-4 py-2 rounded-lg hover:bg-muted transition-colors"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    Movies
-                                </Link>
+                            <nav className="flex flex-col gap-0.5">
+                                {NAV_LINKS.map((link) => {
+                                    const Icon = link.icon;
+                                    return (
+                                        <Link
+                                            key={link.href}
+                                            href={link.href}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-sm font-medium ${isActive(link.href)
+                                                    ? "bg-primary/10 text-primary"
+                                                    : "hover:bg-muted/60 text-fore ground"
+                                                }`}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <Icon className="h-4 w-4" />
+                                            {link.label}
+                                        </Link>
+                                    );
+                                })}
                             </nav>
                         </div>
                     </div>
