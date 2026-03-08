@@ -1,28 +1,25 @@
-import { sankaClient, SankaAnime, SankaEpisode, SankaStreamServer, PaginationInfo } from "./sankaClient";
+import { getProvider } from "./providers";
+import type {
+    ProviderAnime, ProviderAnimeDetail, ProviderStreamServer,
+    PaginatedResponse, PaginationInfo,
+} from "./providers";
 
-// Interfaces to match the UI expectations
-export interface Anime {
-    id: string;
-    slug?: string;
-    title: string;
+// Re-export types for backward compatibility
+export type Anime = Omit<ProviderAnime, "rating"> & {
     image: string;
     poster?: string;
     episode?: number | string;
-    type?: string;
-    genres?: string[];
-    status?: string;
     description?: string;
     rating?: string;
     released?: string;
-    studio?: string;
     season?: string;
     synopsis?: string;
     japaneseTitle?: string;
-}
+};
 
 export type AnimeDetail = Anime & {
     episodes: Episode[];
-}
+};
 
 export interface Episode {
     id: string;
@@ -34,7 +31,7 @@ export interface Episode {
 export interface StreamingData {
     url: string;
     headers?: Record<string, string>;
-    servers?: SankaStreamServer[];
+    servers?: { name: string; quality?: string; streamUrl: string }[];
 }
 
 export interface AnimeListResponse {
@@ -42,135 +39,135 @@ export interface AnimeListResponse {
     pagination?: PaginationInfo;
 }
 
-// Wrapper functions using Sanka Client
-export async function getTrendingAnime(): Promise<Anime[]> {
-    const data = await sankaClient.getHome();
-    return data.map(mapSankaToAnime);
-}
-
-export async function getOngoingAnimeList(page: number = 1): Promise<AnimeListResponse> {
-    const response = await sankaClient.getOngoing(page);
+// --- Helper: Convert provider format to legacy UI format ---
+function toAnime(p: ProviderAnime): Anime {
+    const { rating: numRating, ...rest } = p;
     return {
-        data: response.data.map(mapSankaToAnime),
-        pagination: response.pagination
+        ...rest,
+        rating: numRating?.toString(),
+        image: p.poster,
+        poster: p.poster,
+        episode: p.totalEpisodes,
+        description: p.synopsis,
+        released: p.releaseDate,
+        synopsis: p.synopsis,
     };
 }
 
-export async function getCompletedAnimeList(page: number = 1): Promise<AnimeListResponse> {
-    const response = await sankaClient.getCompleted(page);
+function toAnimeDetail(p: ProviderAnimeDetail): AnimeDetail {
     return {
-        data: response.data.map(mapSankaToAnime),
-        pagination: response.pagination
-    };
-}
-
-export async function getMoviesList(page: number = 1): Promise<AnimeListResponse> {
-    // Movies are currently fetched via search("movie"), likely returns paginated now
-    const response = await sankaClient.search("movie");
-
-    // Strict filter for Movies
-    const filteredData = response.data.map(mapSankaToAnime).filter(anime => {
-        const type = anime.type?.toLowerCase() || "";
-        const status = anime.status?.toLowerCase() || "";
-        const isMovie = type.includes("movie") || type.includes("film");
-        const isUnknown = type === "unknown";
-
-        // Relaxed filter: Allow Unknown types even if status is ongoing (fallback to previous behavior)
-        // because users reported empty list with strict status check.
-        // We prefer showing some non-movies over showing nothing.
-        return isMovie || isUnknown;
-    });
-
-    console.log(`[animbus] getMoviesList: ${response.data.length} raw -> ${filteredData.length} filtered`);
-
-    return {
-        data: filteredData,
-        pagination: response.pagination
-    };
-}
-
-export async function getAnimeByGenre(genre: string, page: number = 1): Promise<AnimeListResponse> {
-    const response = await sankaClient.getByGenre(genre, page);
-    return {
-        data: response.data.map(mapSankaToAnime),
-        pagination: response.pagination
-    };
-}
-
-export async function getAnimeInfo(id: string): Promise<AnimeDetail> {
-    const data = await sankaClient.getDetail(id);
-    return {
-        ...mapSankaToAnime(data),
-        episodes: data.episodes.map(ep => ({
+        ...toAnime(p),
+        japaneseTitle: p.japaneseTitle,
+        season: p.season,
+        episodes: p.episodes.map((ep) => ({
             id: ep.urlSlug || ep.id,
             number: ep.number,
             title: ep.title,
-            urlSlug: ep.urlSlug
-        }))
+            urlSlug: ep.urlSlug,
+        })),
     };
 }
 
-export async function getEpisodeStreams(episodeId: string): Promise<StreamingData | null> {
-    try {
-        console.log("🔍 [animbus] Getting streams for episode:", episodeId);
+// --- Public API (backward-compatible) ---
 
-        const servers = await sankaClient.getStreams(episodeId);
+export async function getTrendingAnime(source?: string): Promise<Anime[]> {
+    const provider = getProvider(source);
+    const data = await provider.getHome();
+    return data.map(toAnime);
+}
 
-        console.log("📡 [animbus] Servers received:", servers);
-        console.log("📊 [animbus] Number of servers:", servers?.length || 0);
+export async function getOngoingAnimeList(page = 1, source?: string): Promise<AnimeListResponse> {
+    const provider = getProvider(source);
+    const response = await provider.getOngoing(page);
+    return {
+        data: response.data.map(toAnime),
+        pagination: response.pagination,
+    };
+}
 
-        if (!servers || !servers.length) {
-            console.warn("⚠️ [animbus] No servers found for:", episodeId);
-            return null;
-        }
+export async function getCompletedAnimeList(page = 1, source?: string): Promise<AnimeListResponse> {
+    const provider = getProvider(source);
+    const response = await provider.getCompleted(page);
+    return {
+        data: response.data.map(toAnime),
+        pagination: response.pagination,
+    };
+}
 
-        // Log all available servers
-        servers.forEach((server, idx) => {
-            console.log(`   Server ${idx + 1}:`, {
-                name: server.name,
-                quality: server.quality,
-                hasUrl: !!server.streamUrl
-            });
+export async function getMoviesList(page = 1, source?: string): Promise<AnimeListResponse> {
+    const provider = getProvider(source);
+
+    if (provider.getMovies) {
+        const response = await provider.getMovies(page);
+        return {
+            data: response.data.map(toAnime),
+            pagination: response.pagination,
+        };
+    }
+
+    // Fallback: search for "movie"
+    const response = await provider.search("movie");
+    const filtered = response.data
+        .map(toAnime)
+        .filter((a) => {
+            const t = a.type?.toLowerCase() || "";
+            return t.includes("movie") || t.includes("film") || t === "unknown";
         });
+
+    return { data: filtered, pagination: response.pagination };
+}
+
+export async function getAnimeByGenre(genre: string, page = 1, source?: string): Promise<AnimeListResponse> {
+    const provider = getProvider(source);
+
+    if (provider.getByGenre) {
+        const response = await provider.getByGenre(genre, page);
+        return {
+            data: response.data.map(toAnime),
+            pagination: response.pagination,
+        };
+    }
+
+    // Fallback: search with genre name
+    const response = await provider.search(genre);
+    return {
+        data: response.data.map(toAnime),
+        pagination: response.pagination,
+    };
+}
+
+export async function getAnimeInfo(id: string, source?: string): Promise<AnimeDetail> {
+    const provider = getProvider(source);
+    const data = await provider.getDetail(id);
+    return toAnimeDetail(data);
+}
+
+export async function getEpisodeStreams(episodeId: string, source?: string): Promise<StreamingData | null> {
+    try {
+        const provider = getProvider(source);
+        const servers = await provider.getStreams(episodeId);
+
+        if (!servers || !servers.length) return null;
 
         return {
             url: servers[0].streamUrl,
             headers: {},
-            servers: servers // Pass all servers for selection
+            servers,
         };
     } catch (e) {
-        console.error("❌ [animbus] Error getting stream:", e);
+        console.error("[animbus] Error getting stream:", e);
         return null;
     }
 }
 
-export async function searchAnimes(query: string): Promise<AnimeListResponse> {
-    const response = await sankaClient.search(query);
+export async function searchAnimes(query: string, source?: string): Promise<AnimeListResponse> {
+    const provider = getProvider(source);
+    const response = await provider.search(query);
     return {
-        data: response.data.map(mapSankaToAnime),
-        pagination: response.pagination
+        data: response.data.map(toAnime),
+        pagination: response.pagination,
     };
 }
 
-// Helper mapper
-function mapSankaToAnime(sanka: SankaAnime): Anime {
-    // Ensure we always have a valid ID - use slug as ultimate fallback
-    const validId = sanka.slug || sanka.id || `anime-${sanka.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
-
-    return {
-        id: validId,
-        slug: sanka.slug,
-        title: sanka.title,
-        image: sanka.poster,
-        poster: sanka.poster,
-        episode: sanka.totalEpisodes,
-        type: sanka.type,
-        genres: sanka.genres,
-        status: sanka.status,
-        description: sanka.synopsis,
-        synopsis: sanka.synopsis,
-        rating: sanka.rating?.toString(),
-        released: sanka.releaseDate,
-        studio: sanka.studio
-    };
-}
+// Re-export PaginationInfo for backward compatibility
+export type { PaginationInfo } from "./providers";

@@ -6,8 +6,9 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
+    const source = request.nextUrl.searchParams.get("source") || undefined;
 
-    console.log("🎯 [API /anime] Request for anime:", id);
+    console.log(`🎯 [API /anime] Request for anime: ${id}, source: ${source || "default"}`);
 
     if (!id) {
         return NextResponse.json(
@@ -17,24 +18,12 @@ export async function GET(
     }
 
     try {
-        const animeData = await getAnimeInfo(id);
+        const animeData = await getAnimeInfo(id, source);
 
         console.log("✅ [API /anime] Data fetched:", {
             title: animeData.title,
             episodeCount: animeData.episodes?.length || 0
         });
-
-        // Log first few episodes for debugging
-        if (animeData.episodes && animeData.episodes.length > 0) {
-            console.log("📺 [API /anime] Sample episodes:");
-            animeData.episodes.slice(0, 3).forEach((ep, idx) => {
-                console.log(`   Ep ${idx + 1}:`, {
-                    number: ep.number,
-                    slug: ep.urlSlug,
-                    title: ep.title
-                });
-            });
-        }
 
         return NextResponse.json({
             success: true,

@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("q") || "";
     const page = parseInt(searchParams.get("page") || "1");
+    const source = searchParams.get("source") || undefined;
 
     if (!query) {
         return NextResponse.json(
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const { data: animes, pagination } = await searchAnimes(query);
+        const { data: animes, pagination } = await searchAnimes(query, source);
 
         const totalPages = pagination?.totalPages || (pagination?.items?.total
             ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20))

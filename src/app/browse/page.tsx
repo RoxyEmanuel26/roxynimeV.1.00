@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
+import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd } from "@/components/ads";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -58,8 +58,11 @@ function BrowseContent() {
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("search") || ""
   );
+  const [source, setSource] = useState(
+    searchParams.get("source") || "otakudesu"
+  );
   const [filters, setFilters] = useState<FilterState>({
-    type: searchParams.get("type") || "completed", // Default to completed for more pages
+    type: searchParams.get("type") || "completed",
     genre: searchParams.get("genre") || "",
     order: "updated",
   });
@@ -70,8 +73,8 @@ function BrowseContent() {
         setLoading(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
 
-        const type = filters.type || "completed"; // Default to completed
-        let url = `/api/anime?type=${type}&page=${pageNum}`;
+        const type = filters.type || "completed";
+        let url = `/api/anime?type=${type}&page=${pageNum}&source=${source}`;
 
         // Debug: Log current filter state
         console.log("[Browse] Filter State:", {
@@ -85,13 +88,13 @@ function BrowseContent() {
         if (searchQuery) {
           url = `/api/anime/search?q=${encodeURIComponent(
             searchQuery
-          )}&page=${pageNum}`;
+          )}&page=${pageNum}&source=${source}`;
         }
         // If genre filter is selected, use genre endpoint
         else if (filters.genre) {
           url = `/api/anime?genre=${encodeURIComponent(
             filters.genre
-          )}&page=${pageNum}`;
+          )}&page=${pageNum}&source=${source}`;
         }
 
         console.log("[Browse] Fetching URL:", url);
@@ -151,7 +154,7 @@ function BrowseContent() {
         setLoading(false);
       }
     },
-    [filters.type, filters.genre, filters.order, searchQuery]
+    [filters.type, filters.genre, filters.order, searchQuery, source]
   );
 
   // Initial fetch and filter changes
@@ -186,6 +189,11 @@ function BrowseContent() {
     setFilters(newFilters);
     setCurrentPage(1);
   };
+
+  const handleProviderChange = useCallback((providerId: string) => {
+    setSource(providerId);
+    setCurrentPage(1);
+  }, []);
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
@@ -293,10 +301,15 @@ function BrowseContent() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Browse Anime</h1>
-        <p className="text-muted-foreground">
-          Discover and watch your favorite anime series and movies
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Browse Anime</h1>
+            <p className="text-muted-foreground">
+              Discover and watch your favorite anime series and movies
+            </p>
+          </div>
+          <ProviderSelector onProviderChange={handleProviderChange} />
+        </div>
       </div>
 
       {/* Top Banner Ad */}

@@ -12,35 +12,34 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type") || "completed";
     const genre = searchParams.get("genre");
     const page = parseInt(searchParams.get("page") || "1");
+    const source = searchParams.get("source") || undefined;
 
     try {
-        let data;
-
         let animeList: Anime[] = [];
         let pagination;
 
         // If genre is specified, use genre endpoint
         if (genre) {
-            console.log(`[API] Fetching by genre: ${genre}, page: ${page}`);
-            const genreRes = await getAnimeByGenre(genre, page);
+            console.log(`[API] Fetching by genre: ${genre}, page: ${page}, source: ${source || "default"}`);
+            const genreRes = await getAnimeByGenre(genre, page, source);
             animeList = genreRes.data;
             pagination = genreRes.pagination;
         } else {
             // Otherwise use type-based endpoints
             switch (type) {
                 case "completed":
-                    const completedRes = await getCompletedAnimeList(page);
+                    const completedRes = await getCompletedAnimeList(page, source);
                     animeList = completedRes.data;
                     pagination = completedRes.pagination;
                     break;
                 case "movie":
-                    const movieRes = await getMoviesList(page);
+                    const movieRes = await getMoviesList(page, source);
                     animeList = movieRes.data;
                     pagination = movieRes.pagination;
                     break;
                 case "ongoing":
                 default:
-                    const ongoingRes = await getOngoingAnimeList(page);
+                    const ongoingRes = await getOngoingAnimeList(page, source);
                     animeList = ongoingRes.data;
                     pagination = ongoingRes.pagination;
                     break;
@@ -57,7 +56,7 @@ export async function GET(request: NextRequest) {
             : (pagination?.lastVisiblePage || 1));
 
         // Convert to match frontend response format
-        data = {
+        const data = {
             status: "success",
             data: animeList,
             total_item: pagination?.items?.total || animeList.length,
