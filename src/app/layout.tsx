@@ -24,11 +24,15 @@ export const metadata: Metadata = {
     "Stream your favorite anime for free in HD quality. Watch the latest episodes, movies, and series on RoxyNime.",
   keywords: [
     "anime",
-    "streaming",
-    "watch anime",
-    "free anime",
-    "anime online",
-    "HD anime",
+    "nonton anime",
+    "anime sub indo",
+    "anime subtitle indonesia",
+    "streaming anime",
+    "anime online gratis",
+    "nonton anime gratis",
+    "anime terbaru",
+    "anime ongoing",
+    "roxynime",
   ],
   authors: [{ name: "RoxyNime" }],
   creator: "RoxyNime",
@@ -54,9 +58,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://roxy.my.id",
   },
-  verification: {
-    google: "GANTI_DENGAN_VERIFICATION_CODE",
-  },
+  // Daftarkan di: https://search.google.com/search-console
+  // Lalu aktifkan: verification: { google: "kode_dari_GSC" },
   manifest: "/manifest.json",
 };
 
@@ -66,7 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#7c3aed" />
         <link rel="icon" href="/favicon.ico" />

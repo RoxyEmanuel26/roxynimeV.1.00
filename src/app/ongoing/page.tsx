@@ -77,11 +77,12 @@ function OngoingContent() {
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
 
+  // FIXED: always write source to URL so it stays in sync
   const buildUrl = (page: number, query: string, f: FilterState, src: string): string => {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (f.genre) params.set("genre", f.genre);
-    if (src && src !== "otakudesu") params.set("source", src);
+    if (src) params.set("source", src);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/ongoing${qs ? `?${qs}` : ""}`;
@@ -129,9 +130,22 @@ function OngoingContent() {
         genres: anime.genres || [],
       }));
 
-      // In ongoing page, ONLY show items that are explicitly "Ongoing"
+      // FIXED: Tolerant status filter — providers use varied status strings
       list = list.filter((anime: any) => {
-        return (anime.status || "").toLowerCase() === "ongoing";
+        const status = (anime.status || "").toLowerCase().trim();
+        if (!status) return true; // empty = assume ongoing
+        if (status.includes("ongoing")) return true;
+        if (status.includes("airing")) return true;
+        if (status.includes("sedang")) return true;
+        if (status.includes("belum tamat")) return true;
+        // Explicitly reject non-ongoing statuses
+        if (status.includes("completed")) return false;
+        if (status.includes("finished")) return false;
+        if (status.includes("tamat")) return false;
+        if (status.includes("movie")) return false;
+        if (status.includes("film")) return false;
+        // Unknown status = show (prefer over-include)
+        return true;
       });
 
       // Client-side sort by rating if requested
@@ -160,15 +174,16 @@ function OngoingContent() {
     }
   }, []);
 
-  // Mount only: read URL params and fetch
+  // FIXED: URL params always take priority over localStorage
   useEffect(() => {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const query = searchParams.get("search") || "";
     const genre = searchParams.get("genre") || "";
-    const src =
-      (typeof window !== "undefined" && localStorage.getItem("roxynime_provider")) ||
-      searchParams.get("source") ||
-      "otakudesu";
+    const srcFromUrl = searchParams.get("source");
+    const srcFromStorage = typeof window !== "undefined"
+      ? localStorage.getItem("roxynime_provider")
+      : null;
+    const src = srcFromUrl || srcFromStorage || "otakudesu";
     const f: FilterState = { type: "ongoing", genre, order: "updated" };
 
     setSearchQuery(query);
@@ -201,8 +216,12 @@ function OngoingContent() {
     fetchAnime(1, searchQuery, f, source);
   }, [searchQuery, source, router, fetchAnime]);
 
+  // FIXED: persist provider selection to localStorage
   const handleProviderChange = useCallback((providerId: string) => {
     setSource(providerId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("roxynime_provider", providerId);
+    }
     router.replace(buildUrl(1, searchQuery, filters, providerId), { scroll: false });
     fetchAnime(1, searchQuery, filters, providerId);
   }, [searchQuery, filters, router, fetchAnime]);
