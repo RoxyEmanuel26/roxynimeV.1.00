@@ -4,3 +4,4 @@ export { InFeedAd } from "./InFeedAd";
 export { NativeAd } from "./NativeAd";
 export { InterstitialAd } from "./InterstitialAd";
 export { PopunderAd } from "./PopunderAd";
+export { StickyMobileAd } from "./StickyMobileAd";

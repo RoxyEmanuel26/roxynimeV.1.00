@@ -10,8 +10,8 @@ interface InFeedAdProps {
 }
 
 /**
- * InFeedAd — 300x250 rectangle ad placed between content sections.
- * Picks from enabled networks' rectangle ads, falls back to banners.
+ * InFeedAd — Responsive rectangle ad between content sections.
+ * Desktop: 300x250 | Mobile: 250x250 (fits small screens)
  */
 export function InFeedAd({ className, slot = "feed" }: InFeedAdProps) {
     const [mounted, setMounted] = useState(false);
@@ -27,14 +27,30 @@ export function InFeedAd({ className, slot = "feed" }: InFeedAdProps) {
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
                     Advertisement
                 </span>
-                <iframe
-                    title={`ad-infeed-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 300, 250)}
-                    width={300}
-                    height={250}
-                    style={{ border: "none", overflow: "hidden", borderRadius: "8px" }}
-                    scrolling="no"
-                />
+
+                {/* Desktop/Tablet: 300x250 */}
+                <div className="hidden sm:block">
+                    <iframe
+                        title={`ad-infeed-desktop-${slot}`}
+                        srcDoc={generateAdSrcDoc(ad, 300, 250)}
+                        width={300}
+                        height={250}
+                        style={{ border: "none", overflow: "hidden", borderRadius: "8px" }}
+                        scrolling="no"
+                    />
+                </div>
+
+                {/* Mobile: 250x250 (fits narrow screens) */}
+                <div className="block sm:hidden">
+                    <iframe
+                        title={`ad-infeed-mobile-${slot}`}
+                        srcDoc={generateAdSrcDoc(ad, 250, 250)}
+                        width={250}
+                        height={250}
+                        style={{ border: "none", overflow: "hidden", borderRadius: "8px" }}
+                        scrolling="no"
+                    />
+                </div>
             </div>
         </div>
     );

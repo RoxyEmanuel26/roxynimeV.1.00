@@ -3,7 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header, Footer } from "@/components/layout";
-import { PopunderAd } from "@/components/ads";
+import { PopunderAd, StickyMobileAd } from "@/components/ads";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -72,7 +72,8 @@ export default function RootLayout({
         <Providers>
           <PopunderAd />
           <Header />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-14 lg:pb-0">{children}</main>
+          <StickyMobileAd />
           <Footer />
         </Providers>
       </body>
