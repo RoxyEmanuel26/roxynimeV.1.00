@@ -178,6 +178,9 @@ function BrowseContent() {
   }, [currentPage, searchQuery, filters, router]);
 
   const handleSearch = (query: string) => {
+    // Abort any in-flight request from the old search
+    if (abortRef.current) abortRef.current.abort();
+    setAnimes([]); // Clear stale data immediately
     setSearchQuery(query);
     setCurrentPage(1);
 
@@ -190,6 +193,9 @@ function BrowseContent() {
   };
 
   const handleFilterChange = (newFilters: FilterState) => {
+    // Abort any in-flight request from the old filter
+    if (abortRef.current) abortRef.current.abort();
+    setAnimes([]); // Clear stale data immediately
     setFilters(newFilters);
     setCurrentPage(1);
 

@@ -169,6 +169,8 @@ function OngoingContent() {
   }, [currentPage, searchQuery, filters, router]);
 
   const handleFilterChange = (newFilters: FilterState) => {
+    if (abortRef.current) abortRef.current.abort();
+    setAnimes([]);
     setFilters({ ...newFilters, type: "ongoing" });
     setCurrentPage(1);
 
@@ -180,6 +182,8 @@ function OngoingContent() {
   };
 
   const handleSearch = (query: string) => {
+    if (abortRef.current) abortRef.current.abort();
+    setAnimes([]);
     setSearchQuery(query);
     setCurrentPage(1);
 
