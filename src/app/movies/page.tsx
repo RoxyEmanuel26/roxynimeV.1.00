@@ -219,41 +219,51 @@ function MoviesContent() {
   const generatePaginationNumbers = () => {
     const pages: (number | string)[] = [];
 
-    // Special handling for genre filter - API doesn't give total pages accurately
-    if (filters.genre) {
-      pages.push(1);
-      if (currentPage > 3) pages.push("...");
-      const maxPageToShow = hasMore ? currentPage + 2 : currentPage;
-      for (let i = Math.max(2, currentPage - 1); i <= maxPageToShow; i++) {
-        if (i > 1) pages.push(i);
-      }
-      if (hasMore) pages.push("...");
-      return pages;
+    let effectiveTotalPages = totalPages;
+
+    // Provide a fallback if API misbehaves but we know there's more
+    if (effectiveTotalPages <= 1 && hasMore) {
+      effectiveTotalPages = currentPage + 1;
+    } else if (effectiveTotalPages <= 1) {
+      return [1];
     }
 
-    // Normal pagination
-    let effectiveTotalPages = totalPages;
-    if (effectiveTotalPages <= 1) return [1];
-
     const maxVisible = 5;
+
+    // If total pages is small, show all pages
     if (effectiveTotalPages <= maxVisible + 2) {
       return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
     }
 
+    // Always show first page
     pages.push(1);
-    if (currentPage > 3) pages.push("...");
+
+    // Calculate start and end of visible pages
+    if (currentPage > 3) {
+      pages.push("...");
+    }
 
     let start = Math.max(2, currentPage - 1);
     let end = Math.min(effectiveTotalPages - 1, currentPage + 1);
 
-    if (currentPage < 3) end = 4;
-    if (currentPage > effectiveTotalPages - 2) start = effectiveTotalPages - 3;
-
-    for (let i = start; i <= end; i++) {
-      if (i > 1 && i < effectiveTotalPages) pages.push(i);
+    // Adjust if at the edges
+    if (currentPage < 3) {
+      end = 4;
+    }
+    if (currentPage > effectiveTotalPages - 2) {
+      start = effectiveTotalPages - 3;
     }
 
-    if (currentPage < effectiveTotalPages - 2) pages.push("...");
+    for (let i = start; i <= end; i++) {
+      if (i > 1 && i < effectiveTotalPages) {
+        pages.push(i);
+      }
+    }
+
+    // Always show last page
+    if (currentPage < effectiveTotalPages - 2) {
+      pages.push("...");
+    }
     pages.push(effectiveTotalPages);
 
     return pages;

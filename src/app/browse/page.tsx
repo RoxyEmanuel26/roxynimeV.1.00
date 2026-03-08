@@ -234,66 +234,37 @@ function BrowseContent() {
   const generatePaginationNumbers = () => {
     const pages: (number | string)[] = [];
 
-    // Special handling for genre filter - API doesn't give total pages
-    // Show current page, surrounding pages, and "..." if there's more
-    if (filters.genre) {
-      // Always show page 1
-      pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push("...");
-      }
-
-      // Determine max page to show based on hasMore
-      // If hasMore is true, show up to currentPage + 2
-      // If hasMore is false, only show up to currentPage (no pages beyond that exist)
-      const maxPageToShow = hasMore ? currentPage + 2 : currentPage;
-
-      // Show pages around current page
-      for (let i = Math.max(2, currentPage - 1); i <= maxPageToShow; i++) {
-        if (i > 1) {
-          pages.push(i);
-        }
-      }
-
-      // If there's more, show "..." at the end
-      if (hasMore) {
-        pages.push("...");
-      }
-
-      return pages;
-    }
-
-    // Normal pagination for non-genre filters
     let effectiveTotalPages = totalPages;
 
-    // If we don't have totalPages or it's 1, just return [1]
-    if (effectiveTotalPages <= 1) return [1];
+    // Provide a fallback if API misbehaves but we know there's more
+    if (effectiveTotalPages <= 1 && hasMore) {
+      effectiveTotalPages = currentPage + 1;
+    } else if (effectiveTotalPages <= 1) {
+      return [1];
+    }
 
-    const maxVisible = 5; // number of buttons to show in the main block
+    const maxVisible = 5;
 
+    // If total pages is small, show all pages
     if (effectiveTotalPages <= maxVisible + 2) {
-      // If total pages is small, show all
       return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
     }
 
     // Always show first page
     pages.push(1);
 
+    // Calculate start and end of visible pages
     if (currentPage > 3) {
       pages.push("...");
     }
 
-    // Calculate start and end of visible range around current page
     let start = Math.max(2, currentPage - 1);
     let end = Math.min(effectiveTotalPages - 1, currentPage + 1);
 
-    // Adjust if at the very beginning
+    // Adjust if at the edges
     if (currentPage < 3) {
       end = 4;
     }
-
-    // Adjust if at the very end
     if (currentPage > effectiveTotalPages - 2) {
       start = effectiveTotalPages - 3;
     }
@@ -304,11 +275,10 @@ function BrowseContent() {
       }
     }
 
+    // Always show last page
     if (currentPage < effectiveTotalPages - 2) {
       pages.push("...");
     }
-
-    // Always show last page
     pages.push(effectiveTotalPages);
 
     return pages;
