@@ -17,7 +17,6 @@ const PROVIDERS: ProviderOption[] = [
     { id: "samehadaku", name: "Samehadaku", icon: "🦈", description: "Alternatif populer", contentType: "Anime" },
     { id: "donghua", name: "Donghua", icon: "🐉", description: "Chinese Animation", contentType: "Donghua" },
     { id: "anoboy", name: "Anoboy", icon: "📺", description: "Nonton anime", contentType: "Anime" },
-    { id: "kuramanime", name: "Kuramanime", icon: "🌸", description: "Streaming anime", contentType: "Anime" },
     { id: "oploverz", name: "Oploverz", icon: "💎", description: "Kualitas terbaik", contentType: "Anime" },
 ];
 

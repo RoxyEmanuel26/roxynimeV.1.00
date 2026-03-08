@@ -5,7 +5,6 @@ import { otakudesuProvider } from "./otakudesu";
 import { samehadakuProvider } from "./samehadaku";
 import { donghuaProvider } from "./donghua";
 import { anoboyProvider } from "./anoboy";
-import { kuramanimeProvider } from "./kuramanime";
 import { oploverzProvider } from "./oploverz";
 
 // Registry of all available providers
@@ -14,7 +13,6 @@ const providers: Record<string, AnimeProvider> = {
     samehadaku: samehadakuProvider,
     donghua: donghuaProvider,
     anoboy: anoboyProvider,
-    kuramanime: kuramanimeProvider,
     oploverz: oploverzProvider,
 };
 

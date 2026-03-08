@@ -12,8 +12,26 @@ const headers = () => ({
     Accept: "application/json",
 });
 
-function mapItem(item: any): ProviderAnime {
-    const id = item.animeId || item.slug || item.id || "";
+// Samehadaku home item fields: animeId, title, poster, episodes, href, releasedOn, samehadakuUrl
+function mapHomeItem(item: any): ProviderAnime {
+    const id = item.animeId || item.slug || "";
+    return {
+        id,
+        slug: id,
+        title: item.title || "",
+        poster: item.poster || "",
+        synopsis: "",
+        genres: [],
+        type: "TV",
+        status: "Ongoing",
+        totalEpisodes: item.episodes ? parseInt(String(item.episodes)) : undefined,
+        rating: undefined,
+    };
+}
+
+// Samehadaku detail item fields vary — more detailed
+function mapDetailItem(item: any): ProviderAnime {
+    const id = item.animeId || item.slug || "";
     return {
         id,
         slug: id,
@@ -23,8 +41,8 @@ function mapItem(item: any): ProviderAnime {
         genres: item.genres || [],
         type: item.type || "TV",
         status: item.status || "Ongoing",
-        totalEpisodes: item.episodes ? parseInt(item.episodes) : undefined,
-        rating: item.score ? parseFloat(item.score) : undefined,
+        totalEpisodes: item.episodes ? parseInt(String(item.episodes)) : undefined,
+        rating: item.score ? parseFloat(String(item.score)) : undefined,
     };
 }
 
@@ -43,7 +61,7 @@ export const samehadakuProvider: AnimeProvider = {
             search: true,
             detail: true,
             streaming: true,
-            schedule: true,
+            schedule: false,
             genres: true,
             movies: true,
         },
@@ -53,16 +71,17 @@ export const samehadakuProvider: AnimeProvider = {
         return getCachedData("samehadaku_home", async () => {
             try {
                 const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
-                if (!res.ok) return [];
-                const data = await res.json();
+                if (!res.ok) { console.error("[Samehadaku] Home HTTP:", res.status); return []; }
+                const json = await res.json();
 
-                // Structure: data.recent.animeList[] OR data.ongoing.animeList[]
-                const recentList = data.data?.recent?.animeList || [];
-                const ongoingList = data.data?.ongoing?.animeList || [];
-                const rawList = recentList.length > 0 ? recentList : ongoingList;
+                // Response: { data: { recent: { animeList: [...] }, top10: {...} } }
+                const recentList = json?.data?.recent?.animeList;
+                if (!Array.isArray(recentList) || recentList.length === 0) {
+                    console.warn("[Samehadaku] No anime in data.recent.animeList");
+                    return [];
+                }
 
-                if (!Array.isArray(rawList)) return [];
-                return rawList.map(mapItem);
+                return recentList.map(mapHomeItem);
             } catch (e) {
                 console.error("[Samehadaku] Home Error:", e);
                 return [];
@@ -71,42 +90,42 @@ export const samehadakuProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return getCachedData(`samehadaku_ongoing_${page}`, async () => {
-            try {
-                const res = await fetch(`${BASE}${PREFIX}/ongoing?page=${page}`, { headers: headers() });
-                if (!res.ok) return { data: [] };
-                const data = await res.json();
-
-                const rawList = data.data?.animeList || data.data || [];
-                const pagination = data.pagination;
-                if (!Array.isArray(rawList)) return { data: [] };
-
-                return { data: rawList.map(mapItem), pagination };
-            } catch (e) {
-                console.error("[Samehadaku] Ongoing Error:", e);
-                return { data: [] };
-            }
-        });
+        // Samehadaku home = ongoing list
+        const homeData = await this.getHome();
+        return {
+            data: homeData,
+            pagination: {
+                currentPage: 1,
+                lastVisiblePage: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+                items: { count: homeData.length, total: homeData.length, per_page: homeData.length },
+            },
+        };
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Samehadaku doesn't have a dedicated completed endpoint — use search
-        return { data: [] };
+        // Not supported — return same as home
+        const homeData = await this.getHome();
+        return { data: homeData };
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
         return getCachedData(`samehadaku_detail_${slug}`, async () => {
             try {
                 const res = await fetch(`${BASE}${PREFIX}/anime/${slug}`, { headers: headers() });
-                if (!res.ok) throw new Error(`Detail fetch failed: ${res.status}`);
+                if (!res.ok) throw new Error(`Samehadaku detail fetch failed: ${res.status}`);
                 const response = await res.json();
-                const data = response.data;
+                const data = response.data || response;
 
-                const genres = (data.genreList || []).map((g: any) => g.title || g);
+                const genres = (data.genreList || []).map((g: any) =>
+                    typeof g === "string" ? g : g.title || g.name || g
+                );
+
                 const episodes: ProviderEpisode[] = (data.episodeList || [])
-                    .map((ep: any) => ({
-                        id: ep.episodeId || ep.slug || "",
-                        number: typeof ep.title === "number" ? ep.title : parseInt(ep.title) || 0,
+                    .map((ep: any, idx: number) => ({
+                        id: ep.episodeId || ep.slug || `ep-${idx}`,
+                        number: typeof ep.title === "number" ? ep.title : parseInt(ep.title) || idx + 1,
                         title: `Episode ${typeof ep.title === "number" ? ep.title : ep.title}`,
                         urlSlug: ep.episodeId || ep.slug || "",
                         date: ep.date,
@@ -147,12 +166,13 @@ export const samehadakuProvider: AnimeProvider = {
                     headers: headers(),
                 });
                 if (!res.ok) return { data: [] };
-                const data = await res.json();
+                const json = await res.json();
 
-                const rawList = data.data?.animeList || data.data || [];
+                // Try multiple possible response paths
+                const rawList = json?.data?.animeList || json?.data || json?.anime_list || [];
                 if (!Array.isArray(rawList)) return { data: [] };
 
-                return { data: rawList.map(mapItem), pagination: data.pagination };
+                return { data: rawList.map(mapDetailItem), pagination: json.pagination };
             } catch (e) {
                 console.error("[Samehadaku] Search Error:", e);
                 return { data: [] };
@@ -166,27 +186,24 @@ export const samehadakuProvider: AnimeProvider = {
                 const res = await fetch(`${BASE}${PREFIX}/episode/${episodeSlug}`, { headers: headers() });
                 if (!res.ok) return [];
                 const response = await res.json();
-                const data = response.data;
+                const data = response.data || response;
                 if (!data) return [];
 
                 const servers: ProviderStreamServer[] = [];
 
-                // Parse server/qualities structure
                 if (data.server?.qualities) {
                     data.server.qualities.forEach((qg: any) => {
                         const quality = qg.title || "default";
                         if (Array.isArray(qg.serverList)) {
                             qg.serverList.forEach((srv: any) => {
-                                let streamUrl = srv.href || srv.url || srv.serverId;
-                                if (streamUrl?.startsWith("/")) streamUrl = `${BASE}${streamUrl}`;
-                                else if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
-                                servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
+                                let streamUrl = srv.href || srv.url || "";
+                                if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
+                                if (streamUrl) servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
                             });
                         }
                     });
                 }
 
-                // Fallback: defaultStreamingUrl
                 if (servers.length === 0 && data.defaultStreamingUrl) {
                     servers.push({ name: "Default", quality: "auto", streamUrl: data.defaultStreamingUrl });
                 }
@@ -200,21 +217,7 @@ export const samehadakuProvider: AnimeProvider = {
     },
 
     async getMovies(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return getCachedData(`samehadaku_movies_${page}`, async () => {
-            try {
-                const res = await fetch(`${BASE}${PREFIX}/movies?page=${page}`, { headers: headers() });
-                if (!res.ok) return { data: [] };
-                const data = await res.json();
-
-                const rawList = data.data?.animeList || data.data || [];
-                if (!Array.isArray(rawList)) return { data: [] };
-
-                return { data: rawList.map(mapItem), pagination: data.pagination };
-            } catch (e) {
-                console.error("[Samehadaku] Movies Error:", e);
-                return { data: [] };
-            }
-        });
+        return { data: [] };
     },
 
     async getByGenre(genre: string, page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
@@ -224,12 +227,10 @@ export const samehadakuProvider: AnimeProvider = {
                     headers: headers(),
                 });
                 if (!res.ok) return { data: [] };
-                const data = await res.json();
-
-                const rawList = data.data?.animeList || data.data || [];
+                const json = await res.json();
+                const rawList = json?.data?.animeList || json?.data || [];
                 if (!Array.isArray(rawList)) return { data: [] };
-
-                return { data: rawList.map(mapItem), pagination: data.pagination };
+                return { data: rawList.map(mapDetailItem), pagination: json.pagination };
             } catch (e) {
                 console.error("[Samehadaku] Genre Error:", e);
                 return { data: [] };

@@ -12,21 +12,22 @@ const headers = () => ({
     Accept: "application/json",
 });
 
+// Anoboy home item fields: title, poster, slug, episode, type, url
 function mapItem(item: any): ProviderAnime {
-    const slug = item.slug || item.animeId || item.id || "";
+    const slug = item.slug || "";
     return {
         id: slug,
         slug,
         title: item.title || "",
-        poster: item.poster || item.image || item.thumb || "",
+        poster: item.poster || "",
         synopsis: "",
-        genres: item.genres || [],
+        genres: [],
         type: item.type || "TV",
-        status: item.status || "Ongoing",
+        status: "Ongoing",
         totalEpisodes: item.episode
             ? parseInt(String(item.episode).replace(/\D/g, ""))
             : undefined,
-        rating: item.score ? parseFloat(item.score) : undefined,
+        rating: undefined,
     };
 }
 
@@ -55,12 +56,15 @@ export const anoboyProvider: AnimeProvider = {
         return getCachedData("anoboy_home", async () => {
             try {
                 const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
-                if (!res.ok) return [];
-                const data = await res.json();
+                if (!res.ok) { console.error("[Anoboy] Home HTTP:", res.status); return []; }
+                const json = await res.json();
 
-                // Structure: { anime_list: [...] }
-                const rawList = data.anime_list || data.data || [];
-                if (!Array.isArray(rawList)) return [];
+                // Response: { anime_list: [...], pagination: {...} }
+                const rawList = json?.anime_list;
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    console.warn("[Anoboy] No anime in anime_list");
+                    return [];
+                }
 
                 return rawList.map(mapItem);
             } catch (e) {
@@ -71,13 +75,14 @@ export const anoboyProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Anoboy home serves as ongoing list
         const homeData = await this.getHome();
         return { data: homeData };
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return { data: [] };
+        // Not supported — return home data
+        const homeData = await this.getHome();
+        return { data: homeData };
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
@@ -112,7 +117,7 @@ export const anoboyProvider: AnimeProvider = {
                     type: data.type || "TV",
                     status: data.status || "Unknown",
                     totalEpisodes: episodes.length,
-                    rating: data.score ? parseFloat(data.score) : undefined,
+                    rating: data.score ? parseFloat(String(data.score)) : undefined,
                     episodes,
                 };
             } catch (e) {
@@ -129,9 +134,10 @@ export const anoboyProvider: AnimeProvider = {
                     headers: headers(),
                 });
                 if (!res.ok) return { data: [] };
-                const data = await res.json();
+                const json = await res.json();
 
-                const rawList = data.anime_list || data.data || [];
+                // Try multiple possible response paths
+                const rawList = json?.anime_list || json?.data || [];
                 if (!Array.isArray(rawList)) return { data: [] };
 
                 return { data: rawList.map(mapItem) };
@@ -158,10 +164,9 @@ export const anoboyProvider: AnimeProvider = {
                         const quality = qg.title || "default";
                         if (Array.isArray(qg.serverList)) {
                             qg.serverList.forEach((srv: any) => {
-                                let streamUrl = srv.href || srv.url || srv.serverId;
-                                if (streamUrl?.startsWith("/")) streamUrl = `${BASE}${streamUrl}`;
-                                else if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
-                                servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
+                                let streamUrl = srv.href || srv.url || "";
+                                if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
+                                if (streamUrl) servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
                             });
                         }
                     });
@@ -173,8 +178,7 @@ export const anoboyProvider: AnimeProvider = {
 
                 if (servers.length === 0 && (data.streaming_url || data.streamUrl || data.stream_link)) {
                     servers.push({
-                        name: "Default",
-                        quality: "auto",
+                        name: "Default", quality: "auto",
                         streamUrl: data.streaming_url || data.streamUrl || data.stream_link,
                     });
                 }

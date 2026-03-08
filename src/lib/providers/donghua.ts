@@ -12,22 +12,22 @@ const headers = () => ({
     Accept: "application/json",
 });
 
+// Donghua home item fields: title, poster, slug, type, status, current_episode, href, anichinUrl
 function mapItem(item: any): ProviderAnime {
-    // Donghua response has different field names
-    const slug = item.slug || item.animeId || item.id || "";
+    const slug = item.slug || "";
     return {
         id: slug,
         slug,
         title: item.title || "",
-        poster: item.poster || item.image || item.thumb || "",
+        poster: item.poster || "",
         synopsis: "",
-        genres: item.genres || [],
+        genres: [],
         type: item.type || "Donghua",
         status: item.status || "Ongoing",
         totalEpisodes: item.current_episode
-            ? parseInt(item.current_episode.replace(/\D/g, ""))
-            : item.episodes,
-        rating: item.score ? parseFloat(item.score) : undefined,
+            ? parseInt(String(item.current_episode).replace(/\D/g, ""))
+            : undefined,
+        rating: undefined,
     };
 }
 
@@ -42,7 +42,7 @@ export const donghuaProvider: AnimeProvider = {
         features: {
             home: true,
             ongoing: true,
-            completed: false,
+            completed: true,
             search: true,
             detail: true,
             streaming: true,
@@ -56,12 +56,18 @@ export const donghuaProvider: AnimeProvider = {
         return getCachedData("donghua_home", async () => {
             try {
                 const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
-                if (!res.ok) return [];
-                const data = await res.json();
+                if (!res.ok) { console.error("[Donghua] Home HTTP:", res.status); return []; }
+                const json = await res.json();
 
-                // Structure: { latest_release: [...] } or { data: [...] }
-                const rawList = data.latest_release || data.data || [];
-                if (!Array.isArray(rawList)) return [];
+                // Response: { latest_release: [...], completed_donghua: [...] }
+                const latestList = json?.latest_release || [];
+                const completedList = json?.completed_donghua || [];
+                const rawList = [...latestList, ...completedList];
+
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    console.warn("[Donghua] No anime in latest_release/completed_donghua");
+                    return [];
+                }
 
                 return rawList.map(mapItem);
             } catch (e) {
@@ -72,13 +78,39 @@ export const donghuaProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Donghua home serves as ongoing
-        const homeData = await this.getHome();
-        return { data: homeData };
+        return getCachedData("donghua_ongoing", async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
+                if (!res.ok) return { data: [] };
+                const json = await res.json();
+
+                const rawList = json?.latest_release || [];
+                if (!Array.isArray(rawList)) return { data: [] };
+
+                return { data: rawList.map(mapItem) };
+            } catch (e) {
+                console.error("[Donghua] Ongoing Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return { data: [] };
+        return getCachedData("donghua_completed", async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
+                if (!res.ok) return { data: [] };
+                const json = await res.json();
+
+                const rawList = json?.completed_donghua || [];
+                if (!Array.isArray(rawList)) return { data: [] };
+
+                return { data: rawList.map(mapItem) };
+            } catch (e) {
+                console.error("[Donghua] Completed Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
@@ -112,8 +144,8 @@ export const donghuaProvider: AnimeProvider = {
                     genres,
                     type: "Donghua",
                     status: data.status || "Ongoing",
-                    totalEpisodes: data.episodes?.length || episodes.length,
-                    rating: data.score ? parseFloat(data.score) : undefined,
+                    totalEpisodes: episodes.length,
+                    rating: data.score ? parseFloat(String(data.score)) : undefined,
                     releaseDate: data.aired || data.release,
                     studio: data.studios || data.studio,
                     episodes,
@@ -132,9 +164,10 @@ export const donghuaProvider: AnimeProvider = {
                     headers: headers(),
                 });
                 if (!res.ok) return { data: [] };
-                const data = await res.json();
+                const json = await res.json();
 
-                const rawList = data.data?.animeList || data.data || data.results || [];
+                // Try multiple possible paths
+                const rawList = json?.data?.animeList || json?.data || json?.results || json?.anime_list || [];
                 if (!Array.isArray(rawList)) return { data: [] };
 
                 return { data: rawList.map(mapItem) };
@@ -161,10 +194,9 @@ export const donghuaProvider: AnimeProvider = {
                         const quality = qg.title || "default";
                         if (Array.isArray(qg.serverList)) {
                             qg.serverList.forEach((srv: any) => {
-                                let streamUrl = srv.href || srv.url || srv.serverId;
-                                if (streamUrl?.startsWith("/")) streamUrl = `${BASE}${streamUrl}`;
-                                else if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
-                                servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
+                                let streamUrl = srv.href || srv.url || "";
+                                if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
+                                if (streamUrl) servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
                             });
                         }
                     });
@@ -174,7 +206,6 @@ export const donghuaProvider: AnimeProvider = {
                     servers.push({ name: "Default", quality: "auto", streamUrl: data.defaultStreamingUrl });
                 }
 
-                // Fallback: streaming_url
                 if (servers.length === 0 && (data.streaming_url || data.streamUrl)) {
                     servers.push({ name: "Default", quality: "auto", streamUrl: data.streaming_url || data.streamUrl });
                 }
@@ -194,10 +225,10 @@ export const donghuaProvider: AnimeProvider = {
                     headers: headers(),
                 });
                 if (!res.ok) return { data: [] };
-                const data = await res.json();
-                const rawList = data.data?.animeList || data.data || [];
+                const json = await res.json();
+                const rawList = json?.data?.animeList || json?.data || [];
                 if (!Array.isArray(rawList)) return { data: [] };
-                return { data: rawList.map(mapItem), pagination: data.pagination };
+                return { data: rawList.map(mapItem), pagination: json.pagination };
             } catch (e) {
                 console.error("[Donghua] Genre Error:", e);
                 return { data: [] };

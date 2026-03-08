@@ -12,19 +12,22 @@ const headers = () => ({
     Accept: "application/json",
 });
 
+// Oploverz home item fields: title, poster, slug, episode, status, type, oploverz_url
 function mapItem(item: any): ProviderAnime {
-    const slug = item.animeId || item.slug || item.id || "";
+    const slug = item.slug || "";
     return {
         id: slug,
         slug,
         title: item.title || "",
-        poster: item.poster || item.image || item.thumb || "",
+        poster: item.poster || "",
         synopsis: "",
-        genres: item.genres || [],
+        genres: [],
         type: item.type || "TV",
         status: item.status || "Ongoing",
-        totalEpisodes: item.episodes ? parseInt(String(item.episodes)) : undefined,
-        rating: item.score ? parseFloat(item.score) : undefined,
+        totalEpisodes: item.episode
+            ? parseInt(String(item.episode).replace(/\D/g, ""))
+            : undefined,
+        rating: undefined,
     };
 }
 
@@ -43,7 +46,7 @@ export const oploverzProvider: AnimeProvider = {
             search: false,
             detail: true,
             streaming: true,
-            schedule: true,
+            schedule: false,
             genres: false,
             movies: false,
         },
@@ -53,11 +56,15 @@ export const oploverzProvider: AnimeProvider = {
         return getCachedData("oploverz_home", async () => {
             try {
                 const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
-                if (!res.ok) return [];
-                const data = await res.json();
+                if (!res.ok) { console.error("[Oploverz] Home HTTP:", res.status); return []; }
+                const json = await res.json();
 
-                const rawList = data.data?.animeList || data.data?.recent || data.data || [];
-                if (!Array.isArray(rawList)) return [];
+                // Response: { anime_list: [...], pagination: {...} }
+                const rawList = json?.anime_list;
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    console.warn("[Oploverz] No anime in anime_list");
+                    return [];
+                }
 
                 return rawList.map(mapItem);
             } catch (e) {
@@ -68,25 +75,14 @@ export const oploverzProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return getCachedData(`oploverz_ongoing_${page}`, async () => {
-            try {
-                const res = await fetch(`${BASE}${PREFIX}/ongoing?page=${page}`, { headers: headers() });
-                if (!res.ok) return { data: [] };
-                const data = await res.json();
-
-                const rawList = data.data?.animeList || data.data || [];
-                if (!Array.isArray(rawList)) return { data: [] };
-
-                return { data: rawList.map(mapItem), pagination: data.pagination };
-            } catch (e) {
-                console.error("[Oploverz] Ongoing Error:", e);
-                return { data: [] };
-            }
-        });
+        const homeData = await this.getHome();
+        return { data: homeData };
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return { data: [] };
+        // Not supported — return home data
+        const homeData = await this.getHome();
+        return { data: homeData };
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
@@ -121,7 +117,7 @@ export const oploverzProvider: AnimeProvider = {
                     type: data.type || "TV",
                     status: data.status || "Unknown",
                     totalEpisodes: episodes.length,
-                    rating: data.score ? parseFloat(data.score) : undefined,
+                    rating: data.score ? parseFloat(String(data.score)) : undefined,
                     episodes,
                 };
             } catch (e) {
@@ -132,7 +128,7 @@ export const oploverzProvider: AnimeProvider = {
     },
 
     async search(query: string): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Oploverz doesn't have a dedicated search endpoint
+        // Not supported
         return { data: [] };
     },
 
@@ -152,10 +148,9 @@ export const oploverzProvider: AnimeProvider = {
                         const quality = qg.title || "default";
                         if (Array.isArray(qg.serverList)) {
                             qg.serverList.forEach((srv: any) => {
-                                let streamUrl = srv.href || srv.url || srv.serverId;
-                                if (streamUrl?.startsWith("/")) streamUrl = `${BASE}${streamUrl}`;
-                                else if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
-                                servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
+                                let streamUrl = srv.href || srv.url || "";
+                                if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
+                                if (streamUrl) servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
                             });
                         }
                     });
