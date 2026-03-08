@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "cdn.myanimelist.net",
-        pathname: "/images/**",
+        pathname: "/**",
       },
       {
         protocol: "https",
@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "otakudesu.best",
+        pathname: "/wp-content/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "otakudesu.blog",
         pathname: "/wp-content/uploads/**",
       },
       {
