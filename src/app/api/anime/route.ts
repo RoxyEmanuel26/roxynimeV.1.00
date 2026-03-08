@@ -22,8 +22,48 @@ export async function GET(request: NextRequest) {
         if (genre) {
             console.log(`[API] Fetching by genre: ${genre}, page: ${page}, source: ${source || "default"}`);
             const genreRes = await getAnimeByGenre(genre, page, source);
-            animeList = genreRes.data;
+            animeList = genreRes.data || [];
             pagination = genreRes.pagination;
+
+            // SMART FALLBACK: If a provider like Anoboy returns almost no results for a genre,
+            // we automatically fetch from all other providers to enrich the user experience.
+            if (animeList.length <= 2 && page === 1) {
+                console.log(`[API] Genre '${genre}' returned too few results on '${source}'. Triggering global fallback...`);
+                const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
+                const otherProviders = ALL_PROVIDERS.filter(p => p !== source);
+
+                const fallbackResults = await Promise.allSettled(
+                    otherProviders.map(async (provider) => {
+                        try {
+                            const { data } = await getAnimeByGenre(genre, page, provider);
+                            return data.map((a: any) => ({ ...a, _source: provider }));
+                        } catch {
+                            return [];
+                        }
+                    })
+                );
+
+                const seenTitles = new Set<string>();
+                animeList.forEach(a => seenTitles.add(a.title?.toLowerCase().trim() || ""));
+
+                fallbackResults.forEach((result) => {
+                    if (result.status === "fulfilled" && Array.isArray(result.value)) {
+                        result.value.forEach((anime: any) => {
+                            const key = anime.title?.toLowerCase().trim();
+                            if (key && !seenTitles.has(key)) {
+                                seenTitles.add(key);
+                                animeList.push(anime);
+                            }
+                        });
+                    }
+                });
+
+                // Shuffle fallback results slightly for variety, but keep original source items at top
+                const originalItems = animeList.filter((a: any) => !a._source);
+                let fallbackItems = animeList.filter((a: any) => a._source);
+                fallbackItems = fallbackItems.sort(() => 0.5 - Math.random());
+                animeList = [...originalItems, ...fallbackItems];
+            }
         } else {
             // Otherwise use type-based endpoints
             switch (type) {
