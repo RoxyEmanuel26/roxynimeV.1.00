@@ -27,16 +27,21 @@ export async function GET(request: NextRequest) {
 
             // SMART FALLBACK: If a provider like Anoboy returns almost no results for a genre,
             // we automatically fetch from all other providers to enrich the user experience.
-            if (animeList.length <= 2 && page === 1) {
-                console.log(`[API] Genre '${genre}' returned too few results on '${source}'. Triggering global fallback...`);
+            if (animeList.length <= 2) {
+                console.log(`[API] Genre '${genre}' returned too few results on '${source}'. Triggering global fallback for page ${page}...`);
                 const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
                 const otherProviders = ALL_PROVIDERS.filter(p => p !== source);
+
+                let fallbackHasNextPage = false;
 
                 const fallbackResults = await Promise.allSettled(
                     otherProviders.map(async (provider) => {
                         try {
-                            const { data } = await getAnimeByGenre(genre, page, provider);
-                            return data.map((a: any) => ({ ...a, _source: provider }));
+                            const res = await getAnimeByGenre(genre, page, provider);
+                            if (res.pagination?.hasNextPage || (res.pagination?.totalPages && res.pagination.totalPages > page)) {
+                                fallbackHasNextPage = true;
+                            }
+                            return res.data.map((a: any) => ({ ...a, _source: provider }));
                         } catch {
                             return [];
                         }
@@ -63,6 +68,18 @@ export async function GET(request: NextRequest) {
                 let fallbackItems = animeList.filter((a: any) => a._source);
                 fallbackItems = fallbackItems.sort(() => 0.5 - Math.random());
                 animeList = [...originalItems, ...fallbackItems];
+
+                // Ensure pagination allows for next page if any fallback provider has more pages
+                if (fallbackHasNextPage) {
+                    if (!pagination) {
+                        pagination = { currentPage: page, hasNextPage: true, hasPrevPage: page > 1, totalPages: page + 1 };
+                    } else {
+                        pagination.hasNextPage = true;
+                        if (!pagination.totalPages || pagination.totalPages <= page) {
+                            pagination.totalPages = page + 1;
+                        }
+                    }
+                }
             }
         } else {
             // Otherwise use type-based endpoints

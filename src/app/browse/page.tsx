@@ -180,20 +180,39 @@ function BrowseContent() {
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
+
+    // Immediately clear page from URL so it doesn't persist
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    if (query) params.set("search", query);
+    else params.delete("search");
+    router.replace(`/browse${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
   };
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
     setCurrentPage(1);
+
+    // Immediately clear page from URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    if (newFilters.type) params.set("type", newFilters.type);
+    if (newFilters.genre) params.set("genre", newFilters.genre);
+    else params.delete("genre");
+    router.replace(`/browse${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
   };
 
   const handleProviderChange = useCallback((providerId: string) => {
-    // Abort any in-flight request from the old provider
     if (abortRef.current) abortRef.current.abort();
-    setAnimes([]); // Clear stale data immediately
+    setAnimes([]);
     setSource(providerId);
     setCurrentPage(1);
-  }, []);
+
+    // Immediately clear page from URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    router.replace(`/browse${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
+  }, [router, searchParams]);
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
