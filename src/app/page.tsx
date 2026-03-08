@@ -1,19 +1,86 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Play, TrendingUp, Calendar, Film } from "lucide-react";
+import { Play, TrendingUp, Calendar, Film, Loader2 } from "lucide-react";
 import { AnimeCard } from "@/components/anime";
 import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
-import { getTrendingAnime } from "@/lib/animbus";
 
-export const revalidate = 3600; // Revalidate every hour
+interface Anime {
+  id?: string;
+  slug: string;
+  title: string;
+  image: string;
+  episode?: string;
+  rating?: string;
+  type?: string[];
+  description?: string;
+}
 
-export default async function HomePage() {
-  // Fetch data in parallel
-  const [ongoingData] = await Promise.all([
-    getTrendingAnime(),
-  ]);
+const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
 
-  const featured = ongoingData[0];
+export default function HomePage() {
+  const [animes, setAnimes] = useState<Anime[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch from ALL providers in parallel and merge results
+  const fetchAllProviders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        PROVIDERS.map(async (provider) => {
+          const res = await fetch(`/api/anime?type=ongoing&source=${provider}&page=1`);
+          if (!res.ok) return [];
+          const json = await res.json();
+          return (json.data || []).map((a: Anime) => ({
+            ...a,
+            // Tag with provider for deduplication
+            _provider: provider,
+          }));
+        })
+      );
+
+      // Merge all successful results
+      const allAnimes: Anime[] = [];
+      const seenTitles = new Set<string>();
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled" && Array.isArray(result.value)) {
+          result.value.forEach((anime: Anime) => {
+            // Deduplicate by title (case-insensitive)
+            const key = anime.title?.toLowerCase().trim();
+            if (key && !seenTitles.has(key)) {
+              seenTitles.add(key);
+              allAnimes.push(anime);
+            }
+          });
+        }
+      });
+
+      // Shuffle for variety
+      const shuffled = allAnimes.sort(() => Math.random() - 0.5);
+      setAnimes(shuffled);
+    } catch (e) {
+      console.error("[Home] Error fetching:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllProviders();
+  }, [fetchAllProviders]);
+
+  const featured = animes[0];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -28,6 +95,7 @@ export default async function HomePage() {
               className="object-cover"
               priority
               sizes="100vw"
+              unoptimized
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
@@ -48,14 +116,14 @@ export default async function HomePage() {
                 )}
                 <div className="flex gap-4">
                   <Link
-                    href={`/anime/${featured.id}`}
+                    href={`/anime/${featured.id || featured.slug}`}
                     className="btn-primary inline-flex items-center gap-2"
                   >
                     <Play className="h-5 w-5 fill-current" />
                     Watch Now
                   </Link>
                   <Link
-                    href={`/anime/${featured.id}`}
+                    href={`/anime/${featured.id || featured.slug}`}
                     className="btn-outline inline-flex items-center gap-2"
                   >
                     More Info
@@ -71,8 +139,8 @@ export default async function HomePage() {
       <BannerAd slot="home-hero" />
       <NativeAd slot="home-after-hero" />
 
-      {/* TRENDING NOW SECTION - STYLED LIKE "YOU MAY ALSO LIKE" */}
-      {ongoingData.length > 0 && (
+      {/* TRENDING NOW — From ALL Providers */}
+      {animes.length > 0 && (
         <section className="py-8 sm:py-12 md:py-16 bg-muted/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
             {/* Section Header */}
@@ -81,15 +149,15 @@ export default async function HomePage() {
                 🔥 Trending Now
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground">
-                Most popular anime this week
+                Anime populer dari semua sumber
               </p>
             </div>
 
-            {/* Responsive Grid - Maximum 12 cards */}
+            {/* Responsive Grid - Maximum 18 cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
-              {ongoingData.slice(0, 12).map((anime) => (
+              {animes.slice(0, 18).map((anime, index) => (
                 <AnimeCard
-                  key={anime.id || anime.slug || anime.title}
+                  key={anime.id || anime.slug || `home-${index}`}
                   id={anime.id || anime.slug || ""}
                   slug={anime.slug}
                   title={anime.title}

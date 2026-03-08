@@ -58,9 +58,13 @@ function BrowseContent() {
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("search") || ""
   );
-  const [source, setSource] = useState(
-    searchParams.get("source") || "otakudesu"
-  );
+  // Read provider from localStorage first, then URL param, then default
+  const [source, setSource] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("roxynime_provider") || searchParams.get("source") || "otakudesu";
+    }
+    return searchParams.get("source") || "otakudesu";
+  });
   const [filters, setFilters] = useState<FilterState>({
     type: searchParams.get("type") || "completed",
     genre: searchParams.get("genre") || "",
@@ -84,11 +88,11 @@ function BrowseContent() {
           searchQuery
         });
 
-        // If search query is present, use search endpoint
+        // If search query is present, search ALL providers
         if (searchQuery) {
           url = `/api/anime/search?q=${encodeURIComponent(
             searchQuery
-          )}&page=${pageNum}&source=${source}`;
+          )}&page=${pageNum}&source=all`;
         }
         // If genre filter is selected, use genre endpoint
         else if (filters.genre) {

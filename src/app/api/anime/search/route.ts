@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAnimes } from "@/lib/animbus";
 
+const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
+
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("q") || "";
@@ -15,6 +17,47 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        // If source is "all" or not specified, search ALL providers
+        if (!source || source === "all") {
+            const results = await Promise.allSettled(
+                ALL_PROVIDERS.map(async (provider) => {
+                    try {
+                        const { data } = await searchAnimes(query, provider);
+                        return data.map((a) => ({ ...a, _source: provider }));
+                    } catch {
+                        return [];
+                    }
+                })
+            );
+
+            // Merge and deduplicate
+            const allAnimes: any[] = [];
+            const seenTitles = new Set<string>();
+
+            results.forEach((result) => {
+                if (result.status === "fulfilled" && Array.isArray(result.value)) {
+                    result.value.forEach((anime: any) => {
+                        const key = anime.title?.toLowerCase().trim();
+                        if (key && !seenTitles.has(key)) {
+                            seenTitles.add(key);
+                            allAnimes.push(anime);
+                        }
+                    });
+                }
+            });
+
+            return NextResponse.json({
+                status: "success",
+                data: allAnimes,
+                total_item: allAnimes.length,
+                hasNext: false,
+                hasPrev: false,
+                current_page: 1,
+                totalPages: 1,
+            });
+        }
+
+        // Single provider search
         const { data: animes, pagination } = await searchAnimes(query, source);
 
         const totalPages = pagination?.totalPages || (pagination?.items?.total

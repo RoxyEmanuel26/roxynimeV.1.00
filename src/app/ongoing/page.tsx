@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
+import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2 } from "lucide-react";
 
@@ -53,6 +53,13 @@ function OngoingContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // Read provider from localStorage
+  const [source, setSource] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("roxynime_provider") || "otakudesu";
+    }
+    return "otakudesu";
+  });
   const [filters, setFilters] = useState<FilterState>({
     type: "ongoing",
     genre: "",
@@ -71,6 +78,7 @@ function OngoingContent() {
         const params = new URLSearchParams();
         params.append("page", page.toString());
         params.append("type", "ongoing");
+        params.append("source", source);
 
         if (searchQuery) params.append("search", searchQuery);
         if (filters.genre) params.append("genre", filters.genre);
@@ -99,7 +107,7 @@ function OngoingContent() {
         setLoadingMore(false);
       }
     },
-    [filters, searchQuery]
+    [filters, searchQuery, source]
   );
 
   useEffect(() => {
@@ -114,50 +122,63 @@ function OngoingContent() {
     setSearchQuery(query);
   };
 
+  const handleProviderChange = (providerId: string) => {
+    setSource(providerId);
+    setCurrentPage(1);
+    setAnimes([]);
+  };
+
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       fetchAnimes(currentPage + 1, true);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Ongoing Anime</h1>
-        <p className="text-muted-foreground">
-          Watch the latest ongoing anime series currently airing
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Ongoing Anime</h1>
+            <p className="text-muted-foreground">
+              Watch the latest ongoing anime series currently airing
+            </p>
+          </div>
+          <ProviderSelector onProviderChange={handleProviderChange} />
+        </div>
       </div>
 
       {/* Ad Layer 1 — Top */}
       <BannerAd slot="ongoing-top" />
       <NativeAd slot="ongoing-native1" />
 
-      <div className="flex gap-6 mt-8">
-        <div className="flex-1">
-          <SearchFilter
-            onSearch={handleSearch}
-            onFilterChange={handleFilterChange}
-          />
+      {/* Search and Filters */}
+      <SearchFilter
+        onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
+        className="mb-6"
+      />
 
-          <div className="mt-6">
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex-1">
+          {/* Results Info */}
+          {!loading && (
             <p className="text-sm text-muted-foreground mb-4">
               Showing ongoing anime • {animes.length} titles
             </p>
-            <AnimeGrid animes={animes} />
+          )}
 
-            {/* Ad Layer 2 — After Grid */}
-            <InFeedAd slot="ongoing-mid" />
-            <NativeAd slot="ongoing-native2" />
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[300px]">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <AnimeGrid animes={animes} />
+          )}
+
+          {/* Ad Layer 2 — After Grid */}
+          <InFeedAd slot="ongoing-mid" />
+          <NativeAd slot="ongoing-native2" />
 
           {hasMore && (
             <div className="mt-8 flex justify-center">
