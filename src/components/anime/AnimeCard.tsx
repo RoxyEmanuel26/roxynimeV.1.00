@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { Star, Play } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getBlurDataURL } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 interface AnimeCardProps {
@@ -15,6 +16,7 @@ interface AnimeCardProps {
     rating?: number | string;
     type?: string | string[];
     className?: string;
+    priority?: boolean;
 }
 
 export function AnimeCard({
@@ -26,11 +28,14 @@ export function AnimeCard({
     rating,
     type,
     className,
+    priority = false,
 }: AnimeCardProps) {
     // Extract anime ID from slug if needed, fallback to id
     const animeId = id || (slug?.match(/\/anime\/(\d+)/)?.[1]) || slug || "";
     const href = `/anime/${animeId}`;
-    const imageSrc = image || '/placeholder-anime.svg';
+
+    // State to handle broken images
+    const [imgSrc, setImgSrc] = useState(image || '/placeholder-anime.svg');
 
     // Convert rating to number if it's a string
     const ratingNum = typeof rating === 'string' ? parseFloat(rating) : rating;
@@ -46,19 +51,18 @@ export function AnimeCard({
             <Link href={href} className="block">
                 <div className="anime-card aspect-[3/4] relative">
                     {/* Poster Image */}
-                    {imageSrc ? (
-                        <Image
-                            src={imageSrc}
-                            alt={title}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <span className="text-muted-foreground text-xs">No Image</span>
-                        </div>
-                    )}
+                    <Image
+                        src={imgSrc}
+                        alt={title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
+                        priority={priority}
+                        loading={priority ? undefined : "lazy"}
+                        placeholder="blur"
+                        blurDataURL={getBlurDataURL(300, 420)}
+                        onError={() => setImgSrc('/placeholder-anime.svg')}
+                    />
 
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />

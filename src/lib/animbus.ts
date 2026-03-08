@@ -114,7 +114,18 @@ export async function getMoviesList(page = 1, source?: string): Promise<AnimeLis
             return t.includes("movie") || t.includes("film") || t === "unknown";
         });
 
-    return { data: filtered, pagination: response.pagination };
+    // FIXED: kalau fallback ke search, inject pagination manual
+    return {
+        data: filtered,
+        pagination: response.pagination || {
+            currentPage: page,
+            hasNextPage: false,
+            hasPrevPage: page > 1,
+            totalPages: page,
+            lastVisiblePage: page,
+            items: { count: response.data.length, total: response.data.length, per_page: 20 }
+        }
+    };
 }
 
 export async function getAnimeByGenre(genre: string, page = 1, source?: string): Promise<AnimeListResponse> {

@@ -93,6 +93,8 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+    minimumCacheTTL: 86400, // 24 hours
+    formats: ['image/avif', 'image/webp'],
   },
   experimental: {
     serverActions: {

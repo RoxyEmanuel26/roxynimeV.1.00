@@ -27,8 +27,21 @@ interface ApiResponse {
 function OngoingLoading() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div>
+            <div className="skeleton h-8 w-48 mb-2 rounded" />
+            <div className="skeleton h-4 w-64 rounded" />
+          </div>
+        </div>
+      </div>
+      <div className="skeleton h-[90px] w-full max-w-[728px] mx-auto mb-4 rounded" />
+      <div className="skeleton h-[90px] w-full max-w-[728px] mx-auto mb-8 rounded" />
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 min-w-0">
+          <AnimeGrid animes={[]} loading={true} />
+        </div>
       </div>
     </div>
   );
@@ -52,6 +65,7 @@ function OngoingContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [hasPrev, setHasPrev] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [source, setSource] = useState("otakudesu");
   const [filters, setFilters] = useState<FilterState>({
@@ -104,29 +118,38 @@ function OngoingContent() {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data: ApiResponse = await response.json();
+      const rawHasNext = data.hasNext ?? false;
       if (fetchId !== fetchIdRef.current) return;
 
+      // NORMALIZATION
       let list = (data.data || []).map((anime: any) => ({
         ...anime,
         id: anime.id || anime.slug || "",
-        type: ["Ongoing"],
+        type: anime.type,
         genres: anime.genres || [],
       }));
 
-      // When searching, filter to ongoing only
-      if (query) {
-        list = list.filter((anime: any) => {
-          const s = anime.status?.toLowerCase() || "";
-          return s.includes("ongoing") || s.includes("airing");
+      // In ongoing page, ONLY show items that are explicitly "Ongoing"
+      list = list.filter((anime: any) => {
+        return (anime.status || "").toLowerCase() === "ongoing";
+      });
+
+      // Client-side sort by rating if requested
+      if (f.order === "rating") {
+        list.sort((a: any, b: any) => {
+          const ra = parseFloat(a.rating || a.score || "0") || 0;
+          const rb = parseFloat(b.rating || b.score || "0") || 0;
+          return rb - ra;
         });
       }
 
-      const hasNext = (data.hasNext ?? false) && list.length > 0;
       const tp = Math.max(data.totalPages || 1, pageNum);
 
       setAnimes(list);
-      setHasMore(hasNext);
-      setTotalPages(hasNext && tp <= pageNum ? pageNum + 1 : tp);
+      // FIXED: pakai rawHasNext dari API, bukan dari filtered list
+      setHasMore(rawHasNext);
+      setHasPrev(data.hasPrev ?? pageNum > 1);
+      setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
       setCurrentPage(pageNum);
     } catch (err: any) {
       if (err?.name === "AbortError") return;
@@ -253,28 +276,37 @@ function OngoingContent() {
           <InFeedAd slot="ongoing-mid" />
           <NativeAd slot="ongoing-native2" />
 
+          {/* FIXED: Kalau hasil filter kosong tapi API masih punya → tampilkan info */}
           {!loading && !error && animes.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
               <p className="text-xl">😕</p>
-              <p className="text-muted-foreground">Tidak ada anime ongoing ditemukan.</p>
-              <p className="text-sm text-muted-foreground">Coba ganti provider atau ubah filter.</p>
+              <p className="text-muted-foreground">Tidak ada anime ongoing ditemukan di halaman ini.</p>
+              {hasMore ? (
+                <p className="text-sm text-muted-foreground">Tapi masih ada halaman berikutnya, silakan klik tombol Next.</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Coba ubah provider.</p>
+              )}
             </div>
           )}
 
-          {!loading && !error && animes.length > 0 && (
+          {/* ── Pagination ──────────────────────────────────────────────── */}
+          {!loading && !error && (animes.length > 0 || hasMore) && (
             <nav className="flex items-center justify-center gap-1 mt-8 flex-wrap" aria-label="Pagination">
               <button
                 onClick={() => goToPage(1)}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || !hasPrev} // FIXED: logic first page
                 className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Halaman pertama"
+                aria-label="Halaman pertama"
               >
                 <ChevronsLeft className="w-4 h-4" />
               </button>
+
               <button
                 onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || !hasPrev} // FIXED: logic prev page
                 className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                aria-label="Halaman sebelumnya"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span className="hidden sm:inline text-sm">Prev</span>
@@ -282,12 +314,16 @@ function OngoingContent() {
 
               {pages.map((p, i) =>
                 p === "..." ? (
-                  <span key={`e-${i}`} className="px-2 py-2 text-muted-foreground select-none">…</span>
+                  <span key={`ellipsis-${i}`} className="px-2 py-2 text-muted-foreground select-none" aria-hidden>
+                    …
+                  </span>
                 ) : (
                   <button
-                    key={`p-${p}`}
+                    key={`page-${p}`}
                     onClick={() => goToPage(p as number)}
                     disabled={currentPage === p}
+                    aria-label={`Halaman ${p}`}
+                    aria-current={currentPage === p ? "page" : undefined}
                     className={`min-w-[38px] px-3 py-2 rounded-md transition-colors text-sm font-medium
                       ${currentPage === p
                         ? "bg-primary text-primary-foreground cursor-default shadow-sm"
@@ -300,17 +336,20 @@ function OngoingContent() {
 
               <button
                 onClick={() => goToPage(currentPage + 1)}
-                disabled={!hasMore}
+                disabled={!hasMore} // FIXED: next disable rule
                 className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                aria-label="Halaman berikutnya"
               >
                 <span className="hidden sm:inline text-sm">Next</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
+
               <button
                 onClick={() => goToPage(effectiveTotalPages)}
-                disabled={currentPage === effectiveTotalPages || !hasMore}
+                disabled={!hasMore && currentPage >= effectiveTotalPages} // FIXED: disable logic last page
                 className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Halaman terakhir"
+                aria-label="Halaman terakhir"
               >
                 <ChevronsRight className="w-4 h-4" />
               </button>

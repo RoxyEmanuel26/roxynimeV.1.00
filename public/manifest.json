@@ -1,11 +1,11 @@
 {
   "name": "RoxyNime",
   "short_name": "RoxyNime",
-  "description": "Stream your favorite anime for free in HD quality",
+  "description": "Nonton Anime Sub Indo",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0c0a12",
-  "theme_color": "#7c3aed",
+  "background_color": "#0B1120",
+  "theme_color": "#0EA5E9",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -49,6 +49,9 @@
       "type": "image/png"
     }
   ],
-  "categories": ["entertainment", "video"],
+  "categories": [
+    "entertainment",
+    "video"
+  ],
   "lang": "en"
 }

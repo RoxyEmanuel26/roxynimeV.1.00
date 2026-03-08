@@ -1,8 +1,8 @@
 export { ErrorBoundary } from "./ErrorBoundary";
 export {
     Skeleton,
-    AnimeCardSkeleton,
-    AnimeGridSkeleton,
     AnimeDetailSkeleton,
     VideoPlayerSkeleton,
 } from "./Skeleton";
+export { AnimeCardSkeleton } from "./AnimeCardSkeleton";
+export { HeroSkeleton } from "./HeroSkeleton";

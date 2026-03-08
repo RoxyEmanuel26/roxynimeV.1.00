@@ -8,24 +8,7 @@ export function Skeleton({ className }: SkeletonProps) {
     return <div className={cn("skeleton", className)} />;
 }
 
-export function AnimeCardSkeleton() {
-    return (
-        <div className="space-y-2">
-            <Skeleton className="aspect-[3/4] rounded-xl" />
-            <Skeleton className="h-4 w-3/4 rounded" />
-        </div>
-    );
-}
 
-export function AnimeGridSkeleton({ count = 12 }: { count?: number }) {
-    return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {Array.from({ length: count }).map((_, i) => (
-                <AnimeCardSkeleton key={i} />
-            ))}
-        </div>
-    );
-}
 
 export function AnimeDetailSkeleton() {
     return (

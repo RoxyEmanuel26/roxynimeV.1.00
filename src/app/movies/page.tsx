@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw } from "lucide-react";
 
 interface Anime {
   id?: string;
@@ -19,22 +19,34 @@ interface ApiResponse {
   status: string;
   data: Anime[];
   hasNext: boolean;
+  hasPrev: boolean; // FIXED: Tambahkan hasPrev
   current_page: number;
-  totalPages?: number;
+  totalPages: number; // FIXED: hapus optional (?)
 }
 
-// Loading fallback component
 function MoviesLoading() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div>
+            <div className="skeleton h-8 w-48 mb-2 rounded" />
+            <div className="skeleton h-4 w-64 rounded" />
+          </div>
+        </div>
+      </div>
+      <div className="skeleton h-[90px] w-full max-w-[728px] mx-auto mb-4 rounded" />
+      <div className="skeleton h-[90px] w-full max-w-[728px] mx-auto mb-8 rounded" />
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 min-w-0">
+          <AnimeGrid animes={[]} loading={true} />
+        </div>
       </div>
     </div>
   );
 }
 
-// Main page wrapper with Suspense
 export default function MoviesPage() {
   return (
     <Suspense fallback={<MoviesLoading />}>
@@ -43,237 +55,173 @@ export default function MoviesPage() {
   );
 }
 
-// Actual content component
 function MoviesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get("page") || "1")
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
-  );
-
-  // Read provider from localStorage
-  const [source, setSource] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("roxynime_provider") || searchParams.get("source") || "otakudesu";
-    }
-    return searchParams.get("source") || "otakudesu";
-  });
-
+  const [hasMore, setHasMore] = useState(true);
+  const [hasPrev, setHasPrev] = useState(false); // FIXED: Tambahkan state hasPrev
+  const [searchQuery, setSearchQuery] = useState("");
+  const [source, setSource] = useState("otakudesu");
   const [filters, setFilters] = useState<FilterState>({
     type: "movie",
-    genre: searchParams.get("genre") || "",
+    genre: "",
     order: "updated",
   });
 
-  // Abort controller to cancel stale fetches
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
 
-  const fetchAnimes = useCallback(
-    async (page: number) => {
-      // Cancel any in-flight request
-      if (abortRef.current) {
-        abortRef.current.abort();
-      }
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const currentFetchId = ++fetchIdRef.current;
-
-      try {
-        setLoading(true);
-        setAnimes([]); // Clear immediately to avoid stale data
-        window.scrollTo({ top: 0, behavior: "smooth" });
-
-        let url = `/api/anime?type=movie&page=${page}&source=${source}`;
-
-        if (searchQuery) {
-          url = `/api/anime/search?q=${encodeURIComponent(
-            searchQuery
-          )}&page=${page}&source=all`;
-        } else if (filters.genre) {
-          url = `/api/anime?genre=${encodeURIComponent(
-            filters.genre
-          )}&page=${page}&source=${source}`;
-        }
-
-        const response = await fetch(url, { signal: controller.signal });
-
-        // If this fetch is no longer the latest, discard its result
-        if (currentFetchId !== fetchIdRef.current) return;
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.statusText}`);
-        }
-
-        const data: ApiResponse = await response.json();
-
-        // If searching, we need to filter to only include Movies
-        let results = Array.isArray(data.data) ? data.data : [];
-        if (searchQuery) {
-          results = results.filter((anime: any) => {
-            const t = (anime.type || "").toLowerCase();
-            return t.includes("movie") || t.includes("film");
-          });
-        }
-
-        // Process and add type badge
-        const processedAnimes = results.map((anime: any) => ({
-          ...anime,
-          type: ["Movie"],
-          genres: anime.genres || []
-        }));
-
-        setAnimes(processedAnimes);
-        setHasMore((data.hasNext ?? false) && processedAnimes.length > 0);
-        setTotalPages(data.totalPages || 1);
-      } catch (error: any) {
-        // Ignore abort errors (expected when switching providers)
-        if (error?.name === "AbortError") return;
-        console.error("Error fetching animes:", error);
-      } finally {
-        if (currentFetchId === fetchIdRef.current) {
-          setLoading(false);
-        }
-      }
-    },
-    [filters.genre, filters.order, searchQuery, source]
-  );
-
-  // Initial fetch and filter changes
-  useEffect(() => {
-    const pageFromUrl = parseInt(searchParams.get("page") || "1");
-    setCurrentPage(pageFromUrl);
-    fetchAnimes(pageFromUrl);
-
-    // Cleanup: abort on unmount or dependency change
-    return () => {
-      if (abortRef.current) abortRef.current.abort();
-    };
-  }, [fetchAnimes, searchParams]);
-
-  // Update URL params when page/filters change
-  useEffect(() => {
+  const buildUrl = (page: number, query: string, f: FilterState, src: string): string => {
     const params = new URLSearchParams();
-    if (searchQuery) params.set("search", searchQuery);
-    if (filters.genre) params.set("genre", filters.genre);
-    if (currentPage > 1) params.set("page", currentPage.toString());
-
-    const newUrl = `/movies${params.toString() ? `?${params.toString()}` : ""}`;
-    router.replace(newUrl, { scroll: false });
-  }, [currentPage, searchQuery, filters, router]);
-
-  const handleFilterChange = (newFilters: FilterState) => {
-    if (abortRef.current) abortRef.current.abort();
-    setAnimes([]);
-    setFilters({ ...newFilters, type: "movie" });
-    setCurrentPage(1);
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("page");
-    if (newFilters.genre) params.set("genre", newFilters.genre);
-    else params.delete("genre");
-    router.replace(`/movies${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
-  };
-
-  const handleSearch = (query: string) => {
-    if (abortRef.current) abortRef.current.abort();
-    setAnimes([]);
-    setSearchQuery(query);
-    setCurrentPage(1);
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("page");
     if (query) params.set("search", query);
-    else params.delete("search");
-    router.replace(`/movies${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
+    if (f.genre) params.set("genre", f.genre);
+    if (src && src !== "otakudesu") params.set("source", src);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    return "/movies" + (qs ? "?" + qs : "");
   };
+
+  const fetchAnime = useCallback(async (
+    pageNum: number,
+    query: string,
+    f: FilterState,
+    src: string
+  ) => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const fetchId = ++fetchIdRef.current;
+
+    setLoading(true);
+    setError(null);
+    setAnimes([]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    try {
+      let url: string;
+      if (query) {
+        url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=all`;
+      } else if (f.genre) {
+        url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${src}`;
+      } else {
+        url = `/api/anime?type=movie&page=${pageNum}&source=${src}`;
+      }
+
+      const response = await fetch(url, { signal: controller.signal });
+      if (fetchId !== fetchIdRef.current) return;
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data: ApiResponse = await response.json();
+      if (fetchId !== fetchIdRef.current) return;
+
+      // FIXED: Simpan hasNext SEBELUM filter
+      const rawHasNext = data.hasNext ?? false;
+
+      let list = (data.data || []).map((anime: any) => ({
+        ...anime,
+        id: anime.id || anime.slug || "",
+        type: ["Movie"],
+        genres: anime.genres || [],
+      }));
+
+      // When searching, filter to movie only
+      if (query) {
+        list = list.filter((anime: any) => {
+          const t = (anime.type || "").toLowerCase();
+          return t.includes("movie") || t.includes("film");
+        });
+      }
+
+      const tp = Math.max(data.totalPages || 1, pageNum);
+
+      setAnimes(list);
+      // FIXED: pakai rawHasNext dari API, bukan dari filtered list
+      setHasMore(rawHasNext);
+      // FIXED: Simpan hasPrev dari response
+      setHasPrev(data.hasPrev ?? pageNum > 1);
+      setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
+      setCurrentPage(pageNum);
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      console.error("[Movies] Fetch error:", err);
+      setError("Gagal memuat data anime. Silakan coba lagi.");
+    } finally {
+      if (fetchId === fetchIdRef.current) setLoading(false);
+    }
+  }, []);
+
+  // FIXED: HAPUS effect #2 yang konflik, sisakan effect mount ini saja
+  useEffect(() => {
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const query = searchParams.get("search") || "";
+    const genre = searchParams.get("genre") || "";
+    const src =
+      (typeof window !== "undefined" && localStorage.getItem("roxynime_provider")) ||
+      searchParams.get("source") ||
+      "otakudesu";
+    const f: FilterState = { type: "movie", genre, order: "updated" };
+
+    setSearchQuery(query);
+    setFilters(f);
+    setSource(src);
+    setCurrentPage(page);
+    fetchAnime(page, query, f, src);
+
+    return () => { if (abortRef.current) abortRef.current.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // FIXED: Buat goToPage langsung panggil fetchAnime
+  const goToPage = useCallback((page: number) => {
+    if (loading) return;
+    const p = Math.max(1, page);
+    router.replace(buildUrl(p, searchQuery, filters, source), { scroll: false });
+    fetchAnime(p, searchQuery, filters, source);
+  }, [loading, router, searchQuery, filters, source, fetchAnime]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    router.replace(buildUrl(1, query, filters, source), { scroll: false });
+    fetchAnime(1, query, filters, source);
+  }, [filters, source, router, fetchAnime]);
+
+  const handleFilterChange = useCallback((newFilters: FilterState) => {
+    const f = { ...newFilters, type: "movie" };
+    setFilters(f);
+    router.replace(buildUrl(1, searchQuery, f, source), { scroll: false });
+    fetchAnime(1, searchQuery, f, source);
+  }, [searchQuery, source, router, fetchAnime]);
 
   const handleProviderChange = useCallback((providerId: string) => {
-    if (abortRef.current) abortRef.current.abort();
-    setAnimes([]);
     setSource(providerId);
-    setCurrentPage(1);
+    router.replace(buildUrl(1, searchQuery, filters, providerId), { scroll: false });
+    fetchAnime(1, searchQuery, filters, providerId);
+  }, [searchQuery, filters, router, fetchAnime]);
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("page");
-    router.replace(`/movies${params.toString() ? `?${params.toString()}` : ""}`, { scroll: false });
-  }, [router, searchParams]);
+  const effectiveTotalPages =
+    hasMore && totalPages <= currentPage ? currentPage + 1 : Math.max(totalPages, 1);
 
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) goToPage(currentPage - 1);
-  };
-
-  const goToNextPage = () => {
-    if (hasMore) goToPage(currentPage + 1);
-  };
-
-  // Generate pagination numbers
-  const generatePaginationNumbers = () => {
-    const pages: (number | string)[] = [];
-
-    let effectiveTotalPages = totalPages;
-
-    // Provide a fallback if API misbehaves but we know there's more
-    if (effectiveTotalPages <= 1 && hasMore) {
-      effectiveTotalPages = currentPage + 1;
-    } else if (effectiveTotalPages <= 1) {
-      return [1];
-    }
-
-    const maxVisible = 5;
-
-    // If total pages is small, show all pages
-    if (effectiveTotalPages <= maxVisible + 2) {
+  const paginationNumbers = (): (number | "...")[] => {
+    if (effectiveTotalPages <= 7) {
       return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
     }
-
-    // Always show first page
-    pages.push(1);
-
-    // Calculate start and end of visible pages
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    let start = Math.max(2, currentPage - 1);
-    let end = Math.min(effectiveTotalPages - 1, currentPage + 1);
-
-    // Adjust if at the edges
-    if (currentPage < 3) {
-      end = 4;
-    }
-    if (currentPage > effectiveTotalPages - 2) {
-      start = effectiveTotalPages - 3;
-    }
-
-    for (let i = start; i <= end; i++) {
-      if (i > 1 && i < effectiveTotalPages) {
-        pages.push(i);
-      }
-    }
-
-    // Always show last page
-    if (currentPage < effectiveTotalPages - 2) {
-      pages.push("...");
-    }
+    const pages: (number | "...")[] = [1];
+    const left = Math.max(2, currentPage - 1);
+    const right = Math.min(effectiveTotalPages - 1, currentPage + 1);
+    if (left > 2) pages.push("...");
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < effectiveTotalPages - 1) pages.push("...");
     pages.push(effectiveTotalPages);
-
     return pages;
   };
 
-  const paginationNumbers = generatePaginationNumbers();
+  const pages = paginationNumbers();
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -289,11 +237,9 @@ function MoviesContent() {
         </div>
       </div>
 
-      {/* Ad Layer 1 — Top */}
       <BannerAd slot="movies-top" className="mb-4" />
       <NativeAd slot="movies-native1" />
 
-      {/* Search and Filters */}
       <SearchFilter
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
@@ -301,89 +247,116 @@ function MoviesContent() {
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
-        <div className="flex-1">
-          {/* Results Info */}
-          {!loading && (
+        <div className="flex-1 min-w-0">
+          {!loading && !error && (
             <p className="text-sm text-muted-foreground mb-4">
-              {searchQuery
-                ? `Showing results for "${searchQuery}"`
-                : `Showing anime movies`}
-              {animes.length > 0 && ` • Page ${currentPage} • ${animes.length} titles`}
+              {searchQuery ? `Hasil untuk "${searchQuery}"` : "Anime movies"}
+              {animes.length > 0 &&
+                ` • Halaman ${currentPage}${effectiveTotalPages > 1 ? ` dari ${effectiveTotalPages}` : ""} • ${animes.length} judul`}
             </p>
           )}
 
-          {/* Anime Grid */}
-          <AnimeGrid animes={animes} loading={loading} />
-
-          {/* Ad Layer 2 — After Grid */}
-          <InFeedAd slot="movies-mid" />
-          <NativeAd slot="movies-native2" />
-
-          {/* Pagination */}
-          {!loading && animes.length > 0 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
+          {error && (
+            <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+              <p className="text-destructive font-medium">{error}</p>
               <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-                className="btn-outline px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                onClick={() => fetchAnime(currentPage, searchQuery, filters, source)}
+                className="btn-primary inline-flex items-center gap-2"
               >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Previous</span>
-              </button>
-
-              <div className="flex items-center gap-1">
-                {paginationNumbers.map((pageNum, index) =>
-                  pageNum === "..." ? (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="px-3 py-2 text-muted-foreground"
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={pageNum}
-                      onClick={() => goToPage(pageNum as number)}
-                      className={`px-3 py-2 rounded-md transition-colors ${currentPage === pageNum
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "hover:bg-muted"
-                        }`}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                )}
-              </div>
-
-              <button
-                onClick={goToNextPage}
-                disabled={!hasMore}
-                className="btn-outline px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ChevronRight className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4" /> Coba Lagi
               </button>
             </div>
           )}
 
-          {/* No Results */}
-          {!loading && animes.length === 0 && (
-            <p className="text-center text-muted-foreground py-12">
-              No anime movies found. Try adjusting your filters or switching providers.
-            </p>
+          {!error && <AnimeGrid animes={animes} loading={loading} />}
+
+          <InFeedAd slot="movies-mid" />
+          <NativeAd slot="movies-native2" />
+
+          {/* FIXED: Kalau hasil filter kosong tapi API masih punya → tampilkan info */}
+          {!loading && !error && animes.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
+              <p className="text-xl">😕</p>
+              <p className="text-muted-foreground">Tidak ada anime movie ditemukan di halaman ini.</p>
+              {hasMore ? (
+                <p className="text-sm text-muted-foreground">Tapi masih ada halaman berikutnya, silakan klik tombol Next.</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Coba ubah filter atau ganti provider.</p>
+              )}
+            </div>
           )}
+
+          {!loading && !error && (animes.length > 0 || hasMore) && (
+            <nav className="flex items-center justify-center gap-1 mt-8 flex-wrap" aria-label="Pagination">
+              <button
+                onClick={() => goToPage(1)}
+                disabled={currentPage === 1 || !hasPrev} // FIXED: logic first page
+                className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Halaman pertama"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1 || !hasPrev} // FIXED: logic prev page
+                className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Prev</span>
+              </button>
+
+              {pages.map((p, i) =>
+                p === "..." ? (
+                  <span key={`e-${i}`} className="px-2 py-2 text-muted-foreground select-none">…</span>
+                ) : (
+                  <button
+                    key={`p-${p}`}
+                    onClick={() => goToPage(p as number)}
+                    disabled={currentPage === p}
+                    className={`min-w-[38px] px-3 py-2 rounded-md transition-colors text-sm font-medium
+                      ${currentPage === p
+                        ? "bg-primary text-primary-foreground cursor-default shadow-sm"
+                        : "hover:bg-muted"}`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={!hasMore} // FIXED: next disable rule
+                className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <span className="hidden sm:inline text-sm">Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => goToPage(effectiveTotalPages)}
+                disabled={!hasMore && currentPage >= effectiveTotalPages} // FIXED: last disable rule
+                className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Halaman terakhir"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </nav>
+          )}
+
+          <div className="mt-8 space-y-4">
+            <InFeedAd slot="movies-bottom" />
+            <BannerAd slot="movies-footer" />
+          </div>
         </div>
 
-        <aside className="w-80 hidden lg:block">
-          <div className="sticky top-24 space-y-8">
-            <SidebarAd />
-          </div>
+        <aside className="lg:w-[300px] space-y-6 shrink-0">
+          <SidebarAd className="hidden lg:flex" />
         </aside>
       </div>
 
-      {/* Ad Layer 3 — Bottom */}
-      <InFeedAd slot="movies-bottom" />
-      <BannerAd slot="movies-footer" />
+      <div className="lg:hidden mt-8 space-y-3">
+        <InFeedAd slot="movies-mobile-bottom" />
+        <BannerAd slot="movies-mobile-footer" />
+      </div>
     </div>
   );
 }

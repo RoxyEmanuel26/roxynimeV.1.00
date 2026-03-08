@@ -62,3 +62,27 @@ export function truncateText(text: string, maxLength: number): string {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength).trim() + "...";
 }
+
+// Generates a solid color or simple SVG placeholder
+export function getBlurDataURL(width = 300, height = 420): string {
+    const svg = `
+<svg width="${width}" height="${height}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <rect width="${width}" height="${height}" fill="#1e293b" />
+  <rect id="r" width="${width}" height="${height}" fill="url(#g)" />
+  <defs>
+    <linearGradient id="g">
+      <stop stop-color="#334155" offset="20%" />
+      <stop stop-color="#475569" offset="50%" />
+      <stop stop-color="#334155" offset="70%" />
+    </linearGradient>
+  </defs>
+</svg>`;
+
+    // Check if window is defined (client-side) or not (server-side)
+    const toBase64 = (str: string) =>
+        typeof window === 'undefined'
+            ? Buffer.from(str).toString('base64')
+            : window.btoa(str);
+
+    return `data:image/svg+xml;base64,${toBase64(svg)}`;
+}

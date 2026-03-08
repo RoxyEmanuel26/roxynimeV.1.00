@@ -1,83 +1,101 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Play, TrendingUp, Calendar, Film, Loader2 } from "lucide-react";
-import { AnimeCard } from "@/components/anime";
-import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
+import { Metadata } from "next";
+import { Play, TrendingUp, Calendar, Film } from "lucide-react";
+import { BannerAd, InFeedAd } from "@/components/ads";
+import { HeroSection } from "@/components/home/HeroSection";
+import { TrendingSection } from "@/components/home/TrendingSection";
+import type { Anime } from "@/components/home/HeroSection";
 
-interface Anime {
-  id?: string;
-  slug: string;
-  title: string;
-  image: string;
-  episode?: string;
-  rating?: string;
-  type?: string[];
-  description?: string;
-}
+export const metadata: Metadata = {
+  title: "RoxyNime - Nonton Anime Sub Indo Online",
+  description: "Nonton streaming dan download anime sub indo online secara gratis tanpa ribet. Tersedia ribuan judul anime terbaru dan terlengkap.",
+  openGraph: {
+    title: "RoxyNime - Nonton Anime Sub Indo Online",
+    description: "Nonton streaming dan download anime sub indo online secara gratis tanpa ribet. Tersedia ribuan judul anime terbaru dan terlengkap.",
+    type: "website",
+    locale: "id_ID",
+    siteName: "RoxyNime",
+  },
+};
 
 const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
 
-export default function HomePage() {
-  const [animes, setAnimes] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState(true);
+// Helper to get base url for internal API calls from Server Components
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'http://localhost:3000';
+};
 
-  // Fetch from ALL providers in parallel and merge results
-  const fetchAllProviders = useCallback(async () => {
-    setLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        PROVIDERS.map(async (provider) => {
-          const res = await fetch(`/api/anime?type=ongoing&source=${provider}&page=1`);
-          if (!res.ok) return [];
-          const json = await res.json();
-          return (json.data || []).map((a: Anime) => ({
-            ...a,
-            // Tag with provider for deduplication
-            _provider: provider,
-          }));
-        })
-      );
+// Deterministic shuffle using a seed (so it's constant for SEO bots for a day, but changes daily)
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
 
-      // Merge all successful results
-      const allAnimes: Anime[] = [];
-      const seenTitles = new Set<string>();
+export default async function HomePage() {
+  const baseUrl = getBaseUrl();
 
-      results.forEach((result) => {
-        if (result.status === "fulfilled" && Array.isArray(result.value)) {
-          result.value.forEach((anime: Anime) => {
-            // Deduplicate by title (case-insensitive)
-            const key = anime.title?.toLowerCase().trim();
-            if (key && !seenTitles.has(key)) {
-              seenTitles.add(key);
-              allAnimes.push(anime);
-            }
-          });
+  // Parallel fetch to internal API
+  const fetchPromises = PROVIDERS.map((provider) =>
+    fetch(`${baseUrl}/api/anime?type=ongoing&source=${provider}&page=1`, {
+      next: { revalidate: 3600 },
+    })
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((json) => json.data || [])
+      .catch((err) => {
+        console.error(`[Home] Error fetching provider ${provider}:`, err);
+        return [];
+      })
+  );
+
+  const results = await Promise.allSettled(fetchPromises);
+
+  const allAnimes: Anime[] = [];
+  const seenTitles = new Set<string>();
+
+  results.forEach((result) => {
+    if (result.status === "fulfilled" && Array.isArray(result.value)) {
+      result.value.forEach((anime: Anime) => {
+        // Deduplicate by title (case-insensitive)
+        const key = anime.title?.toLowerCase().trim();
+        if (key && !seenTitles.has(key)) {
+          seenTitles.add(key);
+          allAnimes.push(anime);
         }
       });
-
-      // Shuffle for variety
-      const shuffled = allAnimes.sort(() => Math.random() - 0.5);
-      setAnimes(shuffled);
-    } catch (e) {
-      console.error("[Home] Error fetching:", e);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  });
 
-  useEffect(() => {
-    fetchAllProviders();
-  }, [fetchAllProviders]);
+  // Shuffle intelligently based on today's date so the SSR UI is stable for the day
+  let seed = new Date().setHours(0, 0, 0, 0) / 100000;
+  let m = allAnimes.length, t, i;
+  while (m) {
+    i = Math.floor(seededRandom(seed++) * m--);
+    t = allAnimes[m];
+    allAnimes[m] = allAnimes[i];
+    allAnimes[i] = t;
+  }
 
-  const featured = animes[0];
+  const featured = allAnimes[0];
 
-  if (loading) {
+  if (allAnimes.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="max-w-md w-full space-y-6">
+          <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">📡</span>
+          </div>
+          <h2 className="text-3xl font-bold">Koneksi Terputus</h2>
+          <p className="text-muted-foreground text-lg">
+            Gagal menyambung ke server provider anime. Silakan coba beberapa saat lagi.
+          </p>
+          <div className="pt-6">
+            <a href="/" className="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform">
+              Coba Lagi
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
@@ -85,105 +103,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
-        <div className="absolute inset-0">
-          {featured && (
-            <Image
-              src={featured.image}
-              alt={featured.title}
-              fill
-              className="object-cover"
-              priority
-              sizes="100vw"
-              unoptimized
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        </div>
-
-        {/* Hero Content */}
-        <div className="relative h-full flex items-end">
-          <div className="container mx-auto px-4 max-w-7xl pb-12">
-            {featured && (
-              <div className="max-w-2xl">
-                <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4">
-                  {featured.title}
-                </h1>
-                {featured.description && (
-                  <p className="text-sm md:text-base text-muted-foreground mb-6 line-clamp-3">
-                    {featured.description}
-                  </p>
-                )}
-                <div className="flex gap-4">
-                  <Link
-                    href={`/anime/${featured.id || featured.slug}`}
-                    className="btn-primary inline-flex items-center gap-2"
-                  >
-                    <Play className="h-5 w-5 fill-current" />
-                    Watch Now
-                  </Link>
-                  <Link
-                    href={`/anime/${featured.id || featured.slug}`}
-                    className="btn-outline inline-flex items-center gap-2"
-                  >
-                    More Info
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <HeroSection featured={featured} />
 
       {/* Ad Layer 1 — After Hero */}
       <BannerAd slot="home-hero" />
-      <NativeAd slot="home-after-hero" />
 
       {/* TRENDING NOW — From ALL Providers */}
-      {animes.length > 0 && (
-        <section className="py-8 sm:py-12 md:py-16 bg-muted/30">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-            {/* Section Header */}
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-                🔥 Trending Now
-              </h2>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Anime populer dari semua sumber
-              </p>
-            </div>
-
-            {/* Responsive Grid - Maximum 18 cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
-              {animes.slice(0, 18).map((anime, index) => (
-                <AnimeCard
-                  key={anime.id || anime.slug || `home-${index}`}
-                  id={anime.id || anime.slug || ""}
-                  slug={anime.slug}
-                  title={anime.title}
-                  image={anime.image}
-                  episode={anime.episode}
-                  rating={anime.rating}
-                  type={anime.type}
-                />
-              ))}
-            </div>
-
-            {/* Ad Layer 2 — Inside Trending */}
-            <NativeAd slot="home-trending" className="mt-4" />
-
-            {/* View All Button */}
-            <div className="mt-6 sm:mt-8 flex justify-center">
-              <Link
-                href="/browse"
-                className="btn-outline px-6 sm:px-8 py-2 sm:py-3"
-              >
-                View All Anime
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
+      <TrendingSection animes={allAnimes} />
 
       {/* Ad Layer 3 — Between Sections */}
       <InFeedAd slot="home-mid" />

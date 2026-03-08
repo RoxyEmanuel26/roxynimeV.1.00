@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   creator: "RoxyNime",
   openGraph: {
     type: "website",
-    locale: "en_US",
-    url: "https://roxynime.com",
+    locale: "id_ID",
+    url: "https://roxy.my.id",
     siteName: "RoxyNime",
     title: "RoxyNime - Watch Anime Online Free",
     description:
@@ -50,6 +50,12 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  alternates: {
+    canonical: "https://roxy.my.id",
+  },
+  verification: {
+    google: "GANTI_DENGAN_VERIFICATION_CODE",
   },
   manifest: "/manifest.json",
 };
@@ -69,6 +75,23 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${outfit.variable} antialiased min-h-screen flex flex-col`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "RoxyNime",
+              "url": "https://roxy.my.id",
+              "description": "Nonton anime sub indo online gratis",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://roxy.my.id/browse?search={search_term}",
+                "query-input": "required name=search_term"
+              }
+            })
+          }}
+        />
         <Providers>
           <PopunderAd />
           <Header />

@@ -110,6 +110,7 @@ export function AnimeCarousel({
                             image={anime.image}
                             episode={anime.episode}
                             type={anime.type}
+                            priority={index < 4}
                         />
                     </div>
                 ))}

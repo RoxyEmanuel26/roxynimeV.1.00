@@ -27,8 +27,21 @@ interface ApiResponse {
 function BrowseLoading() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+          <div>
+            <div className="skeleton h-8 w-48 mb-2 rounded" />
+            <div className="skeleton h-4 w-64 rounded" />
+          </div>
+        </div>
+      </div>
+      <div className="skeleton h-[90px] w-full max-w-[728px] mx-auto mb-4 rounded" />
+      <div className="skeleton h-[90px] w-full max-w-[728px] mx-auto mb-8 rounded" />
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 min-w-0">
+          <AnimeGrid animes={[]} loading={true} />
+        </div>
       </div>
     </div>
   );
@@ -122,6 +135,9 @@ function BrowseContent() {
       const data: ApiResponse = await response.json();
       if (fetchId !== fetchIdRef.current) return;
 
+      // FIXED: Simpan hasNext SEBELUM filter
+      const rawHasNext = data.hasNext ?? false;
+
       // Normalise anime list
       let list = (data.data || []).map((anime: any) => ({
         ...anime,
@@ -142,13 +158,13 @@ function BrowseContent() {
         });
       }
 
-      const hasNext = (data.hasNext ?? false) && list.length > 0;
       const tp = Math.max(data.totalPages || 1, pageNum);
 
       setAnimes(list);
-      setHasMore(hasNext);
+      // FIXED: pakai rawHasNext dari API, bukan dari filtered list
+      setHasMore(rawHasNext);
       setHasPrev(data.hasPrev ?? pageNum > 1);
-      setTotalPages(hasNext && tp <= pageNum ? pageNum + 1 : tp);
+      setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
       setCurrentPage(pageNum);
     } catch (err: any) {
       if (err?.name === "AbortError") return;
@@ -316,19 +332,21 @@ function BrowseContent() {
           <InFeedAd slot="browse-after-grid" />
           <NativeAd slot="browse-inside" />
 
-          {/* No results */}
+          {/* FIXED: Kalau hasil filter kosong tapi API masih punya → tampilkan info */}
           {!loading && !error && animes.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
               <p className="text-xl">😕</p>
-              <p className="text-muted-foreground">Tidak ada anime ditemukan.</p>
-              <p className="text-sm text-muted-foreground">
-                Coba ubah filter atau ganti provider.
-              </p>
+              <p className="text-muted-foreground">Tidak ada anime ditemukan di halaman ini.</p>
+              {hasMore ? (
+                <p className="text-sm text-muted-foreground">Tapi masih ada halaman berikutnya, silakan klik tombol Next.</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Coba ubah filter atau ganti provider.</p>
+              )}
             </div>
           )}
 
           {/* ── Pagination ──────────────────────────────────────────────── */}
-          {!loading && !error && animes.length > 0 && (
+          {!loading && !error && (animes.length > 0 || hasMore) && (
             <nav
               className="flex items-center justify-center gap-1 mt-8 flex-wrap"
               aria-label="Pagination"
@@ -336,7 +354,7 @@ function BrowseContent() {
               {/* First page */}
               <button
                 onClick={() => goToPage(1)}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || !hasPrev} // FIXED: perbaiki disable logic (first)
                 className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Halaman pertama"
                 aria-label="Halaman pertama"
@@ -347,7 +365,7 @@ function BrowseContent() {
               {/* Previous */}
               <button
                 onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || !hasPrev} // FIXED: perbaiki disable logic (prev)
                 className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 aria-label="Halaman sebelumnya"
               >
@@ -386,7 +404,7 @@ function BrowseContent() {
               {/* Next */}
               <button
                 onClick={() => goToPage(currentPage + 1)}
-                disabled={!hasMore}
+                disabled={!hasMore} // FIXED: next disable rule
                 className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 aria-label="Halaman berikutnya"
               >
@@ -397,7 +415,7 @@ function BrowseContent() {
               {/* Last page */}
               <button
                 onClick={() => goToPage(effectiveTotalPages)}
-                disabled={currentPage === effectiveTotalPages || !hasMore}
+                disabled={!hasMore && currentPage >= effectiveTotalPages} // FIXED: disable logic last page
                 className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Halaman terakhir"
                 aria-label="Halaman terakhir"

@@ -17,6 +17,8 @@ interface AnimeGridProps {
     loading?: boolean;
 }
 
+import { AnimeCardSkeleton } from "@/components/common";
+
 export function AnimeGrid({ animes, className, loading }: AnimeGridProps) {
     if (loading) {
         return (
@@ -26,11 +28,8 @@ export function AnimeGrid({ animes, className, loading }: AnimeGridProps) {
                     className
                 )}
             >
-                {Array.from({ length: 12 }).map((_, i) => (
-                    <div key={`skeleton-${i}`} className="space-y-2">
-                        <div className="skeleton aspect-[3/4] rounded-xl" />
-                        <div className="skeleton h-4 w-3/4 rounded" />
-                    </div>
+                {Array.from({ length: 20 }).map((_, i) => (
+                    <AnimeCardSkeleton key={`skeleton-${i}`} />
                 ))}
             </div>
         );
@@ -61,6 +60,7 @@ export function AnimeGrid({ animes, className, loading }: AnimeGridProps) {
                     episode={anime.episode}
                     type={anime.type}
                     rating={anime.rating}
+                    priority={index < 6}
                 />
             ))}
         </div>

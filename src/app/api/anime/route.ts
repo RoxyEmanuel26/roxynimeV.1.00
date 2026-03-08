@@ -108,23 +108,36 @@ export async function GET(request: NextRequest) {
             animeList = [];
         }
 
-        const totalPages = pagination?.totalPages || (pagination?.items?.total
-            ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20))
-            : (pagination?.lastVisiblePage || 1));
+        // Hitung totalPages secara aman
+        const perPage = pagination?.items?.per_page || 20;
+        const rawTotal = pagination?.totalPages
+            || (pagination?.items?.total
+                ? Math.ceil(pagination.items.total / perPage)
+                : null)
+            || pagination?.lastVisiblePage
+            || null;
 
-        const hasNext = pagination?.hasNextPage !== undefined
-            ? pagination.hasNextPage
-            : (totalPages > page && animeList.length > 0);
+        // hasNext: percayai provider, atau fallback dari data length
+        const rawHasNext = pagination?.hasNextPage
+            ?? (rawTotal ? rawTotal > page : animeList.length >= perPage);
 
-        // Convert to match frontend response format
+        // Normalisasi: pastikan UI tidak pernah "buntu"
+        const safeHasNext = rawHasNext && animeList.length > 0;
+        const safeTotalPages = Math.max(
+            rawTotal || 1,
+            page,
+            safeHasNext ? page + 1 : 1
+        );
+
+        // FIXED: pastikan normalisasi pagination backend
         const data = {
             status: "success",
             data: animeList,
             total_item: pagination?.items?.total || animeList.length,
-            hasNext: hasNext,
+            hasNext: safeHasNext,
             hasPrev: pagination?.hasPrevPage ?? (page > 1),
             current_page: pagination?.currentPage || page,
-            totalPages: totalPages,
+            totalPages: safeTotalPages,
         };
 
         return NextResponse.json(data);
