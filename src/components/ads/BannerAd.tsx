@@ -1,72 +1,63 @@
 "use client";
 
-import { useEffect, useRef, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { pickAdForSlot, generateAdSrcDoc } from "@/config/ads.config";
 
 interface BannerAdProps {
     className?: string;
+    slot?: string;
 }
 
-export function BannerAd({ className }: BannerAdProps) {
-    const [adConfig, setAdConfig] = useState<{ key: string; height: number; width: number } | null>(null);
+/**
+ * BannerAd — Responsive multi-network banner.
+ * Picks a random ad from enabled networks (Adsterra/ExoClick/PropellerAds/HilltopAds).
+ * Desktop: 728x90 | Tablet: 468x60 | Mobile: 320x50
+ */
+export function BannerAd({ className, slot = "default" }: BannerAdProps) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
 
-    useEffect(() => {
-        // Adsterra Keys Configuration (728x90)
-        const adKeys = [
-            "1d4f1463e95b8d3fb84adadeb3a2f170", // Key 1
-            "c89ece9ff04cd88930d8cf0f5e62f70f"  // Key 2
-        ];
-
-        // Randomly select one key on mount
-        const selectedKey = adKeys[Math.floor(Math.random() * adKeys.length)];
-
-        setAdConfig({
-            key: selectedKey,
-            height: 90,
-            width: 728
-        });
-    }, []);
-
-    if (!adConfig) return null;
-
-    const srcDoc = `
-        <html>
-            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;background-color:transparent;">
-                <script type="text/javascript">
-                    atOptions = {
-                        'key' : '${adConfig.key}',
-                        'format' : 'iframe',
-                        'height' : ${adConfig.height},
-                        'width' : ${adConfig.width},
-                        'params' : {}
-                    };
-                </script>
-                <script type="text/javascript" src="https://www.highperformanceformat.com/${adConfig.key}/invoke.js"></script>
-            </body>
-        </html>
-    `;
+    const ad = pickAdForSlot("banner", slot);
+    if (!ad) return null;
 
     return (
-        <div className={cn("w-full max-w-[728px] mx-auto my-2 overflow-hidden", className)}>
-            {/* Desktop Banner 728x90 */}
-            <div className="hidden lg:flex justify-center items-center h-[90px] w-[728px] mx-auto">
+        <div className={cn("w-full flex justify-center my-3", className)}>
+            {/* Desktop 728x90 */}
+            <div className="hidden lg:flex justify-center">
                 <iframe
-                    title="Advertisement"
-                    srcDoc={srcDoc}
+                    title={`ad-banner-desktop-${slot}`}
+                    srcDoc={generateAdSrcDoc(ad, 728, 90)}
                     width={728}
                     height={90}
-                    style={{ border: 'none', overflow: 'hidden' }}
+                    style={{ border: "none", overflow: "hidden" }}
                     scrolling="no"
                 />
             </div>
 
-            {/* Mobile Banner - Placeholder/Fallback */}
-            {/* Note: Adsterra 728x90 keys usually don't scale to mobile. 
-                Ideally we should use a distinct mobile key (320x50) here if available.
-                For now we keep the placeholder.
-            */}
-            <div className="lg:hidden flex justify-center items-center min-h-[50px] bg-gray-800/30 rounded-lg">
-                <span className="text-xs text-gray-400">Advertisement</span>
+            {/* Tablet 468x60 */}
+            <div className="hidden sm:flex lg:hidden justify-center">
+                <iframe
+                    title={`ad-banner-tablet-${slot}`}
+                    srcDoc={generateAdSrcDoc(ad, 468, 60)}
+                    width={468}
+                    height={60}
+                    style={{ border: "none", overflow: "hidden" }}
+                    scrolling="no"
+                />
+            </div>
+
+            {/* Mobile 320x50 */}
+            <div className="flex sm:hidden justify-center">
+                <iframe
+                    title={`ad-banner-mobile-${slot}`}
+                    srcDoc={generateAdSrcDoc(ad, 320, 50)}
+                    width={320}
+                    height={50}
+                    style={{ border: "none", overflow: "hidden" }}
+                    scrolling="no"
+                />
             </div>
         </div>
     );

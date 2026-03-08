@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
-import { BannerAd, SidebarAd } from "@/components/ads";
+import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2 } from "lucide-react";
 
 interface Anime {
@@ -184,7 +184,9 @@ function MoviesContent() {
         </p>
       </div>
 
-      <BannerAd className="mb-8" />
+      {/* Ad Layer 1 — Top */}
+      <BannerAd slot="movies-top" className="mb-4" />
+      <NativeAd slot="movies-native1" />
 
       <SearchFilter
         onSearch={handleSearch}
@@ -205,8 +207,9 @@ function MoviesContent() {
 
           <AnimeGrid animes={animes} />
 
-          {/* Pagination (Simplified since API pagination is broken for search) */}
-          {/* We keep the structural layout of Browse but maybe hide pagination if only 1 page */}
+          {/* Ad Layer 2 — After Grid */}
+          <InFeedAd slot="movies-mid" />
+          <NativeAd slot="movies-native2" />
         </div>
 
         <aside className="w-80 hidden lg:block">
@@ -215,6 +218,10 @@ function MoviesContent() {
           </div>
         </aside>
       </div>
+
+      {/* Ad Layer 3 — Bottom */}
+      <InFeedAd slot="movies-bottom" />
+      <BannerAd slot="movies-footer" />
     </div>
   );
 }

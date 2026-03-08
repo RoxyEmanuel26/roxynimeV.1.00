@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
-import { BannerAd, SidebarAd } from "@/components/ads";
+import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2 } from "lucide-react";
 
 interface Anime {
@@ -137,7 +137,9 @@ function OngoingContent() {
         </p>
       </div>
 
-      <BannerAd />
+      {/* Ad Layer 1 — Top */}
+      <BannerAd slot="ongoing-top" />
+      <NativeAd slot="ongoing-native1" />
 
       <div className="flex gap-6 mt-8">
         <div className="flex-1">
@@ -151,6 +153,10 @@ function OngoingContent() {
               Showing ongoing anime • {animes.length} titles
             </p>
             <AnimeGrid animes={animes} />
+
+            {/* Ad Layer 2 — After Grid */}
+            <InFeedAd slot="ongoing-mid" />
+            <NativeAd slot="ongoing-native2" />
           </div>
 
           {hasMore && (
@@ -174,11 +180,15 @@ function OngoingContent() {
         </div>
 
         <aside className="w-80 hidden lg:block">
-          <div className="sticky top-20">
+          <div className="sticky top-20 space-y-4">
             <SidebarAd />
           </div>
         </aside>
       </div>
+
+      {/* Ad Layer 3 — Bottom */}
+      <InFeedAd slot="ongoing-bottom" />
+      <BannerAd slot="ongoing-footer" />
     </div>
   );
 }

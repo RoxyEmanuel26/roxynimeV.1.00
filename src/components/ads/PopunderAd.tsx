@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getPopunderScripts } from "@/config/ads.config";
 
 /**
- * PopunderAd
- * Injects the ad network script that handles frequency capping and popunder logic.
+ * PopunderAd — Injects popunder scripts from all enabled networks.
  */
 export function PopunderAd() {
     const isLoaded = useRef(false);
@@ -12,19 +12,21 @@ export function PopunderAd() {
     useEffect(() => {
         if (isLoaded.current) return;
 
+        const scripts = getPopunderScripts();
+        if (scripts.length === 0) return;
+
         try {
-            const script = document.createElement("script");
-            // Script from user: https://pl28650799.effectivegatecpm.com/a2/92/18/a29218ac83917d59f19c700bc4e955f0.js
-            script.src = "//pl28650799.effectivegatecpm.com/a2/92/18/a29218ac83917d59f19c700bc4e955f0.js";
-            script.async = true;
-            document.body.appendChild(script);
+            scripts.forEach((scriptUrl) => {
+                const script = document.createElement("script");
+                script.src = scriptUrl;
+                script.async = true;
+                document.body.appendChild(script);
+            });
 
             isLoaded.current = true;
-
-            // Debug
-            console.log("Popunder script injected");
+            console.log(`[Ads] ${scripts.length} popunder script(s) injected`);
         } catch (error) {
-            console.error("Error loading popunder:", error);
+            console.error("[Ads] Error loading popunder:", error);
         }
     }, []);
 

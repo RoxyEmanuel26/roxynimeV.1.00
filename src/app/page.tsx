@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Play, TrendingUp, Calendar, Film } from "lucide-react";
 import { AnimeCard } from "@/components/anime";
-import { BannerAd, SidebarAd } from "@/components/ads";
+import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { getTrendingAnime } from "@/lib/animbus";
 
 export const revalidate = 3600; // Revalidate every hour
@@ -67,10 +67,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Banner Ad - After Hero */}
-      <div className="container mx-auto px-4 max-w-7xl py-4">
-        <BannerAd />
-      </div>
+      {/* Ad Layer 1 — After Hero */}
+      <BannerAd slot="home-hero" />
+      <NativeAd slot="home-after-hero" />
 
       {/* TRENDING NOW SECTION - STYLED LIKE "YOU MAY ALSO LIKE" */}
       {ongoingData.length > 0 && (
@@ -102,6 +101,9 @@ export default async function HomePage() {
               ))}
             </div>
 
+            {/* Ad Layer 2 — Inside Trending */}
+            <NativeAd slot="home-trending" className="mt-4" />
+
             {/* View All Button */}
             <div className="mt-6 sm:mt-8 flex justify-center">
               <Link
@@ -115,10 +117,9 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Banner Ad - Between Sections */}
-      <div className="container mx-auto px-4 max-w-7xl py-4">
-        <BannerAd />
-      </div>
+      {/* Ad Layer 3 — Between Sections */}
+      <InFeedAd slot="home-mid" />
+      <BannerAd slot="home-mid-banner" />
 
       {/* Quick Links Section */}
       <section className="py-8 sm:py-12 bg-background">
@@ -161,10 +162,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Banner Ad - Page Bottom */}
-      <div className="container mx-auto px-4 max-w-7xl py-6">
-        <BannerAd />
-      </div>
+      {/* Ad Layer 4 — Page Bottom */}
+      <InFeedAd slot="home-bottom" />
+      <BannerAd slot="home-footer" />
     </div>
   );
 }

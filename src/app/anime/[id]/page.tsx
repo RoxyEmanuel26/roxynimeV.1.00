@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Play, Calendar, Star, Tag, Users } from "lucide-react";
 import { AnimeCard } from "@/components/anime/AnimeCard";
-import { SidebarAd, BannerAd } from "@/components/ads";
+import { SidebarAd, BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { getAnimeInfo, getTrendingAnime } from "@/lib/animbus";
 
 export const revalidate = 3600; // Revalidate every hour
@@ -147,8 +147,9 @@ export default async function AnimeDetailPage({
                             </Link>
                         )}
 
-                        {/* Banner Ad - Before Episodes */}
-                        <BannerAd className="my-4" />
+                        {/* Ad Layer 1 — Before Episodes */}
+                        <NativeAd slot="detail-pre-ep" className="my-2" />
+                        <BannerAd slot="detail-banner1" className="my-4" />
 
                         {/* Episodes List */}
                         {episodes.length > 0 && (
@@ -169,6 +170,9 @@ export default async function AnimeDetailPage({
                                 </div>
                             </div>
                         )}
+
+                        {/* Ad Layer 2 — After Episodes */}
+                        <InFeedAd slot="detail-after-ep" />
                     </div>
 
                     {/* Right: Sidebar */}
@@ -218,7 +222,11 @@ export default async function AnimeDetailPage({
                 </div>
             </div>
 
-            {/* YOU MAY ALSO LIKE SECTION - FIXED: PROPER CARD SIZING */}
+            {/* Ad Layer 3 — Before Related */}
+            <BannerAd slot="detail-mid" />
+            <NativeAd slot="detail-native2" />
+
+            {/* YOU MAY ALSO LIKE SECTION */}
             <section className="py-8 sm:py-12 md:py-16 bg-muted/30 mt-8 sm:mt-12">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                     {/* Section Header */}
@@ -259,10 +267,9 @@ export default async function AnimeDetailPage({
                 </div>
             </section>
 
-            {/* Mobile Bottom Ad */}
-            <div className="lg:hidden p-4">
-                <SidebarAd className="w-full h-[100px]" />
-            </div>
+            {/* Ad Layer 4 — Bottom */}
+            <InFeedAd slot="detail-bottom" />
+            <BannerAd slot="detail-footer" />
         </div>
     );
 }

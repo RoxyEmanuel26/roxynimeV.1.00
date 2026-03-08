@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { VideoPlayer } from "@/components/player";
 import { EpisodeList } from "@/components/anime";
-import { BannerAd, InterstitialAd } from "@/components/ads";
+import { BannerAd, InterstitialAd, InFeedAd, NativeAd } from "@/components/ads";
 import { VideoPlayerSkeleton } from "@/components/common";
 import { cn } from "@/lib/utils";
 
@@ -329,6 +329,10 @@ export default function WatchPage() {
                 </div>
             </div>
 
+            {/* Ad Layer 1 — After Controls */}
+            <NativeAd slot="watch-controls" />
+            <BannerAd slot="watch-banner1" />
+
             {/* Episode List Panel */}
             {showEpisodeList && (
                 <div className="bg-card border-t border-border">
@@ -350,6 +354,9 @@ export default function WatchPage() {
                             />
                         </div>
                     </div>
+
+                    {/* Ad Layer 2 — Inside Episode List */}
+                    <NativeAd slot="watch-eplist" />
                 </div>
             )}
 
@@ -371,10 +378,14 @@ export default function WatchPage() {
                 </button>
             </div>
 
-            {/* Content Below Player */}
+            {/* Ad Layer 3 — Below Player */}
             <div className="bg-background">
-                <div className="container mx-auto px-4 py-8">
-                    <BannerAd />
+                <div className="container mx-auto px-4 py-8 space-y-4">
+                    <BannerAd slot="watch-bottom1" />
+                    <InFeedAd slot="watch-mid" />
+                    <BannerAd slot="watch-bottom2" />
+                    <NativeAd slot="watch-native" />
+                    <InFeedAd slot="watch-bottom3" />
                 </div>
             </div>
         </div>

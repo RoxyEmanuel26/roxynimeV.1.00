@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
-import { BannerAd, SidebarAd } from "@/components/ads";
+import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Anime {
@@ -312,8 +312,9 @@ function BrowseContent() {
         </div>
       </div>
 
-      {/* Top Banner Ad */}
-      <BannerAd className="mb-8" />
+      {/* Ad Layer 1 — Top banner */}
+      <BannerAd slot="browse-top" className="mb-4" />
+      <NativeAd slot="browse-after-top" />
 
       {/* Search and Filters */}
       <SearchFilter
@@ -337,6 +338,10 @@ function BrowseContent() {
 
           {/* Anime Grid */}
           <AnimeGrid animes={animes} loading={loading} />
+
+          {/* Ad Layer 2 — After grid */}
+          <InFeedAd slot="browse-after-grid" />
+          <NativeAd slot="browse-inside" />
 
           {/* Pagination */}
           {!loading && animes.length > 0 && (
@@ -388,14 +393,11 @@ function BrowseContent() {
             </div>
           )}
 
-          {/* Banner Ad - After Pagination */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <BannerAd />
-            <BannerAd />
-            <BannerAd />
-            <BannerAd />
-            <BannerAd />
-            <BannerAd />
+          {/* Ad Layer 3 — After Pagination */}
+          <div className="mt-8 space-y-4">
+            <BannerAd slot="browse-post-page-1" />
+            <InFeedAd slot="browse-post-page-2" />
+            <BannerAd slot="browse-post-page-3" />
           </div>
 
           {/* No Results */}
@@ -412,9 +414,10 @@ function BrowseContent() {
         </aside>
       </div>
 
-      {/* Mobile Bottom Ad */}
-      <div className="lg:hidden mt-8">
-        <BannerAd />
+      {/* Ad Layer 4 — Mobile Bottom */}
+      <div className="lg:hidden mt-8 space-y-3">
+        <InFeedAd slot="browse-mobile-bottom" />
+        <BannerAd slot="browse-mobile-footer" />
       </div>
 
     </div>
