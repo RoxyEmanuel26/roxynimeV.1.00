@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Anime {
   id?: string;
@@ -20,6 +20,7 @@ interface ApiResponse {
   data: Anime[];
   hasNext: boolean;
   current_page: number;
+  totalPages?: number;
 }
 
 // Loading fallback
@@ -49,20 +50,26 @@ function OngoingContent() {
 
   const [animes, setAnimes] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(searchParams.get("page") || "1")
+  );
+  const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || ""
+  );
+
   // Read provider from localStorage
   const [source, setSource] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("roxynime_provider") || "otakudesu";
+      return localStorage.getItem("roxynime_provider") || searchParams.get("source") || "otakudesu";
     }
-    return "otakudesu";
+    return searchParams.get("source") || "otakudesu";
   });
+
   const [filters, setFilters] = useState<FilterState>({
     type: "ongoing",
-    genre: "",
+    genre: searchParams.get("genre") || "",
     order: "updated",
   });
 
@@ -71,33 +78,35 @@ function OngoingContent() {
   const fetchIdRef = useRef(0);
 
   const fetchAnimes = useCallback(
-    async (page: number = 1, shouldAppend = false) => {
+    async (page: number) => {
       // Cancel any in-flight request
-      if (abortRef.current) abortRef.current.abort();
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
       const controller = new AbortController();
       abortRef.current = controller;
       const currentFetchId = ++fetchIdRef.current;
 
-      if (shouldAppend) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-        setAnimes([]); // Clear stale data immediately
-      }
-
       try {
-        const params = new URLSearchParams();
-        params.append("page", page.toString());
-        params.append("type", "ongoing");
-        params.append("source", source);
+        setLoading(true);
+        setAnimes([]); // Clear immediately to avoid stale data
+        window.scrollTo({ top: 0, behavior: "smooth" });
 
-        if (searchQuery) params.append("search", searchQuery);
-        if (filters.genre) params.append("genre", filters.genre);
-        if (filters.order) params.append("order", filters.order);
+        let url = `/api/anime?type=ongoing&page=${page}&source=${source}`;
 
-        const response = await fetch(`/api/anime?${params.toString()}`, { signal: controller.signal });
+        if (searchQuery) {
+          url = `/api/anime/search?q=${encodeURIComponent(
+            searchQuery
+          )}&page=${page}&source=all`;
+        } else if (filters.genre) {
+          url = `/api/anime?genre=${encodeURIComponent(
+            filters.genre
+          )}&page=${page}&source=${source}`;
+        }
 
-        // If this fetch is stale, discard
+        const response = await fetch(url, { signal: controller.signal });
+
+        // If this fetch is no longer the latest, discard its result
         if (currentFetchId !== fetchIdRef.current) return;
 
         if (!response.ok) {
@@ -106,54 +115,134 @@ function OngoingContent() {
 
         const data: ApiResponse = await response.json();
 
-        if (shouldAppend) {
-          setAnimes((prev) => [...prev, ...data.data.map((anime) => ({ ...anime, type: ["Ongoing"] }))]);
-        } else {
-          setAnimes(data.data.map((anime) => ({ ...anime, type: ["Ongoing"] })));
+        // If searching, we need to filter to only include Ongoing
+        let results = Array.isArray(data.data) ? data.data : [];
+        if (searchQuery) {
+          results = results.filter((anime: any) =>
+            anime.status?.toLowerCase() === "ongoing" ||
+            anime.status?.toLowerCase() === "currently airing"
+          );
         }
 
-        setHasMore(data.hasNext ?? false);
-        setCurrentPage(page);
+        const processedAnimes = results.map((anime: any) => ({
+          ...anime,
+          type: ["Ongoing"]
+        }));
+
+        setAnimes(processedAnimes);
+        setHasMore((data.hasNext ?? false) && processedAnimes.length > 0);
+        setTotalPages(data.totalPages || 1);
       } catch (error: any) {
+        // Ignore abort errors (expected when switching providers)
         if (error?.name === "AbortError") return;
         console.error("Error fetching animes:", error);
       } finally {
         if (currentFetchId === fetchIdRef.current) {
           setLoading(false);
-          setLoadingMore(false);
         }
       }
     },
-    [filters, searchQuery, source]
+    [filters.genre, filters.order, searchQuery, source]
   );
 
+  // Initial fetch and filter changes
   useEffect(() => {
-    fetchAnimes(1);
+    const pageFromUrl = parseInt(searchParams.get("page") || "1");
+    setCurrentPage(pageFromUrl);
+    fetchAnimes(pageFromUrl);
+
+    // Cleanup: abort on unmount or dependency change
     return () => {
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [fetchAnimes]);
+  }, [fetchAnimes, searchParams]);
+
+  // Update URL params when page/filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("search", searchQuery);
+    if (filters.genre) params.set("genre", filters.genre);
+    if (currentPage > 1) params.set("page", currentPage.toString());
+
+    const newUrl = `/ongoing${params.toString() ? `?${params.toString()}` : ""}`;
+    router.replace(newUrl, { scroll: false });
+  }, [currentPage, searchQuery, filters, router]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters({ ...newFilters, type: "ongoing" });
+    setCurrentPage(1);
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    setCurrentPage(1);
   };
 
-  const handleProviderChange = (providerId: string) => {
+  const handleProviderChange = useCallback((providerId: string) => {
+    // Abort any in-flight request from the old provider
     if (abortRef.current) abortRef.current.abort();
     setAnimes([]); // Clear stale data immediately
     setSource(providerId);
     setCurrentPage(1);
+  }, []);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
   };
 
-  const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
-      fetchAnimes(currentPage + 1, true);
-    }
+  const goToPreviousPage = () => {
+    if (currentPage > 1) goToPage(currentPage - 1);
   };
+
+  const goToNextPage = () => {
+    if (hasMore) goToPage(currentPage + 1);
+  };
+
+  // Generate pagination numbers
+  const generatePaginationNumbers = () => {
+    const pages: (number | string)[] = [];
+
+    // Special handling for genre filter - API doesn't give total pages accurately
+    if (filters.genre) {
+      pages.push(1);
+      if (currentPage > 3) pages.push("...");
+      const maxPageToShow = hasMore ? currentPage + 2 : currentPage;
+      for (let i = Math.max(2, currentPage - 1); i <= maxPageToShow; i++) {
+        if (i > 1) pages.push(i);
+      }
+      if (hasMore) pages.push("...");
+      return pages;
+    }
+
+    // Normal pagination
+    let effectiveTotalPages = totalPages;
+    if (effectiveTotalPages <= 1) return [1];
+
+    const maxVisible = 5;
+    if (effectiveTotalPages <= maxVisible + 2) {
+      return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
+    }
+
+    pages.push(1);
+    if (currentPage > 3) pages.push("...");
+
+    let start = Math.max(2, currentPage - 1);
+    let end = Math.min(effectiveTotalPages - 1, currentPage + 1);
+
+    if (currentPage < 3) end = 4;
+    if (currentPage > effectiveTotalPages - 2) start = effectiveTotalPages - 3;
+
+    for (let i = start; i <= end; i++) {
+      if (i > 1 && i < effectiveTotalPages) pages.push(i);
+    }
+
+    if (currentPage < effectiveTotalPages - 2) pages.push("...");
+    pages.push(effectiveTotalPages);
+
+    return pages;
+  };
+
+  const paginationNumbers = generatePaginationNumbers();
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -185,39 +274,72 @@ function OngoingContent() {
           {/* Results Info */}
           {!loading && (
             <p className="text-sm text-muted-foreground mb-4">
-              Showing ongoing anime • {animes.length} titles
+              {searchQuery
+                ? `Showing results for "${searchQuery}"`
+                : `Showing ongoing anime`}
+              {animes.length > 0 && ` • Page ${currentPage} • ${animes.length} titles`}
             </p>
           )}
 
-          {loading ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <AnimeGrid animes={animes} />
-          )}
+          {/* Anime Grid */}
+          <AnimeGrid animes={animes} loading={loading} />
 
           {/* Ad Layer 2 — After Grid */}
           <InFeedAd slot="ongoing-mid" />
           <NativeAd slot="ongoing-native2" />
 
-          {hasMore && (
-            <div className="mt-8 flex justify-center">
+          {/* Pagination */}
+          {!loading && animes.length > 0 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
               <button
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className="btn-outline px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
-                {loadingMore ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading more...
-                  </>
-                ) : (
-                  "Load More"
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {paginationNumbers.map((pageNum, index) =>
+                  pageNum === "..." ? (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="px-3 py-2 text-muted-foreground"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum as number)}
+                      className={`px-3 py-2 rounded-md transition-colors ${currentPage === pageNum
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "hover:bg-muted"
+                        }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
                 )}
+              </div>
+
+              <button
+                onClick={goToNextPage}
+                disabled={!hasMore}
+                className="btn-outline px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          )}
+
+          {/* No Results */}
+          {!loading && animes.length === 0 && (
+            <p className="text-center text-muted-foreground py-12">
+              No ongoing anime found. Try adjusting your filters or switching providers.
+            </p>
           )}
         </div>
 
