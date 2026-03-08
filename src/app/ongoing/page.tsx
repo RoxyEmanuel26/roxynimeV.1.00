@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
@@ -66,12 +66,23 @@ function OngoingContent() {
     order: "updated",
   });
 
+  // Abort controller to cancel stale fetches
+  const abortRef = useRef<AbortController | null>(null);
+  const fetchIdRef = useRef(0);
+
   const fetchAnimes = useCallback(
     async (page: number = 1, shouldAppend = false) => {
+      // Cancel any in-flight request
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const currentFetchId = ++fetchIdRef.current;
+
       if (shouldAppend) {
         setLoadingMore(true);
       } else {
         setLoading(true);
+        setAnimes([]); // Clear stale data immediately
       }
 
       try {
@@ -84,7 +95,10 @@ function OngoingContent() {
         if (filters.genre) params.append("genre", filters.genre);
         if (filters.order) params.append("order", filters.order);
 
-        const response = await fetch(`/api/anime?${params.toString()}`);
+        const response = await fetch(`/api/anime?${params.toString()}`, { signal: controller.signal });
+
+        // If this fetch is stale, discard
+        if (currentFetchId !== fetchIdRef.current) return;
 
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.statusText}`);
@@ -100,11 +114,14 @@ function OngoingContent() {
 
         setHasMore(data.hasNext ?? false);
         setCurrentPage(page);
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.name === "AbortError") return;
         console.error("Error fetching animes:", error);
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (currentFetchId === fetchIdRef.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [filters, searchQuery, source]
@@ -112,6 +129,9 @@ function OngoingContent() {
 
   useEffect(() => {
     fetchAnimes(1);
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
   }, [fetchAnimes]);
 
   const handleFilterChange = (newFilters: FilterState) => {
@@ -123,9 +143,10 @@ function OngoingContent() {
   };
 
   const handleProviderChange = (providerId: string) => {
+    if (abortRef.current) abortRef.current.abort();
+    setAnimes([]); // Clear stale data immediately
     setSource(providerId);
     setCurrentPage(1);
-    setAnimes([]);
   };
 
   const handleLoadMore = () => {

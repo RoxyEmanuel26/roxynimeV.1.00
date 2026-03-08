@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
@@ -71,22 +71,28 @@ function BrowseContent() {
     order: "updated",
   });
 
+  // Abort controller ref to cancel in-flight fetches on provider switch
+  const abortRef = useRef<AbortController | null>(null);
+  // Track current fetch ID to ignore stale responses
+  const fetchIdRef = useRef(0);
+
   const fetchAnime = useCallback(
     async (pageNum: number) => {
+      // Cancel any in-flight request
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const currentFetchId = ++fetchIdRef.current;
+
       try {
         setLoading(true);
+        setAnimes([]); // Clear immediately to avoid stale data
         window.scrollTo({ top: 0, behavior: "smooth" });
 
         const type = filters.type || "completed";
         let url = `/api/anime?type=${type}&page=${pageNum}&source=${source}`;
-
-        // Debug: Log current filter state
-        console.log("[Browse] Filter State:", {
-          type: filters.type,
-          genre: filters.genre,
-          order: filters.order,
-          searchQuery
-        });
 
         // If search query is present, search ALL providers
         if (searchQuery) {
@@ -101,61 +107,43 @@ function BrowseContent() {
           )}&page=${pageNum}&source=${source}`;
         }
 
-        console.log("[Browse] Fetching URL:", url);
+        console.log("[Browse] Fetching:", url);
 
-        const response = await fetch(url);
+        const response = await fetch(url, { signal: controller.signal });
+
+        // If this fetch is no longer the latest, discard its result
+        if (currentFetchId !== fetchIdRef.current) return;
+
         const data: ApiResponse = await response.json();
-
-        console.log("[Browse] API Response:", {
-          status: data.status,
-          count: data.data?.length,
-          hasNext: data.hasNext,
-          totalPages: data.totalPages
-        });
 
         // Process anime to match UI requirements
         let processedAnimes = data.data.map((anime: any) => ({
           ...anime,
           id: anime.id || anime.slug || "",
-          // If viewing completed or anime is completed, override type to show "Completed" badge
           type: (type === 'completed' || anime.status === 'Completed') ? ['Completed'] : anime.type,
-          // Ensure genres array exists for filtering
           genres: anime.genres || []
         }));
 
-        // Note: Genre filter is now handled by using genre as search query above
-        // No additional client-side filtering needed since API doesn't return genre data
-
         // Client-side Sorting
-        if (filters.order) {
-          switch (filters.order) {
-            case "rating":
-              // Sort by rating descending (highest first)
-              processedAnimes.sort((a: any, b: any) => {
-                const ratingA = parseFloat(a.rating || a.score || "0") || 0;
-                const ratingB = parseFloat(b.rating || b.score || "0") || 0;
-                return ratingB - ratingA;
-              });
-              break;
-            case "popular":
-              // Sort by popularity (we can use rating as proxy, or just leave as-is since API might already sort by popular)
-              // For now, stable sort (no change)
-              break;
-            case "updated":
-            default:
-              // Assume API already returns "updated" order, no changes needed
-              break;
-          }
+        if (filters.order === "rating") {
+          processedAnimes.sort((a: any, b: any) => {
+            const ratingA = parseFloat(a.rating || a.score || "0") || 0;
+            const ratingB = parseFloat(b.rating || b.score || "0") || 0;
+            return ratingB - ratingA;
+          });
         }
 
         setAnimes(processedAnimes);
-        // Only hasMore if API says so AND we actually got results
         setHasMore((data.hasNext ?? false) && processedAnimes.length > 0);
         setTotalPages(data.totalPages || 1);
-      } catch (error) {
+      } catch (error: any) {
+        // Ignore abort errors (expected when switching providers)
+        if (error?.name === "AbortError") return;
         console.error("Error fetching anime:", error);
       } finally {
-        setLoading(false);
+        if (currentFetchId === fetchIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [filters.type, filters.genre, filters.order, searchQuery, source]
@@ -166,6 +154,11 @@ function BrowseContent() {
     const pageFromUrl = parseInt(searchParams.get("page") || "1");
     setCurrentPage(pageFromUrl);
     fetchAnime(pageFromUrl);
+
+    // Cleanup: abort on unmount or dependency change
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
   }, [fetchAnime, searchParams]);
 
   // Update URL params when page/filters change
@@ -195,6 +188,9 @@ function BrowseContent() {
   };
 
   const handleProviderChange = useCallback((providerId: string) => {
+    // Abort any in-flight request from the old provider
+    if (abortRef.current) abortRef.current.abort();
+    setAnimes([]); // Clear stale data immediately
     setSource(providerId);
     setCurrentPage(1);
   }, []);
