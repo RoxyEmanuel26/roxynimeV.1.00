@@ -64,12 +64,16 @@ export async function GET(request: NextRequest) {
             ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20))
             : (pagination?.lastVisiblePage || 1));
 
+        const hasNext = pagination?.hasNextPage !== undefined
+            ? pagination.hasNextPage
+            : (totalPages > page && animes.length > 0);
+
         const data = {
             status: "success",
             data: animes,
             total_item: pagination?.items?.total || animes.length,
-            hasNext: pagination?.hasNextPage ?? false,
-            hasPrev: pagination?.hasPrevPage ?? false,
+            hasNext: hasNext,
+            hasPrev: pagination?.hasPrevPage ?? (page > 1),
             current_page: pagination?.currentPage || page,
             totalPages: totalPages,
         };

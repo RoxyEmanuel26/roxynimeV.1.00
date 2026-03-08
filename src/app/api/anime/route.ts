@@ -112,13 +112,17 @@ export async function GET(request: NextRequest) {
             ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20))
             : (pagination?.lastVisiblePage || 1));
 
+        const hasNext = pagination?.hasNextPage !== undefined
+            ? pagination.hasNextPage
+            : (totalPages > page && animeList.length > 0);
+
         // Convert to match frontend response format
         const data = {
             status: "success",
             data: animeList,
             total_item: pagination?.items?.total || animeList.length,
-            hasNext: pagination?.hasNextPage ?? false,
-            hasPrev: pagination?.hasPrevPage ?? false,
+            hasNext: hasNext,
+            hasPrev: pagination?.hasPrevPage ?? (page > 1),
             current_page: pagination?.currentPage || page,
             totalPages: totalPages,
         };
