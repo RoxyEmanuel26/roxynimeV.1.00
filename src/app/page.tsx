@@ -18,14 +18,9 @@ export const metadata: Metadata = {
   },
 };
 
-const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
+import { getOngoingAnimeList } from "@/lib/animbus";
 
-// Helper to get base url for internal API calls from Server Components
-const getBaseUrl = () => {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'http://localhost:3000';
-};
+const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
 
 // Deterministic shuffle using a seed (so it's constant for SEO bots for a day, but changes daily)
 function seededRandom(seed: number) {
@@ -34,15 +29,10 @@ function seededRandom(seed: number) {
 }
 
 export default async function HomePage() {
-  const baseUrl = getBaseUrl();
-
-  // Parallel fetch to internal API
+  // FIXED: Server component uses direct data layer call to avoid HTTP connection drops
   const fetchPromises = PROVIDERS.map((provider) =>
-    fetch(`${baseUrl}/api/anime?type=ongoing&source=${provider}&page=1`, {
-      next: { revalidate: 3600 },
-    })
-      .then((res) => (res.ok ? res.json() : { data: [] }))
-      .then((json) => json.data || [])
+    getOngoingAnimeList(1, provider)
+      .then((res) => res.data || [])
       .catch((err) => {
         console.error(`[Home] Error fetching provider ${provider}:`, err);
         return [];
@@ -56,12 +46,12 @@ export default async function HomePage() {
 
   results.forEach((result) => {
     if (result.status === "fulfilled" && Array.isArray(result.value)) {
-      result.value.forEach((anime: Anime) => {
+      result.value.forEach((anime: any) => {
         // Deduplicate by title (case-insensitive)
         const key = anime.title?.toLowerCase().trim();
         if (key && !seenTitles.has(key)) {
           seenTitles.add(key);
-          allAnimes.push(anime);
+          allAnimes.push(anime as Anime);
         }
       });
     }

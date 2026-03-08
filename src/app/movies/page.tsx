@@ -81,7 +81,8 @@ function MoviesContent() {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (f.genre) params.set("genre", f.genre);
-    if (src && src !== "otakudesu") params.set("source", src);
+    // FIXED: Always write source to URL
+    if (src) params.set("source", src);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return "/movies" + (qs ? "?" + qs : "");
@@ -161,10 +162,12 @@ function MoviesContent() {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const query = searchParams.get("search") || "";
     const genre = searchParams.get("genre") || "";
-    const src =
-      (typeof window !== "undefined" && localStorage.getItem("roxynime_provider")) ||
-      searchParams.get("source") ||
-      "otakudesu";
+    // FIXED: URL params have absolute priority over cached storage
+    const srcFromUrl = searchParams.get("source");
+    const srcFromStorage = typeof window !== "undefined"
+      ? localStorage.getItem("roxynime_provider")
+      : null;
+    const src = srcFromUrl || srcFromStorage || "otakudesu";
     const f: FilterState = { type: "movie", genre, order: "updated" };
 
     setSearchQuery(query);
@@ -198,8 +201,12 @@ function MoviesContent() {
     fetchAnime(1, searchQuery, f, source);
   }, [searchQuery, source, router, fetchAnime]);
 
+  // FIXED: Sync selection directly to localStorage immediately
   const handleProviderChange = useCallback((providerId: string) => {
     setSource(providerId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("roxynime_provider", providerId);
+    }
     router.replace(buildUrl(1, searchQuery, filters, providerId), { scroll: false });
     fetchAnime(1, searchQuery, filters, providerId);
   }, [searchQuery, filters, router, fetchAnime]);

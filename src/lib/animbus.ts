@@ -174,6 +174,58 @@ export async function getEpisodeStreams(episodeId: string, source?: string): Pro
 export async function searchAnimes(query: string, source?: string): Promise<AnimeListResponse> {
     const provider = getProvider(source);
     const response = await provider.search(query);
+
+    // BUG D FIX: Search Jikan (MyAnimeList) Pagination Fallback
+    const hasResults = response && response.data && response.data.length > 0;
+    const isOtakudesu = !source || source.toLowerCase() === "otakudesu";
+
+    if (!hasResults && isOtakudesu) {
+        console.log(`[animbus] Searching Jikan API fallback for: ${query}`);
+        try {
+            // Kita fetch 10 hasil dari Jikan
+            const jikanRes = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=10`);
+            if (jikanRes.ok) {
+                const jikanData = await jikanRes.json();
+                const jikanItems = jikanData.data || [];
+
+                if (jikanItems.length > 0) {
+                    const finalData = jikanItems.map((item: any) => ({
+                        id: item.mal_id.toString(),
+                        slug: item.mal_id.toString(),
+                        title: item.title,
+                        image: item.images?.webp?.image_url || item.images?.jpg?.image_url,
+                        poster: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+                        rating: item.score?.toString(),
+                        type: item.type,
+                        status: item.status,
+                        synopsis: item.synopsis,
+                        episode: item.episodes?.toString() || "?",
+                        released: item.year?.toString() || "Unknown",
+                        _source: "jikan"
+                    }));
+
+                    return {
+                        data: finalData as Anime[],
+                        pagination: {
+                            currentPage: 1,
+                            hasNextPage: jikanData.pagination?.has_next_page || false,
+                            hasPrevPage: false,
+                            lastVisiblePage: jikanData.pagination?.last_visible_page || 1,
+                            totalPages: jikanData.pagination?.last_visible_page || 1,
+                            items: {
+                                count: finalData.length,
+                                total: jikanData.pagination?.items?.total || finalData.length,
+                                per_page: jikanData.pagination?.items?.per_page || 10
+                            }
+                        }
+                    };
+                }
+            }
+        } catch (error) {
+            console.error("[animbus] Jikan fallback search error:", error);
+        }
+    }
+
     return {
         data: response.data.map(toAnime),
         pagination: response.pagination,

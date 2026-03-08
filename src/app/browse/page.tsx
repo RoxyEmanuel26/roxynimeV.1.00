@@ -90,7 +90,8 @@ function BrowseContent() {
     if (query) params.set("search", query);
     if (f.type) params.set("type", f.type);
     if (f.genre) params.set("genre", f.genre);
-    if (src && src !== "otakudesu") params.set("source", src);
+    // FIXED: Always write the source to URL to prevent stale loops
+    if (src) params.set("source", src);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/browse${qs ? `?${qs}` : ""}`;
@@ -181,11 +182,12 @@ function BrowseContent() {
     const query = searchParams.get("search") || "";
     const type = searchParams.get("type") || "completed";
     const genre = searchParams.get("genre") || "";
-    const src =
-      (typeof window !== "undefined" &&
-        localStorage.getItem("roxynime_provider")) ||
-      searchParams.get("source") ||
-      "otakudesu";
+    // FIXED: URL parameters have absolute priority over cached localStorage
+    const srcFromUrl = searchParams.get("source");
+    const srcFromStorage = typeof window !== "undefined"
+      ? localStorage.getItem("roxynime_provider")
+      : null;
+    const src = srcFromUrl || srcFromStorage || "otakudesu";
 
     const f: FilterState = { type, genre, order: "updated" };
 
@@ -238,6 +240,10 @@ function BrowseContent() {
   const handleProviderChange = useCallback(
     (providerId: string) => {
       setSource(providerId);
+      // FIXED: Synchronize explicit UI provider choices down to storage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("roxynime_provider", providerId);
+      }
       router.replace(buildBrowseUrl(1, searchQuery, filters, providerId), {
         scroll: false,
       });

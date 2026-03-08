@@ -7,6 +7,17 @@ import {
     Anime,
 } from "@/lib/animbus";
 
+// Helper timeout wrapper
+async function fetchWithTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs = 3000
+): Promise<T> {
+    const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), timeoutMs)
+    );
+    return Promise.race([promise, timeout]);
+}
+
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get("type") || "completed";
@@ -30,14 +41,20 @@ export async function GET(request: NextRequest) {
             if (animeList.length <= 2) {
                 console.log(`[API] Genre '${genre}' returned too few results on '${source}'. Triggering global fallback for page ${page}...`);
                 const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
-                const otherProviders = ALL_PROVIDERS.filter(p => p !== source);
+                // FIXED: Hanya coba 2 provider alternatif teratas, dengan perlindungan timeout 3 detik per fetch
+                const topProviders = ALL_PROVIDERS
+                    .filter(p => p !== source)
+                    .slice(0, 2); // ← maksimal 2, bukan 4
 
                 let fallbackHasNextPage = false;
 
                 const fallbackResults = await Promise.allSettled(
-                    otherProviders.map(async (provider) => {
+                    topProviders.map(async (provider) => {
                         try {
-                            const res = await getAnimeByGenre(genre, page, provider);
+                            const res = await fetchWithTimeout(
+                                getAnimeByGenre(genre, page, provider),
+                                3000
+                            );
                             if (res.pagination?.hasNextPage || (res.pagination?.totalPages && res.pagination.totalPages > page)) {
                                 fallbackHasNextPage = true;
                             }
