@@ -315,17 +315,13 @@ export function pickAdForSlot(
         interstitial: getInterstitialAds,
     };
 
-    // Try preferred type first
-    let ads = getters[type]();
+    // FIXED: Hanya return ad dari tipe yang diminta, TIDAK fallback ke tipe lain
+    // Fallback ke banner/any menyebabkan NativeAd/InFeedAd render iframe ukuran salah → kotak putih
+    const ads = getters[type]();
     if (ads.length > 0) return pickAd(ads, slot);
 
-    // Fallback to banners
-    ads = getBannerAds();
-    if (ads.length > 0) return pickAd(ads, slot);
-
-    // Fallback to any available ad
-    const all = [...getBannerAds(), ...getRectangleAds(), ...getNativeAds()];
-    return pickAd(all, slot);
+    // Tidak ada ad untuk tipe ini → return null → komponen tidak render apa-apa
+    return null;
 }
 
 // ─── Script Generators (per network) ────────────────────────

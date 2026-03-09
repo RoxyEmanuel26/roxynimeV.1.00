@@ -18,6 +18,14 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
+// FIXED: Helper untuk mendeteksi stale pagination (provider yang selalu return page 1)
+function getPageFingerprint(data: Anime[]): string {
+    return data
+        .slice(0, 3)
+        .map((a) => a.slug || a.id || a.title)
+        .join("|");
+}
+
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get("type") || "completed";
@@ -65,18 +73,37 @@ export async function GET(request: NextRequest) {
                     })
                 );
 
-                const seenTitles = new Set<string>();
-                animeList.forEach(a => seenTitles.add(a.title?.toLowerCase().trim() || ""));
-
+                // FIXED: Kumpulkan semua fallback results dulu sebelum deduplicate
+                const allFallbackItems: any[] = [];
                 fallbackResults.forEach((result) => {
                     if (result.status === "fulfilled" && Array.isArray(result.value)) {
-                        result.value.forEach((anime: any) => {
-                            const key = anime.title?.toLowerCase().trim();
-                            if (key && !seenTitles.has(key)) {
-                                seenTitles.add(key);
-                                animeList.push(anime);
-                            }
-                        });
+                        allFallbackItems.push(...result.value);
+                    }
+                });
+
+                // FIXED: Deduplikasi gabungan (original + SEMUA fallback sekaligus)
+                // Gunakan double-check: title DAN slug
+                const seenTitles = new Set<string>();
+                const seenSlugs = new Set<string>();
+
+                // Masukkan original items dulu
+                animeList.forEach(a => {
+                    seenTitles.add(a.title?.toLowerCase().trim() || "");
+                    if (a.slug) seenSlugs.add(a.slug);
+                });
+
+                // FIXED: Tambahkan fallback dengan cek title DAN slug agar tidak duplikat
+                allFallbackItems.forEach((anime: any) => {
+                    const titleKey = anime.title?.toLowerCase().trim();
+                    const slugKey = anime.slug || anime.id || "";
+
+                    if (
+                        titleKey && !seenTitles.has(titleKey) &&
+                        (!slugKey || !seenSlugs.has(slugKey))
+                    ) {
+                        seenTitles.add(titleKey);
+                        if (slugKey) seenSlugs.add(slugKey);
+                        animeList.push(anime);
                     }
                 });
 
@@ -123,6 +150,68 @@ export async function GET(request: NextRequest) {
         // Handle case when animeList is undefined
         if (!animeList) {
             animeList = [];
+        }
+
+        // FIXED: Deteksi stale pagination — provider yang selalu return data page 1
+        // untuk semua page request (donghua, anoboy, oploverz sering begini)
+        let stalePaginationDetected = false;
+        if (page > 1 && animeList.length > 0) {
+            try {
+                let page1Data: Anime[] = [];
+                if (genre) {
+                    const p1 = await fetchWithTimeout(
+                        getAnimeByGenre(genre, 1, source),
+                        2000
+                    );
+                    page1Data = p1.data || [];
+                } else {
+                    switch (type) {
+                        case "completed": {
+                            const p1 = await fetchWithTimeout(
+                                getCompletedAnimeList(1, source),
+                                2000
+                            );
+                            page1Data = p1.data || [];
+                            break;
+                        }
+                        case "ongoing": {
+                            const p1 = await fetchWithTimeout(
+                                getOngoingAnimeList(1, source),
+                                2000
+                            );
+                            page1Data = p1.data || [];
+                            break;
+                        }
+                    }
+                }
+
+                if (page1Data.length > 0) {
+                    const fp1 = getPageFingerprint(page1Data);
+                    const fpCurrent = getPageFingerprint(animeList);
+                    if (fp1 === fpCurrent) {
+                        stalePaginationDetected = true;
+                        console.warn(
+                            `[API] Provider '${source}' tidak support pagination — ` +
+                            `page ${page} = page 1. Mengembalikan empty.`
+                        );
+                    }
+                }
+            } catch {
+                // Jangan fail kalau page 1 fetch gagal — abaikan saja
+            }
+        }
+
+        // FIXED: Kalau stale pagination terdeteksi, return empty dengan hasNext=false
+        if (stalePaginationDetected) {
+            return NextResponse.json({
+                status: "success",
+                data: [],
+                total_item: 0,
+                hasNext: false,
+                hasPrev: true,
+                current_page: page,
+                totalPages: page - 1,
+            });
         }
 
         // Hitung totalPages secara aman

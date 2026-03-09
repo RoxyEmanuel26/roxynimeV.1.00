@@ -150,6 +150,15 @@ function BrowseContent() {
         genres: anime.genres || [],
       }));
 
+      // FIXED: Frontend safety dedup — menangkap duplikat yang lolos dari API
+      const seenKeys = new Set<string>();
+      list = list.filter((anime: any) => {
+        const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
+        if (!key || seenKeys.has(key)) return false;
+        seenKeys.add(key);
+        return true;
+      });
+
       // Client-side sort by rating if requested
       if (f.order === "rating") {
         list.sort((a: any, b: any) => {
