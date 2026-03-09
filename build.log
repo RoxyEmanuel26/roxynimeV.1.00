@@ -5,11 +5,11 @@
 Environment variables loaded from .env
 Prisma schema loaded from prisma\schema.prisma
 
-✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 94ms
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 83ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Want real-time updates to your database without manual polling? Discover how with Pulse: https://pris.ly/tip-0-pulse
+Tip: Want to react to database changes in your app as they happen? Discover how with Pulse: https://pris.ly/tip-1-pulse
 
 ▲ Next.js 16.1.6 (Turbopack)
 - Environments: .env
@@ -17,7 +17,7 @@ Tip: Want real-time updates to your database without manual polling? Discover ho
   · serverActions
 
   Creating an optimized production build ...
-✓ Compiled successfully in 2.9s
+✓ Compiled successfully in 3.8s
   Running TypeScript ...
   Collecting page data using 11 workers ...
   Generating static pages using 11 workers (0/19) ...
@@ -30,7 +30,7 @@ Tip: Want real-time updates to your database without manual polling? Discover ho
     code: 'ECONNREFUSED'
   }
 }
-✓ Generating static pages using 11 workers (19/19) in 524.1ms
+✓ Generating static pages using 11 workers (19/19) in 1621.2ms
   Finalizing page optimization ...
 
 Route (app)                   Revalidate  Expire
