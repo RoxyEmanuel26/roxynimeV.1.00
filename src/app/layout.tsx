@@ -6,6 +6,7 @@ import { PopunderAd, StickyMobileAd } from "@/components/ads";
 import { DataSaverBanner } from "@/components/common/DataSaverBanner";
 import { DisablePrefetch } from "@/components/common/DisablePrefetch";
 import { SAVER_CONFIG } from "@/config/dataSaver";
+import { VERIFICATION_META_TAGS } from "@/config/ads.config";
 
 export const metadata: Metadata = {
   title: {
@@ -63,10 +64,9 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <meta name="monetag" content="f7741fca031b06265f52e59195616470" />
-        <meta name="a3976e5839396e4d0b02dfeb5a15e654c02367dc" content="a3976e5839396e4d0b02dfeb5a15e654c02367dc" />
-        <meta name="monetag" content="11bb69bb4d641d9b94b196ab5d84532c"></meta>
-        <meta name="3375b985ef300c04e1dc3bc53816b6b18f34e207" content="3375b985ef300c04e1dc3bc53816b6b18f34e207" />
+        {VERIFICATION_META_TAGS.map((tag, idx) => (
+          <meta key={idx} name={tag.name} content={tag.content} />
+        ))}
         <meta name="theme-color" content="#7c3aed" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />

@@ -57,6 +57,17 @@ export interface NetworkConfig {
 //  ✏️  EDIT BELOW — Paste your ad codes from each network
 //
 
+/** 
+ * Verification Meta Tags
+ * Add tags here to verify your site ownership for ad networks (monetag, etc.) 
+ */
+export const VERIFICATION_META_TAGS = [
+    { name: "monetag", content: "f7741fca031b06265f52e59195616470" },
+    { name: "a3976e5839396e4d0b02dfeb5a15e654c02367dc", content: "a3976e5839396e4d0b02dfeb5a15e654c02367dc" },
+    { name: "monetag", content: "11bb69bb4d641d9b94b196ab5d84532c" },
+    { name: "3375b985ef300c04e1dc3bc53816b6b18f34e207", content: "3375b985ef300c04e1dc3bc53816b6b18f34e207" },
+];
+
 export const ADS_CONFIG: Record<AdNetwork, NetworkConfig> = {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
