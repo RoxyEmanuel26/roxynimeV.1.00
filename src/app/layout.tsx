@@ -64,6 +64,7 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <head>
         <meta name="monetag" content="f7741fca031b06265f52e59195616470" />
+        <meta name="a3976e5839396e4d0b02dfeb5a15e654c02367dc" content="a3976e5839396e4d0b02dfeb5a15e654c02367dc" />
         <meta name="theme-color" content="#7c3aed" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -110,6 +111,6 @@ export default function RootLayout({
           <Footer />
         </Providers>
       </body>
-    </html>
+    </html >
   );
 }
