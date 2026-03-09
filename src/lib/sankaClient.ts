@@ -2,6 +2,7 @@
 import { getCachedData } from "./cache";
 
 const SANKA_API_BASE = process.env.SANKA_API_BASE || "https://www.sankavollerei.com";
+const isDev = process.env.NODE_ENV === "development";
 
 // --- Types ---
 export type SankaAnime = {
@@ -135,7 +136,17 @@ export const sankaClient = {
                     status: item.status || "Ongoing", // Keep original status if available
                     totalEpisodes: item.episodes || item.episode || item.total_episode,
                     rating: item.score ? parseFloat(item.score) : undefined
-                })).filter((item: any) => !item.status || item.status.toLowerCase() === 'ongoing'); // Strict filter
+                })).filter((item: any) => {
+                    // FIXED: less strict ongoing filter
+                    const s = (item.status || "").toLowerCase().trim();
+                    if (!s) return true;
+                    return (
+                        s.includes("ongoing") ||
+                        s.includes("airing") ||
+                        s.includes("tayang") ||
+                        s.includes("belum tamat")
+                    );
+                });
 
                 return { data: animeList, pagination };
             } catch (e) {
@@ -180,7 +191,18 @@ export const sankaClient = {
                     status: "Completed",
                     totalEpisodes: item.episodes || item.episode || item.total_episode,
                     rating: item.score ? parseFloat(item.score) : undefined
-                })).filter((item: any) => !item.status || item.status.toLowerCase() === 'completed');
+                })).filter((item: any) => {
+                    // FIXED: less strict completed filter
+                    const s = (item.status || "").toLowerCase().trim();
+                    if (!s) return true;
+                    return (
+                        s.includes("completed") ||
+                        s.includes("complete") ||
+                        s.includes("finished") ||
+                        s.includes("tamat") ||
+                        s.includes("selesai")
+                    );
+                });
 
                 return { data: animeList, pagination };
             } catch (e) {
@@ -248,12 +270,13 @@ export const sankaClient = {
                     rating: item.score ? parseFloat(item.score) : undefined
                 }));
 
-                // Pagination: hasNextPage only if second page has full 15 items AND we got results
+                // FIXED: More conservative pagination estimation
+                const hasMore = rawList1.length > 0 || rawList2.length > 0;
                 const paginationInfo = {
                     currentPage: page,
-                    hasNextPage: rawList2.length >= 15, // Only true if second page is full
+                    hasNextPage: hasMore && (rawList1.length >= 14 || rawList2.length > 0),
                     hasPrevPage: page > 1,
-                    lastVisiblePage: rawList2.length >= 15 ? page + 1 : page,
+                    lastVisiblePage: hasMore ? page + 1 : page,
                     items: { count: rawList.length, total: rawList.length, per_page: 30 }
                 };
 
@@ -345,16 +368,16 @@ export const sankaClient = {
                         date: ep.date
                     })).sort((a: any, b: any) => b.number - a.number);
 
-                    console.log(`✅ [Sanka] Found anime: ${anime.title}`);
+                    if (isDev) console.log(`✅ [Sanka] Found anime: ${anime.title}`);
                     return { ...anime, episodes };
                 }
             } catch (e) {
-                console.log(`⚠️ [Sanka] Failed for ${slug}, trying Jikan fallback...`);
+                if (isDev) console.log(`⚠️ [Sanka] Failed for ${slug}, trying Jikan fallback...`);
             }
 
             // Fallback to Jikan API (MyAnimeList)
             try {
-                console.log(`🔄 [Jikan] Searching for: ${slug}`);
+                if (isDev) console.log(`🔄 [Jikan] Searching for: ${slug}`);
 
                 // Extract search term from slug (remove sub-indo, episode numbers etc)
                 const searchTerm = slug
@@ -370,7 +393,7 @@ export const sankaClient = {
                     const match = jikanData.data?.[0];
 
                     if (match) {
-                        console.log(`✅ [Jikan] Found: ${match.title}`);
+                        if (isDev) console.log(`✅ [Jikan] Found: ${match.title}`);
 
                         const anime: SankaAnime = {
                             id: slug,
@@ -407,15 +430,15 @@ export const sankaClient = {
     getStreams: async (episodeSlug: string): Promise<SankaStreamServer[]> => {
         return getCachedData(`sanka_stream_v2_${episodeSlug}`, async () => {
             try {
-                console.log("🌐 [SankaClient] getStreams called with:", episodeSlug);
+                if (isDev) console.log("🌐 [SankaClient] getStreams called with:", episodeSlug);
 
                 // Docs: /anime/episode/{id}
                 const url = `${SANKA_API_BASE}/anime/episode/${episodeSlug}`;
-                console.log(`📞 [SankaClient] Fetching from: ${url}`);
+                if (isDev) console.log(`📞 [SankaClient] Fetching from: ${url}`);
 
                 const res = await fetch(url);
 
-                console.log("📥 [SankaClient] Response status:", res.status);
+                if (isDev) console.log("📥 [SankaClient] Response status:", res.status);
 
                 if (!res.ok) {
                     console.error(`Sanka Stream Fetch Failed for ${url}: ${res.status} ${res.statusText}`);
@@ -429,12 +452,14 @@ export const sankaClient = {
                 const response = await res.json();
 
                 // DEBUG: Log raw response
-                console.log('=== SANKA STREAMING RAW RESPONSE ===');
-                console.log('Episode Slug:', episodeSlug);
-                console.log('Response keys:', Object.keys(response));
-                console.log('Response data keys:', response.data ? Object.keys(response.data) : 'NO DATA');
-                console.log('Full response:', JSON.stringify(response, null, 2));
-                console.log('====================================');
+                if (isDev) {
+                    console.log('=== SANKA STREAMING RAW RESPONSE ===');
+                    console.log('Episode Slug:', episodeSlug);
+                    console.log('Response keys:', Object.keys(response));
+                    console.log('Response data keys:', response.data ? Object.keys(response.data) : 'NO DATA');
+                    console.log('Full response:', JSON.stringify(response, null, 2));
+                    console.log('====================================');
+                }
 
                 // CRITICAL: API returns nested structure { data: { data: {...} } }
                 const data = response.data;
@@ -449,7 +474,7 @@ export const sankaClient = {
                 // === NEW PARSING LOGIC === 
                 // 1. Check for 'server.qualities' (NEW FORMAT from actual API)
                 if (data.server && data.server.qualities) {
-                    console.log("📀 [SankaClient] Processing server.qualities data...");
+                    if (isDev) console.log("📀 [SankaClient] Processing server.qualities data...");
 
                     data.server.qualities.forEach((qualityGroup: any) => {
                         const quality = qualityGroup.title || "default"; // e.g., "360p", "480p", "720p"
@@ -478,7 +503,7 @@ export const sankaClient = {
 
                 // 2. FALLBACK: Check for 'mirror' field (OLD FORMAT)
                 else if (data.mirror) {
-                    console.log("📀 [SankaClient] Processing mirror data (old format)...");
+                    if (isDev) console.log("📀 [SankaClient] Processing mirror data (old format)...");
                     Object.entries(data.mirror).forEach(([quality, serverList]) => {
                         if (Array.isArray(serverList)) {
                             serverList.forEach((srv: any) => {
@@ -502,7 +527,7 @@ export const sankaClient = {
 
                 // 3. FALLBACK: Use defaultStreamingUrl if available
                 else if (data.defaultStreamingUrl) {
-                    console.log("📀 [SankaClient] Using defaultStreamingUrl...");
+                    if (isDev) console.log("📀 [SankaClient] Using defaultStreamingUrl...");
                     servers.push({
                         name: "Default",
                         quality: "auto",
@@ -512,7 +537,7 @@ export const sankaClient = {
 
                 // 4. FALLBACK: check for streamList/stream_link
                 else {
-                    console.log("⚠️ [SankaClient] No server data, trying other fallbacks...");
+                    if (isDev) console.log("⚠️ [SankaClient] No server data, trying other fallbacks...");
 
                     if (data.streamList && Array.isArray(data.streamList)) {
                         data.streamList.forEach((srv: any) => {
@@ -533,20 +558,22 @@ export const sankaClient = {
                     }
                 }
 
-                console.log('=== PARSED STREAMS ===');
-                console.log('🎬 Stream count:', servers.length);
-                if (servers.length > 0) {
-                    servers.forEach((s, idx) => {
-                        console.log(`   Server ${idx + 1}:`, {
-                            name: s.name,
-                            quality: s.quality,
-                            hasUrl: !!s.streamUrl
+                if (isDev) {
+                    console.log('=== PARSED STREAMS ===');
+                    console.log('🎬 Stream count:', servers.length);
+                    if (servers.length > 0) {
+                        servers.forEach((s, idx) => {
+                            console.log(`   Server ${idx + 1}:`, {
+                                name: s.name,
+                                quality: s.quality,
+                                hasUrl: !!s.streamUrl
+                            });
                         });
-                    });
-                } else {
-                    console.warn('⚠️ No streams parsed from response!');
+                    } else {
+                        console.warn('⚠️ No streams parsed from response!');
+                    }
+                    console.log('======================');
                 }
-                console.log('======================');
 
                 return servers;
             } catch (e) {
