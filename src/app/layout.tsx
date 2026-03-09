@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header, Footer } from "@/components/layout";
 import { PopunderAd, StickyMobileAd } from "@/components/ads";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-heading",
-});
+import { DataSaverBanner } from "@/components/common/DataSaverBanner";
+import { DisablePrefetch } from "@/components/common/DisablePrefetch";
+import { SAVER_CONFIG } from "@/config/dataSaver";
 
 export const metadata: Metadata = {
   title: {
@@ -71,12 +63,25 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        <meta name="monetag" content="f7741fca031b06265f52e59195616470" />
         <meta name="theme-color" content="#7c3aed" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        {!SAVER_CONFIG.MODE_HEMAT && (
+          <>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link
+              href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+              rel="stylesheet"
+            />
+            {/* Inject CSS variables for tailwind if needed */}
+            <style dangerouslySetInnerHTML={{ __html: `:root { --font-sans: 'Inter', sans-serif; --font-heading: 'Outfit', sans-serif; }` }} />
+          </>
+        )}
       </head>
       <body
-        className={`${inter.variable} ${outfit.variable} antialiased min-h-screen flex flex-col`}
+        className={`font-sans antialiased min-h-screen flex flex-col`}
       >
         <script
           type="application/ld+json"
@@ -96,6 +101,8 @@ export default function RootLayout({
           }}
         />
         <Providers>
+          <DisablePrefetch />
+          <DataSaverBanner />
           <PopunderAd />
           <Header />
           <main className="flex-1 pb-14 lg:pb-0">{children}</main>

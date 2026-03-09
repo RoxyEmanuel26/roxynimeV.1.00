@@ -22,6 +22,7 @@ import {
     Sparkles,
 } from "lucide-react";
 import { BannerAd } from "../ads/BannerAd";
+import { DataSaverToggle } from "@/components/common/DataSaverToggle";
 
 const NAV_LINKS = [
     { href: "/", label: "Home", icon: Home },
@@ -194,6 +195,9 @@ export function Header() {
                                     </div>
                                 </button>
                             )}
+
+                            {/* 6.5 DATA SAVER TOGGLE */}
+                            <DataSaverToggle />
 
                             {/* 7. SIGN IN / USER DROPDOWN */}
                             {session ? (

@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
+import { useDataSaver } from "@/context/DataSaverContext";
+import { DataSaverToggle } from "@/components/common/DataSaverToggle";
+import { SAVER_CONFIG } from "@/config/dataSaver";
 
 interface Anime {
   id?: string;
@@ -79,6 +82,7 @@ function BrowseContent() {
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
   const currentPageRef = useRef(1);
+  const { isHemat, addSavedBytes } = useDataSaver();
 
   // ── Build browse URL from current params ───────────────────────────────────
   const buildBrowseUrl = (
@@ -114,6 +118,15 @@ function BrowseContent() {
     setLoading(true);
     setError(null);
     // FIXED: Pertahankan data lama saat loading agar grid tidak kosong
+
+    // MODE HEMAT: block all API fetches
+    if (isHemat) {
+      addSavedBytes(307200); // Catat ~300KB API response yang dihemat
+      setAnimes([]);
+      setError(SAVER_CONFIG.MESSAGES.api_blocked);
+      setLoading(false);
+      return;
+    }
 
     try {
       let url: string;
@@ -292,6 +305,45 @@ function BrowseContent() {
   const pages = paginationNumbers();
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  // MODE HEMAT: show dedicated UI
+  if (isHemat) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6 text-center px-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Zap className="h-8 w-8 text-amber-400 fill-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white mb-2">⚡ Mode Hemat Data Aktif</h2>
+            <p className="text-white/50 text-sm max-w-sm">
+              Semua konten anime dimatikan untuk menghemat kuota internet Anda.
+              Matikan Mode Hemat untuk melihat daftar anime.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+              <p className="text-lg font-bold text-amber-400">~80%</p>
+              <p className="text-[10px] text-white/40">Kuota dihemat</p>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+              <p className="text-lg font-bold text-green-400">0 MB</p>
+              <p className="text-[10px] text-white/40">Gambar dimuat</p>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+              <p className="text-lg font-bold text-blue-400">0 API</p>
+              <p className="text-[10px] text-white/40">Request dibuat</p>
+            </div>
+          </div>
+          <DataSaverToggle />
+          <p className="text-xs text-white/30">Klik ikon ⚡ di navbar untuk toggle Mode Hemat</p>
+          <div className="w-full max-w-2xl">
+            <BannerAd adKey="1d4f1463e95b8d3fb84adadeb3a2f170" width={728} height={90} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
