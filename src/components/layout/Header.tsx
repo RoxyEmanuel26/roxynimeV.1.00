@@ -83,7 +83,7 @@ export function Header() {
     return (
         <header className="sticky top-0 z-50 w-full">
             {/* Top Ad Banner */}
-            <BannerAd className="hidden lg:flex" />
+            <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90} className="hidden lg:flex" />
 
             {/* ─── Main Header ─── */}
             <div
@@ -264,8 +264,8 @@ export function Header() {
                                             key={link.href}
                                             href={link.href}
                                             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-sm font-medium ${isActive(link.href)
-                                                    ? "bg-primary/10 text-primary"
-                                                    : "hover:bg-muted/60 text-fore ground"
+                                                ? "bg-primary/10 text-primary"
+                                                : "hover:bg-muted/60 text-fore ground"
                                                 }`}
                                             onClick={() => setMobileMenuOpen(false)}
                                         >

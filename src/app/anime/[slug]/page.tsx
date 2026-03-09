@@ -57,7 +57,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
             </div>
 
             <div className="container mx-auto px-4 pt-6 max-w-7xl">
-                <BannerAd slot="anime-detail-top" className="mb-6" />
+                <BannerAd adKey="1d4f1463e95b8d3fb84adadeb3a2f170" width={728} height={90} className="mb-6 hidden md:flex" />
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Main Content Area */}
@@ -160,7 +160,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                             </div>
                         </div>
 
-                        <InFeedAd slot="anime-detail-mid" />
+                        <InFeedAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} />
 
                         {/* Episode List Section */}
                         <div className="bg-card rounded-2xl shadow-sm border border-border p-4 sm:p-6 lg:p-8">
@@ -239,7 +239,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                     </aside>
                 </div>
 
-                <BannerAd slot="anime-detail-bottom" className="mt-8" />
+                <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60} className="mt-8 hidden sm:flex" />
             </div>
         </div>
     );

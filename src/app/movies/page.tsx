@@ -250,8 +250,11 @@ function MoviesContent() {
         </div>
       </div>
 
-      <BannerAd slot="movies-top" className="mb-4" />
-      <NativeAd slot="movies-native1" />
+      {/* FIXED: Ads — Top banner — responsive */}
+      <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90}
+        className="mb-6 hidden lg:flex justify-center" />
+      <BannerAd adKey="aba7098d25b574b0f3cda75504b6f8e6" width={320} height={50}
+        className="mb-4 flex lg:hidden justify-center" />
 
       <SearchFilter
         onSearch={handleSearch}
@@ -283,8 +286,9 @@ function MoviesContent() {
 
           {!error && <AnimeGrid animes={animes} loading={loading} />}
 
-          <InFeedAd slot="movies-mid" />
-          <NativeAd slot="movies-native2" />
+          {/* FIXED: Ads — after grid */}
+          <NativeAd set="A" className="my-4" />
+          <InFeedAd adKey="0184ead2c935ee466bea96058347d06d" width={300} height={250} />
 
           {/* FIXED: Kalau hasil filter kosong tapi API masih punya → tampilkan info */}
           {!loading && !error && animes.length === 0 && (
@@ -355,20 +359,22 @@ function MoviesContent() {
             </nav>
           )}
 
+          {/* FIXED: Ads — below pagination */}
           <div className="mt-8 space-y-4">
-            <InFeedAd slot="movies-bottom" />
-            <BannerAd slot="movies-footer" />
+            <NativeAd set="B" className="my-4" />
+            <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60}
+              className="hidden sm:flex justify-center" />
           </div>
         </div>
 
-        <aside className="lg:w-[300px] space-y-6 shrink-0">
-          <SidebarAd className="hidden lg:flex" />
-        </aside>
+        {/* FIXED: Sidebar — sticky banners desktop only */}
+        <SidebarAd />
       </div>
 
+      {/* FIXED: Mobile bottom ads */}
       <div className="lg:hidden mt-8 space-y-3">
-        <InFeedAd slot="movies-mobile-bottom" />
-        <BannerAd slot="movies-mobile-footer" />
+        <BannerAd adKey="2773304d8f72b4fe1e803cf5cf08230a" width={320} height={50}
+          className="justify-center" />
       </div>
     </div>
   );

@@ -1,63 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-import { pickAdForSlot, generateAdSrcDoc } from "@/config/ads.config";
+import { useEffect, useRef } from "react";
 
 interface NativeAdProps {
+    /** "A" untuk Set A, "B" untuk Set B */
+    set?: "A" | "B";
     className?: string;
-    slot?: string;
 }
 
-/**
- * NativeAd — Responsive small inline ad that blends with content.
- * Desktop: 468x60 | Tablet: 320x50 | Mobile: 300x50
- */
-export function NativeAd({ className, slot = "native" }: NativeAdProps) {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-    if (!mounted) return null;
+// FIXED: Data native banner per set dari balkliving.com
+const NATIVE_ADS = {
+    A: {
+        src: "https://balkliving.com/1fe522e35341470390c5d22d3859e155/invoke.js",
+        containerId: "container-1fe522e35341470390c5d22d3859e155",
+    },
+    B: {
+        src: "https://balkliving.com/eb9a01b55acbcef04f866e53d4339f0e/invoke.js",
+        containerId: "container-eb9a01b55acbcef04f866e53d4339f0e",
+    },
+} as const;
 
-    const ad = pickAdForSlot("native", slot);
-    if (!ad) return null;
+/**
+ * NativeAd — Native banner ad dari Adsterra via balkliving.com.
+ * Menggunakan container ID unik dan invoke.js per set.
+ */
+export function NativeAd({ set = "A", className }: NativeAdProps) {
+    const loadedRef = useRef(false);
+    const ad = NATIVE_ADS[set];
+
+    useEffect(() => {
+        if (loadedRef.current) return;
+
+        // Cek apakah container sudah ada di DOM
+        const container = document.getElementById(ad.containerId);
+        if (!container) return;
+
+        loadedRef.current = true;
+
+        const script = document.createElement("script");
+        script.src = ad.src;
+        script.async = true;
+        script.setAttribute("data-cfasync", "false");
+        container.appendChild(script);
+    }, [ad]);
 
     return (
-        <div className={cn("w-full flex justify-center my-2 px-2", className)}>
-            {/* Desktop: 468x60 */}
-            <div className="hidden md:block">
-                <iframe
-                    title={`ad-native-desktop-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 468, 60)}
-                    width={468}
-                    height={60}
-                    style={{ border: "none", overflow: "hidden", borderRadius: "8px" }}
-                    scrolling="no"
-                />
-            </div>
-
-            {/* Tablet: 320x50 */}
-            <div className="hidden sm:block md:hidden">
-                <iframe
-                    title={`ad-native-tablet-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 320, 50)}
-                    width={320}
-                    height={50}
-                    style={{ border: "none", overflow: "hidden", borderRadius: "8px" }}
-                    scrolling="no"
-                />
-            </div>
-
-            {/* Mobile: 300x50 */}
-            <div className="block sm:hidden">
-                <iframe
-                    title={`ad-native-mobile-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 300, 50)}
-                    width={300}
-                    height={50}
-                    style={{ border: "none", overflow: "hidden", borderRadius: "8px" }}
-                    scrolling="no"
-                />
-            </div>
+        <div className={`w-full ${className || ""}`}>
+            <div id={ad.containerId} />
         </div>
     );
 }

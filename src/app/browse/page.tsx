@@ -307,9 +307,11 @@ function BrowseContent() {
         </div>
       </div>
 
-      {/* Ad — Top banner */}
-      <BannerAd slot="browse-top" className="mb-4" />
-      <NativeAd slot="browse-after-top" />
+      {/* FIXED: Ads — Top banner — responsive desktop/mobile */}
+      <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90}
+        className="mb-6 hidden lg:flex justify-center" />
+      <BannerAd adKey="2773304d8f72b4fe1e803cf5cf08230a" width={320} height={50}
+        className="mb-4 flex lg:hidden justify-center" />
 
       {/* Search & Filters */}
       <SearchFilter
@@ -349,9 +351,9 @@ function BrowseContent() {
           {/* Grid */}
           {!error && <AnimeGrid animes={animes} loading={loading} />}
 
-          {/* Ad — after grid */}
-          <InFeedAd slot="browse-after-grid" />
-          <NativeAd slot="browse-inside" />
+          {/* FIXED: Ads — after grid */}
+          <NativeAd set="A" className="my-4" />
+          <InFeedAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} />
 
           {/* FIXED: Kalau hasil filter kosong tapi API masih punya → tampilkan info */}
           {!loading && !error && animes.length === 0 && (
@@ -446,24 +448,21 @@ function BrowseContent() {
             </nav>
           )}
 
-          {/* Ad — below pagination */}
+          {/* FIXED: Ads — below pagination */}
           <div className="mt-8 space-y-4">
-            <BannerAd slot="browse-post-page-1" />
-            <InFeedAd slot="browse-post-page-2" />
-            <BannerAd slot="browse-post-page-3" />
+            <NativeAd set="B" className="my-4" />
+            <InFeedAd adKey="0184ead2c935ee466bea96058347d06d" width={300} height={250} />
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="lg:w-[300px] space-y-6 shrink-0">
-          <SidebarAd className="hidden lg:flex" />
-        </aside>
+        {/* FIXED: Sidebar — sticky banners desktop only */}
+        <SidebarAd />
       </div>
 
-      {/* Mobile bottom ads */}
+      {/* FIXED: Mobile bottom ads */}
       <div className="lg:hidden mt-8 space-y-3">
-        <InFeedAd slot="browse-mobile-bottom" />
-        <BannerAd slot="browse-mobile-footer" />
+        <BannerAd adKey="aba7098d25b574b0f3cda75504b6f8e6" width={320} height={50}
+          className="justify-center" />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { Play, TrendingUp, Calendar, Film } from "lucide-react";
-import { BannerAd, InFeedAd } from "@/components/ads";
+import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { HeroSection } from "@/components/home/HeroSection";
 import { TrendingSection } from "@/components/home/TrendingSection";
 import { getOngoingAnimeList } from "@/lib/animbus";
@@ -102,15 +102,20 @@ export default async function HomePage() {
       {/* Hero Section */}
       <HeroSection featured={featured} />
 
-      {/* Ad Layer 1 — After Hero */}
-      <BannerAd slot="home-hero" />
+      {/* FIXED: Ads after hero — responsive desktop/mobile */}
+      <div className="container mx-auto px-4 max-w-7xl">
+        <BannerAd adKey="1d4f1463e95b8d3fb84adadeb3a2f170" width={728} height={90}
+          className="my-4 hidden md:flex" />
+        <BannerAd adKey="2773304d8f72b4fe1e803cf5cf08230a" width={320} height={50}
+          className="my-4 flex md:hidden" />
+      </div>
 
       {/* TRENDING NOW — From ALL Providers */}
       <TrendingSection animes={allAnimes} />
 
-      {/* Ad Layer 3 — Between Sections */}
-      <InFeedAd slot="home-mid" />
-      <BannerAd slot="home-mid-banner" />
+      {/* FIXED: Native ad + rectangle ad between sections */}
+      <NativeAd set="A" className="my-4" />
+      <InFeedAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} />
 
       {/* Quick Links Section */}
       <section className="py-8 sm:py-12 bg-background">
@@ -153,9 +158,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Ad Layer 4 — Page Bottom */}
-      <InFeedAd slot="home-bottom" />
-      <BannerAd slot="home-footer" />
+      {/* FIXED: Bottom ads — native + banners */}
+      <NativeAd set="B" className="my-4" />
+      <div className="container mx-auto px-4 max-w-7xl">
+        <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60}
+          className="my-4 hidden sm:flex" />
+        <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90}
+          className="my-4 hidden lg:flex" />
+      </div>
     </div>
   );
 }

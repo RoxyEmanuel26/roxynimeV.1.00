@@ -265,8 +265,11 @@ function OngoingContent() {
         </div>
       </div>
 
-      <BannerAd slot="ongoing-top" />
-      <NativeAd slot="ongoing-native1" />
+      {/* FIXED: Ads — Top banner — responsive */}
+      <BannerAd adKey="1d4f1463e95b8d3fb84adadeb3a2f170" width={728} height={90}
+        className="mb-6 hidden lg:flex justify-center" />
+      <BannerAd adKey="2773304d8f72b4fe1e803cf5cf08230a" width={320} height={50}
+        className="mb-4 flex lg:hidden justify-center" />
 
       <SearchFilter
         onSearch={handleSearch}
@@ -298,8 +301,9 @@ function OngoingContent() {
 
           {!error && <AnimeGrid animes={animes} loading={loading} />}
 
-          <InFeedAd slot="ongoing-mid" />
-          <NativeAd slot="ongoing-native2" />
+          {/* FIXED: Ads — after grid */}
+          <NativeAd set="A" className="my-4" />
+          <InFeedAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} />
 
           {/* FIXED: Kalau hasil filter kosong tapi API masih punya → tampilkan info */}
           {!loading && !error && animes.length === 0 && (
@@ -381,20 +385,21 @@ function OngoingContent() {
             </nav>
           )}
 
+          {/* FIXED: Ads — below pagination */}
           <div className="mt-8 space-y-4">
-            <InFeedAd slot="ongoing-bottom" />
-            <BannerAd slot="ongoing-footer" />
+            <NativeAd set="B" className="my-4" />
+            <InFeedAd adKey="0184ead2c935ee466bea96058347d06d" width={300} height={250} />
           </div>
         </div>
 
-        <aside className="lg:w-[300px] space-y-6 shrink-0">
-          <SidebarAd className="hidden lg:flex" />
-        </aside>
+        {/* FIXED: Sidebar — sticky banners desktop only */}
+        <SidebarAd />
       </div>
 
+      {/* FIXED: Mobile bottom ads */}
       <div className="lg:hidden mt-8 space-y-3">
-        <InFeedAd slot="ongoing-mobile-bottom" />
-        <BannerAd slot="ongoing-mobile-footer" />
+        <BannerAd adKey="aba7098d25b574b0f3cda75504b6f8e6" width={320} height={50}
+          className="justify-center" />
       </div>
     </div>
   );

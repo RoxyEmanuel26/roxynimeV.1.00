@@ -330,8 +330,8 @@ export default function WatchPage() {
             </div>
 
             {/* Ad Layer 1 — After Controls */}
-            <NativeAd slot="watch-controls" />
-            <BannerAd slot="watch-banner1" />
+            <NativeAd set="A" className="my-2" />
+            <BannerAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} className="justify-center" />
 
             {/* Episode List Panel */}
             {showEpisodeList && (
@@ -356,7 +356,7 @@ export default function WatchPage() {
                     </div>
 
                     {/* Ad Layer 2 — Inside Episode List */}
-                    <NativeAd slot="watch-eplist" />
+                    <NativeAd set="B" className="my-2" />
                 </div>
             )}
 
@@ -381,11 +381,11 @@ export default function WatchPage() {
             {/* Ad Layer 3 — Below Player */}
             <div className="bg-background">
                 <div className="container mx-auto px-4 py-8 space-y-4">
-                    <BannerAd slot="watch-bottom1" />
-                    <InFeedAd slot="watch-mid" />
-                    <BannerAd slot="watch-bottom2" />
-                    <NativeAd slot="watch-native" />
-                    <InFeedAd slot="watch-bottom3" />
+                    <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90} className="hidden md:flex justify-center" />
+                    <InFeedAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} />
+                    <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60} className="hidden sm:flex justify-center" />
+                    <NativeAd set="A" className="my-2" />
+                    <InFeedAd adKey="0184ead2c935ee466bea96058347d06d" width={300} height={250} />
                 </div>
             </div>
         </div>

@@ -1,64 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-import { pickAdForSlot, generateAdSrcDoc } from "@/config/ads.config";
+import { useEffect, useRef, useId } from "react";
 
 interface BannerAdProps {
+    adKey: string;
+    width: number;
+    height: number;
     className?: string;
-    slot?: string;
 }
 
 /**
- * BannerAd — Responsive multi-network banner.
- * Picks a random ad from enabled networks (Adsterra/ExoClick/PropellerAds/HilltopAds).
- * Desktop: 728x90 | Tablet: 468x60 | Mobile: 320x50
+ * BannerAd — Reusable atOptions-based banner ad component.
+ * Sets atOptions BEFORE loading invoke.js to satisfy Adsterra's requirement.
+ * Each instance gets a unique wrapper via useId() to prevent conflicts.
  */
-export function BannerAd({ className, slot = "default" }: BannerAdProps) {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-    if (!mounted) return null;
+export function BannerAd({ adKey, width, height, className }: BannerAdProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const loadedRef = useRef(false);
+    const uniqueId = useId().replace(/:/g, "");
 
-    const ad = pickAdForSlot("banner", slot);
-    if (!ad) return null;
+    useEffect(() => {
+        if (loadedRef.current || !containerRef.current) return;
+        loadedRef.current = true;
+
+        const container = containerRef.current;
+
+        // FIXED: Step 1 — Set atOptions SEBELUM invoke.js dimuat
+        const optionsScript = document.createElement("script");
+        optionsScript.type = "text/javascript";
+        optionsScript.text = `
+            atOptions = {
+                'key' : '${adKey}',
+                'format' : 'iframe',
+                'height' : ${height},
+                'width' : ${width},
+                'params' : {}
+            };
+        `;
+        container.appendChild(optionsScript);
+
+        // FIXED: Step 2 — Load invoke.js SETELAH atOptions di-set
+        const invokeScript = document.createElement("script");
+        invokeScript.type = "text/javascript";
+        invokeScript.src = `https://balkliving.com/${adKey}/invoke.js`;
+        invokeScript.async = true;
+        container.appendChild(invokeScript);
+    }, [adKey, width, height]);
 
     return (
-        <div className={cn("w-full flex justify-center my-3", className)}>
-            {/* Desktop 728x90 */}
-            <div className="hidden lg:flex justify-center">
-                <iframe
-                    title={`ad-banner-desktop-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 728, 90)}
-                    width={728}
-                    height={90}
-                    style={{ border: "none", overflow: "hidden" }}
-                    scrolling="no"
-                />
-            </div>
-
-            {/* Tablet 468x60 */}
-            <div className="hidden sm:flex lg:hidden justify-center">
-                <iframe
-                    title={`ad-banner-tablet-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 468, 60)}
-                    width={468}
-                    height={60}
-                    style={{ border: "none", overflow: "hidden" }}
-                    scrolling="no"
-                />
-            </div>
-
-            {/* Mobile 320x50 */}
-            <div className="flex sm:hidden justify-center">
-                <iframe
-                    title={`ad-banner-mobile-${slot}`}
-                    srcDoc={generateAdSrcDoc(ad, 320, 50)}
-                    width={320}
-                    height={50}
-                    style={{ border: "none", overflow: "hidden" }}
-                    scrolling="no"
-                />
-            </div>
-        </div>
+        <div
+            ref={containerRef}
+            id={`ad-banner-${uniqueId}`}
+            className={`flex justify-center items-center overflow-hidden ${className || ""}`}
+            style={{ minHeight: height }}
+        />
     );
 }

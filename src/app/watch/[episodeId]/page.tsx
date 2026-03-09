@@ -118,7 +118,7 @@ export default async function WatchPage({ params }: PageProps) {
             </div>
 
             <div className="container mx-auto px-4 pt-6 max-w-5xl">
-                <BannerAd slot="watch-top" className="mb-6" />
+                <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90} className="mb-6 hidden md:flex" />
 
                 {/* Title Area */}
                 <div className="mb-6">
@@ -192,7 +192,7 @@ export default async function WatchPage({ params }: PageProps) {
                     )}
                 </div>
 
-                <BannerAd slot="watch-bottom" className="mt-8" />
+                <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60} className="mt-8 hidden sm:flex" />
             </div>
         </div>
     );

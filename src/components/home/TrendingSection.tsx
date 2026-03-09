@@ -34,7 +34,7 @@ export function TrendingSection({ animes }: { animes: Anime[] }) {
                     ))}
                 </div>
 
-                <NativeAd slot="home-trending" className="mt-4" />
+                <NativeAd set="A" className="mt-4" />
 
                 <div className="mt-6 sm:mt-8 flex justify-center">
                     <Link
