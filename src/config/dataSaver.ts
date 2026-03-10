@@ -2,7 +2,7 @@
 // MODE HEMAT DATA — RoxyNime
 // ============================================================
 export const SAVER_CONFIG = {
-    MODE_HEMAT: true,
+    MODE_HEMAT: false,
 
     // ── LAYER 1: Media (paling boros) ──────────────
     DISABLE_IMAGES: true,          // thumbnail anime → teks
