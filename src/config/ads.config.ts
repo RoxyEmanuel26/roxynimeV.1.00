@@ -66,6 +66,7 @@ export const VERIFICATION_META_TAGS = [
     { name: "a3976e5839396e4d0b02dfeb5a15e654c02367dc", content: "a3976e5839396e4d0b02dfeb5a15e654c02367dc" },
     { name: "monetag", content: "11bb69bb4d641d9b94b196ab5d84532c" },
     { name: "3375b985ef300c04e1dc3bc53816b6b18f34e207", content: "3375b985ef300c04e1dc3bc53816b6b18f34e207" },
+    { name: "p:domain_verify", content: "f2c35ca2d67b1ffb5d2db09a6fe825ec" },
 ];
 
 export const ADS_CONFIG: Record<AdNetwork, NetworkConfig> = {
