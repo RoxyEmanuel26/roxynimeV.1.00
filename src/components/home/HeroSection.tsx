@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import { AdLink } from "@/components/ads/AdLink";
 import { HeroFallback } from "./HeroFallback";
 
 export interface Anime {
@@ -52,13 +53,14 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                             </p>
                         )}
                         <div className="flex gap-4">
-                            <Link
+                            <AdLink
                                 href={`/anime/${featured.id || featured.slug}`}
+                                adKey={`hero-watch-${featured.id || featured.slug}`}
                                 className="btn-primary inline-flex items-center gap-2"
                             >
                                 <Play className="h-5 w-5 fill-current" />
                                 Watch Now
-                            </Link>
+                            </AdLink>
                             <Link
                                 href={`/anime/${featured.id || featured.slug}`}
                                 className="btn-outline inline-flex items-center gap-2"

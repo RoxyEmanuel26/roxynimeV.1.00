@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { sankaClient } from "@/lib/sankaClient";
 import { Play, Calendar, Star, Film, Clock, ChevronRight } from "lucide-react";
 import { BannerAd, InFeedAd, SidebarAd } from "@/components/ads";
+import { AdLink } from "@/components/ads/AdLink";
 import { getBlurDataURL } from "@/lib/utils";
 
 interface PageProps {
@@ -182,9 +183,10 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                                         const isLatest = index === 0 && status?.toLowerCase().includes("ongoing");
 
                                         return (
-                                            <Link
+                                            <AdLink
                                                 key={ep.id}
                                                 href={`/watch/${ep.urlSlug}`}
+                                                adKey={`ep-detail-${ep.id}`}
                                                 className="group flex flex-col justify-center p-4 rounded-xl border border-border bg-background hover:border-primary hover:shadow-md hover:bg-primary/5 transition-all relative overflow-hidden"
                                             >
                                                 <div className="flex items-center justify-between mb-1">
@@ -214,7 +216,7 @@ export default async function AnimeDetailPage({ params }: PageProps) {
                                                         </div>
                                                     </div>
                                                 )}
-                                            </Link>
+                                            </AdLink>
                                         );
                                     })}
                                 </div>

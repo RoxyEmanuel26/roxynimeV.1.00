@@ -6,3 +6,5 @@ export { SmartlinkAd } from "./SmartlinkAd";
 export { InterstitialAd } from "./InterstitialAd";
 export { PopunderAd } from "./PopunderAd";
 export { StickyMobileAd } from "./StickyMobileAd";
+export { AdLink } from "./AdLink";
+export { AdButton } from "./AdButton";

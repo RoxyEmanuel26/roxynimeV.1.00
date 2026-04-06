@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AdLink } from "@/components/ads/AdLink";
 import { useState, useEffect } from "react";
 import { Star, Play, Film } from "lucide-react";
 import { cn, getBlurDataURL } from "@/lib/utils";
@@ -85,7 +86,7 @@ export function AnimeCard({
             transition={{ duration: 0.3 }}
             className={cn("group", className)}
         >
-            <Link href={href} className="block">
+            <AdLink href={href} adKey={`card-${animeId}`} className="block">
                 <div className="anime-card aspect-[3/4] relative">
                     {/* Mode Normal: full image */}
                     <>
@@ -151,7 +152,7 @@ export function AnimeCard({
                 <h3 className="mt-2 font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
                     {title}
                 </h3>
-            </Link>
+            </AdLink>
         </motion.div>
     );
 }

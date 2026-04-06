@@ -1,6 +1,7 @@
 "use client";
 
 import { Play, Lock } from "lucide-react";
+import { AdButton } from "@/components/ads/AdButton";
 import { cn } from "@/lib/utils";
 
 interface Episode {
@@ -38,8 +39,9 @@ export function EpisodeList({
                 const isLocked = false; // Future: implement premium content
 
                 return (
-                    <button
+                    <AdButton
                         key={episode.id}
+                        adKey={`ep-${episode.id}`}
                         onClick={() => !isLocked && onSelect(episode)}
                         disabled={isLocked}
                         className={cn(
@@ -75,7 +77,7 @@ export function EpisodeList({
                                 Now Playing
                             </span>
                         )}
-                    </button>
+                    </AdButton>
                 );
             })}
         </div>

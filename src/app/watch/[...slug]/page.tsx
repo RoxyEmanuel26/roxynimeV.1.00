@@ -17,6 +17,7 @@ import { EpisodeList } from "@/components/anime";
 import { BannerAd, InterstitialAd, InFeedAd, NativeAd } from "@/components/ads";
 import { VideoPlayerSkeleton } from "@/components/common";
 import { cn } from "@/lib/utils";
+import { AdButton } from "@/components/ads/AdButton";
 
 interface Episode {
     id: string;
@@ -296,23 +297,25 @@ export default function WatchPage() {
 
                         {/* Navigation */}
                         <div className="flex items-center gap-2">
-                            <button
+                            <AdButton
+                                adKey={`watch-prev-${animeId}`}
                                 onClick={goToPrev}
                                 disabled={!hasPrev}
                                 className="btn-outline px-3 disabled:opacity-50"
                             >
                                 <ChevronLeft className="h-4 w-4" />
                                 Prev
-                            </button>
+                            </AdButton>
 
-                            <button
+                            <AdButton
+                                adKey={`watch-next-${animeId}`}
                                 onClick={goToNext}
                                 disabled={!hasNext}
                                 className="btn-outline px-3 disabled:opacity-50"
                             >
                                 Next
                                 <ChevronRight className="h-4 w-4" />
-                            </button>
+                            </AdButton>
 
                             <button
                                 onClick={() => setShowEpisodeList(!showEpisodeList)}
