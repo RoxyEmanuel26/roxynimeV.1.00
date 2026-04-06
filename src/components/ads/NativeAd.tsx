@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getNativeAdBySet } from "@/config/ads.config";
 
 interface NativeAdProps {
     /** "A" untuk Set A, "B" untuk Set B */
@@ -8,30 +9,17 @@ interface NativeAdProps {
     className?: string;
 }
 
-// FIXED: Data native banner per set dari balkliving.com
-const NATIVE_ADS = {
-    A: {
-        src: "https://balkliving.com/1fe522e35341470390c5d22d3859e155/invoke.js",
-        containerId: "container-1fe522e35341470390c5d22d3859e155",
-    },
-    B: {
-        src: "https://balkliving.com/eb9a01b55acbcef04f866e53d4339f0e/invoke.js",
-        containerId: "container-eb9a01b55acbcef04f866e53d4339f0e",
-    },
-} as const;
-
 /**
- * NativeAd — Native banner ad dari Adsterra via balkliving.com.
- * Menggunakan container ID unik dan invoke.js per set.
+ * NativeAd — Native banner ad component.
+ * Script URLs & container IDs dikonfigurasi di src/config/ads.config.ts
  */
 export function NativeAd({ set = "A", className }: NativeAdProps) {
     const loadedRef = useRef(false);
-    const ad = NATIVE_ADS[set];
+    const ad = getNativeAdBySet(set);
 
     useEffect(() => {
-        if (loadedRef.current) return;
+        if (loadedRef.current || !ad) return;
 
-        // Cek apakah container sudah ada di DOM
         const container = document.getElementById(ad.containerId);
         if (!container) return;
 
@@ -43,6 +31,8 @@ export function NativeAd({ set = "A", className }: NativeAdProps) {
         script.setAttribute("data-cfasync", "false");
         container.appendChild(script);
     }, [ad]);
+
+    if (!ad) return null;
 
     return (
         <div className={`w-full ${className || ""}`}>

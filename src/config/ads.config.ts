@@ -3,64 +3,18 @@
  *   RoxyNime — Ad Network Configuration
  * ═══════════════════════════════════════════════
  *
- *  Supported Networks: Adsterra, ExoClick, PropellerAds, HilltopAds
+ *  Semua konfigurasi iklan terpusat di file ini.
+ *  Komponen iklan (PopunderAd, NativeAd, dll.) membaca dari sini.
  *
- *  HOW TO ADD YOUR AD CODES:
- *  1. Paste your ad code/key in the appropriate section below
- *  2. Set enabled: true for the network you want active
- *  3. Deploy — ads will auto-rotate between enabled networks
- *
- *  Each ad placement will randomly pick from ALL enabled networks
- *  for maximum revenue optimization.
+ *  Cara mengelola:
+ *  1. Tambah/hapus script di section yang sesuai
+ *  2. Set enabled: true/false untuk mengaktifkan/mematikan
+ *  3. Deploy — komponen akan otomatis membaca config terbaru
  */
 
-// ─── Types ───────────────────────────────────────────────
+// ─── Verification Meta Tags ──────────────────────────────────
+// Tag <meta> untuk verifikasi kepemilikan situs di ad network
 
-export type AdNetwork = "adsterra" | "exoclick" | "propellerads" | "hilltopads";
-
-export interface AdUnit {
-    /** Unique identifier for this ad unit */
-    id: string;
-    /** Which network this belongs to */
-    network: AdNetwork;
-    /** Ad format/size label */
-    format: string;
-    /** Width in pixels */
-    width: number;
-    /** Height in pixels */
-    height: number;
-    /** The ad key, zone ID, or placement ID from the network */
-    key: string;
-    /** Script URL (if the network uses a script tag) */
-    scriptUrl?: string;
-}
-
-export interface NetworkConfig {
-    /** Enable/disable this entire network */
-    enabled: boolean;
-    /** Display name */
-    name: string;
-    /** Banner ads (leaderboard, mobile banners, etc.) */
-    banners: AdUnit[];
-    /** Rectangle ads (300x250, in-feed) */
-    rectangles: AdUnit[];
-    /** Native/small ads (320x50, etc.) */
-    natives: AdUnit[];
-    /** Popunder script URL (if available) */
-    popunder?: string;
-    /** Interstitial ad units */
-    interstitials: AdUnit[];
-}
-
-// ─── CONFIGURATION ────────────────────────────────────────
-//
-//  ✏️  EDIT BELOW — Paste your ad codes from each network
-//
-
-/** 
- * Verification Meta Tags
- * Add tags here to verify your site ownership for ad networks (monetag, etc.) 
- */
 export const VERIFICATION_META_TAGS = [
     { name: "monetag", content: "f7741fca031b06265f52e59195616470" },
     { name: "a3976e5839396e4d0b02dfeb5a15e654c02367dc", content: "a3976e5839396e4d0b02dfeb5a15e654c02367dc" },
@@ -69,315 +23,167 @@ export const VERIFICATION_META_TAGS = [
     { name: "p:domain_verify", content: "f2c35ca2d67b1ffb5d2db09a6fe825ec" },
 ];
 
-export const ADS_CONFIG: Record<AdNetwork, NetworkConfig> = {
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  ADSTERRA — https://www.adsterra.com
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    adsterra: {
+// ─── Global Scripts (Popunder, Social Bar, dll.) ──────────────
+// Script yang di-load sekali di seluruh halaman via <Script> tag
+
+export interface GlobalAdScript {
+    /** ID unik untuk script ini */
+    id: string;
+    /** Tipe iklan */
+    type: "popunder" | "social-bar" | "vignette" | "interstitial" | "push-notification" | "other";
+    /** Sumber: "adsterra" | "monetag" | dll. */
+    network: string;
+    /** URL script (untuk tag <script src="...">) */
+    src?: string;
+    /** Inline script (untuk dangerouslySetInnerHTML) */
+    inline?: string;
+    /** Aktif atau tidak */
+    enabled: boolean;
+}
+
+export const GLOBAL_AD_SCRIPTS: GlobalAdScript[] = [
+
+    // ── Adsterra (via balkliving.com) ─────────────────────────
+
+    {
+        id: "adsterra-popunder-a",
+        type: "popunder",
+        network: "adsterra",
+        src: "https://glamournakedemployee.com/ba/9b/a2/ba9ba2f9ddd8853b30d8a203c7179958.js",
         enabled: true,
-        name: "Adsterra",
-        banners: [
-            {
-                id: "adsterra-banner-1",
-                network: "adsterra",
-                format: "728x90",
-                width: 728,
-                height: 90,
-                key: "1d4f1463e95b8d3fb84adadeb3a2f170",
-                // Script URL auto-generated: https://www.highperformanceformat.com/{key}/invoke.js
-            },
-            {
-                id: "adsterra-banner-2",
-                network: "adsterra",
-                format: "728x90",
-                width: 728,
-                height: 90,
-                key: "c89ece9ff04cd88930d8cf0f5e62f70f",
-            },
-        ],
-        rectangles: [
-            // Paste your 300x250 keys here:
-            // {
-            //     id: "adsterra-rect-1",
-            //     network: "adsterra",
-            //     format: "300x250",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_ADSTERRA_300x250_KEY",
-            // },
-        ],
-        natives: [
-            // Paste your native/320x50 keys here:
-            // {
-            //     id: "adsterra-native-1",
-            //     network: "adsterra",
-            //     format: "320x50",
-            //     width: 320,
-            //     height: 50,
-            //     key: "YOUR_ADSTERRA_NATIVE_KEY",
-            // },
-        ],
-        popunder: "//pl28650799.effectivegatecpm.com/a2/92/18/a29218ac83917d59f19c700bc4e955f0.js",
-        interstitials: [],
+    },
+    {
+        id: "adsterra-socialbar-a",
+        type: "social-bar",
+        network: "adsterra",
+        src: "https://glamournakedemployee.com/17/34/6f/17346f5e8864f23e6a539e67e940f5b8.js",
+        enabled: true,
     },
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  EXOCLICK — https://www.exoclick.com
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    exoclick: {
-        enabled: false, // ← Set to true after adding your zone IDs
-        name: "ExoClick",
-        banners: [
-            // ExoClick uses Zone IDs. Paste yours here:
-            // {
-            //     id: "exo-banner-1",
-            //     network: "exoclick",
-            //     format: "728x90",
-            //     width: 728,
-            //     height: 90,
-            //     key: "YOUR_EXOCLICK_ZONE_ID",
-            //     scriptUrl: "https://a.magsrv.com/ad-provider.js",
-            // },
-        ],
-        rectangles: [
-            // {
-            //     id: "exo-rect-1",
-            //     network: "exoclick",
-            //     format: "300x250",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_EXOCLICK_ZONE_ID",
-            //     scriptUrl: "https://a.magsrv.com/ad-provider.js",
-            // },
-        ],
-        natives: [
-            // {
-            //     id: "exo-native-1",
-            //     network: "exoclick",
-            //     format: "native",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_EXOCLICK_NATIVE_ZONE_ID",
-            //     scriptUrl: "https://a.magsrv.com/ad-provider.js",
-            // },
-        ],
-        // ExoClick Popunder:
-        // popunder: "https://a.magsrv.com/ad-provider.js",
-        interstitials: [
-            // {
-            //     id: "exo-interstitial-1",
-            //     network: "exoclick",
-            //     format: "interstitial",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_EXOCLICK_INTERSTITIAL_ZONE_ID",
-            //     scriptUrl: "https://a.magsrv.com/ad-provider.js",
-            // },
-        ],
-    },
+    // ── Monetag ───────────────────────────────────────────────
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  PROPELLERADS — https://www.propellerads.com
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    propellerads: {
-        enabled: false, // ← Set to true after adding your zone IDs
-        name: "PropellerAds",
-        banners: [
-            // PropellerAds uses Zone IDs with their own script
-            // {
-            //     id: "propeller-banner-1",
-            //     network: "propellerads",
-            //     format: "728x90",
-            //     width: 728,
-            //     height: 90,
-            //     key: "YOUR_PROPELLERADS_ZONE_ID",
-            //     scriptUrl: "//pl_________.profitablegatecpm.com/YOUR_HASH.js",
-            // },
-        ],
-        rectangles: [
-            // {
-            //     id: "propeller-rect-1",
-            //     network: "propellerads",
-            //     format: "300x250",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_PROPELLERADS_ZONE_ID",
-            //     scriptUrl: "//pl_________.profitablegatecpm.com/YOUR_HASH.js",
-            // },
-        ],
-        natives: [
-            // {
-            //     id: "propeller-native-1",
-            //     network: "propellerads",
-            //     format: "native",
-            //     width: 320,
-            //     height: 50,
-            //     key: "YOUR_PROPELLERADS_NATIVE_ID",
-            //     scriptUrl: "//pl_________.profitablegatecpm.com/YOUR_HASH.js",
-            // },
-        ],
-        // PropellerAds Popunder/OnClick:
-        // popunder: "//pl_________.profitablegatecpm.com/YOUR_POPUNDER_HASH.js",
-        interstitials: [
-            // {
-            //     id: "propeller-interstitial-1",
-            //     network: "propellerads",
-            //     format: "interstitial",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_PROPELLERADS_INTERSTITIAL_ID",
-            //     scriptUrl: "//pl_________.profitablegatecpm.com/YOUR_HASH.js",
-            // },
-        ],
-    },
+    // {
+    //     id: "monetag-1",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702024',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-2",
+    //     type: "other",
+    //     network: "monetag",
+    //     src: "https://quge5.com/88/tag.min.js",
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-3",
+    //     type: "other",
+    //     network: "monetag",
+    //     src: "https://5gvci.com/act/files/tag.min.js?z=10702028",
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-4",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702046',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-5",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702048',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-6",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702050',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-7",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702051',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-8",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702052',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-9",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702053',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+    // {
+    //     id: "monetag-10",
+    //     type: "other",
+    //     network: "monetag",
+    //     inline: `(function(s){s.dataset.zone='10702055',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+    //     enabled: true,
+    // },
+];
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  HILLTOPADS — https://www.hilltopads.com
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    hilltopads: {
-        enabled: false, // ← Set to true after adding your zone IDs
-        name: "HilltopAds",
-        banners: [
-            // HilltopAds uses Zone IDs with iframe embeds
-            // {
-            //     id: "hilltop-banner-1",
-            //     network: "hilltopads",
-            //     format: "728x90",
-            //     width: 728,
-            //     height: 90,
-            //     key: "YOUR_HILLTOPADS_ZONE_ID",
-            //     scriptUrl: "https://www.hilltopads.net/hta/afu.php",
-            // },
-        ],
-        rectangles: [
-            // {
-            //     id: "hilltop-rect-1",
-            //     network: "hilltopads",
-            //     format: "300x250",
-            //     width: 300,
-            //     height: 250,
-            //     key: "YOUR_HILLTOPADS_ZONE_ID",
-            //     scriptUrl: "https://www.hilltopads.net/hta/afu.php",
-            // },
-        ],
-        natives: [],
-        // HilltopAds Popunder:
-        // popunder: "https://www.hilltopads.net/hta/afu.php?zoneid=YOUR_POPUNDER_ZONE&var=YOUR_VAR",
-        interstitials: [],
-    },
-};
 
-// ─── Helper Functions ──────────────────────────────────────
+// ─── Native Banner Ads ────────────────────────────────────────
+// Script iklan native yang ditampilkan di dalam halaman (bukan popup)
 
-/** Get all enabled networks */
-export function getEnabledNetworks(): NetworkConfig[] {
-    return Object.values(ADS_CONFIG).filter((n) => n.enabled);
+export interface NativeAdConfig {
+    /** ID unik */
+    id: string;
+    /** Label set (A, B, dll.) untuk memilih dari komponen */
+    set: string;
+    /** Network asal */
+    network: string;
+    /** URL script invoke.js */
+    src: string;
+    /** Container div ID yang dibutuhkan oleh script */
+    containerId: string;
+    /** Aktif atau tidak */
+    enabled: boolean;
 }
 
-/** Get all banner ad units from enabled networks */
-export function getBannerAds(): AdUnit[] {
-    return getEnabledNetworks().flatMap((n) => n.banners);
+export const NATIVE_AD_CONFIGS: NativeAdConfig[] = [
+    // {
+    //     id: "native-adsterra-a",
+    //     set: "A",
+    //     network: "adsterra",
+    //     src: "https://balkliving.com/1fe522e35341470390c5d22d3859e155/invoke.js",
+    //     containerId: "container-1fe522e35341470390c5d22d3859e155",
+    //     enabled: true,
+    // },
+];
+
+
+// ─── Helper Functions ──────────────────────────────────────────
+
+/** Ambil semua global scripts yang aktif */
+export function getEnabledGlobalScripts(): GlobalAdScript[] {
+    return GLOBAL_AD_SCRIPTS.filter((s) => s.enabled);
 }
 
-/** Get all rectangle ad units from enabled networks */
-export function getRectangleAds(): AdUnit[] {
-    return getEnabledNetworks().flatMap((n) => n.rectangles);
+/** Ambil global scripts berdasarkan tipe */
+export function getGlobalScriptsByType(type: GlobalAdScript["type"]): GlobalAdScript[] {
+    return GLOBAL_AD_SCRIPTS.filter((s) => s.enabled && s.type === type);
 }
 
-/** Get all native ad units from enabled networks */
-export function getNativeAds(): AdUnit[] {
-    return getEnabledNetworks().flatMap((n) => n.natives);
+/** Ambil native ad config berdasarkan set */
+export function getNativeAdBySet(set: string): NativeAdConfig | undefined {
+    return NATIVE_AD_CONFIGS.find((n) => n.enabled && n.set === set);
 }
 
-/** Get all interstitial ad units from enabled networks */
-export function getInterstitialAds(): AdUnit[] {
-    return getEnabledNetworks().flatMap((n) => n.interstitials);
-}
-
-/** Get all popunder scripts from enabled networks */
-export function getPopunderScripts(): string[] {
-    return getEnabledNetworks()
-        .map((n) => n.popunder)
-        .filter((s): s is string => !!s);
-}
-
-/**
- * Pick a random ad unit from a list.
- * Uses a slot string for deterministic (but distributed) selection.
- */
-export function pickAd(ads: AdUnit[], slot: string = "default"): AdUnit | null {
-    if (ads.length === 0) return null;
-    const hash = slot.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    return ads[hash % ads.length];
-}
-
-/**
- * Pick a random ad unit of any type from enabled networks.
- * Falls back through: preferred → banners → any.
- */
-export function pickAdForSlot(
-    type: "banner" | "rectangle" | "native" | "interstitial",
-    slot: string = "default"
-): AdUnit | null {
-    const getters: Record<string, () => AdUnit[]> = {
-        banner: getBannerAds,
-        rectangle: getRectangleAds,
-        native: getNativeAds,
-        interstitial: getInterstitialAds,
-    };
-
-    // FIXED: Hanya return ad dari tipe yang diminta, TIDAK fallback ke tipe lain
-    // Fallback ke banner/any menyebabkan NativeAd/InFeedAd render iframe ukuran salah → kotak putih
-    const ads = getters[type]();
-    if (ads.length > 0) return pickAd(ads, slot);
-
-    // Tidak ada ad untuk tipe ini → return null → komponen tidak render apa-apa
-    return null;
-}
-
-// ─── Script Generators (per network) ────────────────────────
-
-/**
- * Generate the iframe srcDoc for a given ad unit.
- * Each network has its own script injection pattern.
- */
-export function generateAdSrcDoc(ad: AdUnit, overrideW?: number, overrideH?: number): string {
-    const w = overrideW || ad.width;
-    const h = overrideH || ad.height;
-
-    switch (ad.network) {
-        case "adsterra":
-            return `<html><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:${h}px;overflow:hidden;background:transparent;">
-                <script type="text/javascript">
-                    atOptions = { 'key':'${ad.key}', 'format':'iframe', 'height':${h}, 'width':${w}, 'params':{} };
-                </script>
-                <script type="text/javascript" src="https://www.highperformanceformat.com/${ad.key}/invoke.js"></script>
-            </body></html>`;
-
-        case "exoclick":
-            return `<html><head>
-                <script type="text/javascript" src="${ad.scriptUrl || 'https://a.magsrv.com/ad-provider.js'}" async></script>
-            </head><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:${h}px;overflow:hidden;background:transparent;">
-                <ins class="eas6a97888e" data-zoneid="${ad.key}"></ins>
-                <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-            </body></html>`;
-
-        case "propellerads":
-            return `<html><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:${h}px;overflow:hidden;background:transparent;">
-                <script type="text/javascript" src="${ad.scriptUrl}" async></script>
-            </body></html>`;
-
-        case "hilltopads":
-            // HilltopAds uses iframe embed or script
-            const htaUrl = `${ad.scriptUrl || 'https://www.hilltopads.net/hta/afu.php'}?zoneid=${ad.key}&var=${w}x${h}`;
-            return `<html><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:${h}px;overflow:hidden;background:transparent;">
-                <iframe src="${htaUrl}" width="${w}" height="${h}" frameborder="0" scrolling="no" style="border:none;"></iframe>
-            </body></html>`;
-
-        default:
-            return `<html><body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:${h}px;background:transparent;">
-                <div style="width:${w}px;height:${h}px;background:#1a1a2e;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#666;font-size:11px;">Ad</div>
-            </body></html>`;
-    }
+/** Ambil semua native ads yang aktif */
+export function getEnabledNativeAds(): NativeAdConfig[] {
+    return NATIVE_AD_CONFIGS.filter((n) => n.enabled);
 }
