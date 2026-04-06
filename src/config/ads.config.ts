@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /**
  * ═══════════════════════════════════════════════
  *   RoxyNime — Ad Network Configuration
@@ -166,6 +168,42 @@ export const NATIVE_AD_CONFIGS: NativeAdConfig[] = [
 ];
 
 
+// ─── Sidebar Ads (Advertica, dll) ─────────────────────────────
+// Script iklan (biasanya 160x600 skyscraper) yang diletakkan di sidebar halaman
+
+export interface SidebarAdConfig {
+    id: string;
+    network: string;
+    insProps: {
+        style?: CSSProperties;
+        "data-width"?: string;
+        "data-height"?: string;
+        className?: string;
+        "data-domain"?: string;
+        "data-affquery"?: string;
+    };
+    scriptSrc: string;
+    enabled: boolean;
+}
+
+export const SIDEBAR_AD_CONFIGS: SidebarAdConfig[] = [
+    {
+        id: "advertica-sidebar",
+        network: "advertica",
+        insProps: {
+            style: { width: "160px", height: "600px", display: "inline-block" },
+            "data-width": "160",
+            "data-height": "600",
+            className: "edde818665d",
+            "data-domain": "//data527.click",
+            "data-affquery": "/f364edfc2c3644ad5c79/dde818665d/?placementName=roxynime",
+        },
+        scriptSrc: "//data527.click/js/responsive.js",
+        enabled: true,
+    }
+];
+
+
 // ─── Helper Functions ──────────────────────────────────────────
 
 /** Ambil semua global scripts yang aktif */
@@ -186,4 +224,9 @@ export function getNativeAdBySet(set: string): NativeAdConfig | undefined {
 /** Ambil semua native ads yang aktif */
 export function getEnabledNativeAds(): NativeAdConfig[] {
     return NATIVE_AD_CONFIGS.filter((n) => n.enabled);
+}
+
+/** Ambil semua sidebar ads yang aktif */
+export function getEnabledSidebarAds(): SidebarAdConfig[] {
+    return SIDEBAR_AD_CONFIGS.filter((s) => s.enabled);
 }
