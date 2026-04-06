@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SankaStreamServer } from "@/lib/sankaClient";
-import { Play } from "lucide-react";
+import { Play, Loader2, RefreshCw } from "lucide-react";
 
 interface WatchPlayerProps {
     servers: SankaStreamServer[];
@@ -12,6 +12,92 @@ export default function WatchPlayer({ servers }: WatchPlayerProps) {
     const [activeServer, setActiveServer] = useState<SankaStreamServer | null>(
         servers.length > 0 ? servers[0] : null
     );
+    const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+    const [resolving, setResolving] = useState(false);
+    const [resolveError, setResolveError] = useState<string | null>(null);
+
+    /**
+     * Resolve a server's streamUrl.
+     *
+     * Some streamUrls point directly to an iframe-embeddable page (e.g. desustream).
+     * Others point to a Sanka API endpoint (/anime/server/...) that returns JSON
+     * with the actual embed URL in `data.url`.
+     *
+     * This function handles both cases.
+     */
+    const resolveStreamUrl = useCallback(async (server: SankaStreamServer) => {
+        const url = server.streamUrl;
+        if (!url) {
+            setResolveError("URL server tidak tersedia");
+            return;
+        }
+
+        setResolving(true);
+        setResolveError(null);
+        setResolvedUrl(null);
+
+        try {
+            // If the URL is NOT a Sanka API endpoint, use it directly
+            const isSankaEndpoint =
+                url.includes("/anime/server/") ||
+                url.includes("sankavollerei.com/anime/");
+
+            if (!isSankaEndpoint) {
+                // Direct embeddable URL (e.g., desustream, vidhide, filedon, etc.)
+                setResolvedUrl(url);
+                setResolving(false);
+                return;
+            }
+
+            // Fetch the Sanka server endpoint to get the actual embed URL
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`Server responded with ${res.status}`);
+            }
+
+            const contentType = res.headers.get("content-type") || "";
+
+            // If the response is JSON, extract the URL
+            if (contentType.includes("application/json")) {
+                const json = await res.json();
+
+                // Check various possible structures
+                const embedUrl =
+                    json.data?.url ||
+                    json.data?.streamUrl ||
+                    json.data?.embed ||
+                    json.data?.iframe ||
+                    json.url ||
+                    json.streamUrl ||
+                    json.embed;
+
+                if (embedUrl) {
+                    setResolvedUrl(embedUrl);
+                } else {
+                    console.error("[WatchPlayer] Could not extract URL from JSON:", json);
+                    throw new Error("Tidak dapat menemukan URL video dari server");
+                }
+            } else {
+                // Response is not JSON (it's HTML/embeddable content)
+                // Use the URL directly as iframe source
+                setResolvedUrl(url);
+            }
+        } catch (err) {
+            console.error("[WatchPlayer] Error resolving stream URL:", err);
+            setResolveError(
+                err instanceof Error ? err.message : "Gagal memuat video, coba server lain"
+            );
+        } finally {
+            setResolving(false);
+        }
+    }, []);
+
+    // Resolve URL whenever the active server changes
+    useEffect(() => {
+        if (activeServer) {
+            resolveStreamUrl(activeServer);
+        }
+    }, [activeServer, resolveStreamUrl]);
 
     if (!servers || servers.length === 0) {
         return (
@@ -27,16 +113,35 @@ export default function WatchPlayer({ servers }: WatchPlayerProps) {
         <div className="space-y-6">
             {/* Video Player (iframe) */}
             <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-xl ring-1 ring-border relative">
-                {activeServer ? (
+                {resolving ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">Memuat video...</p>
+                    </div>
+                ) : resolveError ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-white gap-4 px-4">
+                        <p className="text-red-400 text-center">{resolveError}</p>
+                        <button
+                            onClick={() => activeServer && resolveStreamUrl(activeServer)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/80 transition-colors"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Coba Lagi
+                        </button>
+                        <p className="text-xs text-muted-foreground text-center">
+                            Atau pilih server lain di bawah
+                        </p>
+                    </div>
+                ) : resolvedUrl ? (
                     <iframe
-                        src={activeServer.streamUrl}
+                        src={resolvedUrl}
                         className="w-full h-full border-0 absolute top-0 left-0"
                         allowFullScreen
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        Memuat video...
+                        Pilih server untuk mulai menonton
                     </div>
                 )}
             </div>
