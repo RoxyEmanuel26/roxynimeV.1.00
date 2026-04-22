@@ -53,7 +53,7 @@ export const GLOBAL_AD_SCRIPTS: GlobalAdScript[] = [
         type: "popunder",
         network: "adsterra",
         src: "https://glamournakedemployee.com/ba/9b/a2/ba9ba2f9ddd8853b30d8a203c7179958.js",
-        enabled: false,
+        enabled: true,
     },
     {
         id: "adsterra-socialbar-a",

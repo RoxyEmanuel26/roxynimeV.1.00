@@ -1,5 +1,12 @@
 import { Suspense } from "react";
+import { Metadata } from "next";
 import { AnimeCardSkeleton } from "@/components/common";
+
+export const metadata: Metadata = {
+  title: "Cari Anime Sub Indo Lengkap",
+  description: "Cari dan temukan ribuan judul anime subtitle Indonesia gratis. Filter berdasarkan genre, status, dan rating.",
+  alternates: { canonical: "https://roxy.my.id/browse" },
+};
 
 export default function BrowseLayout({
     children,

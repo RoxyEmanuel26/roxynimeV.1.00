@@ -20,10 +20,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         // Buat deskripsi yang aman (menghindari hasil "undefined...")
         const safeSynopsis = anime.synopsis ? `${anime.synopsis.slice(0, 150)}...` : '';
         const description = `Nonton ${anime.title} sub indo gratis. ${safeSynopsis}`.trim();
+        const url = `https://roxy.my.id/anime/${slug}`;
 
         return {
             title: `${anime.title} Sub Indo — RoxyNime`,
             description: description,
+            alternates: { canonical: url },
             keywords: [
                 anime.title,
                 `${anime.title} sub indo`,
@@ -65,6 +67,23 @@ export default async function AnimeDetailPage({ params }: PageProps) {
 
     return (
         <div className="min-h-screen pb-12">
+            {/* JSON-LD Schema */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "TVSeries",
+                        "name": title,
+                        "image": poster || "https://roxy.my.id/placeholder-anime.svg",
+                        "description": synopsis || `Nonton anime ${title} sub indo gratis di RoxyNime.`,
+                        "genre": genres || [],
+                        "startDate": releaseDate || undefined,
+                        "numberOfEpisodes": totalEpisodes || undefined,
+                    })
+                }}
+            />
+
             {/* Breadcrumb */}
             <div className="bg-muted/30 border-b border-border">
                 <div className="container mx-auto px-4 max-w-7xl h-12 flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto whitespace-nowrap scrollbar-hide">
