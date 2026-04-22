@@ -51,8 +51,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://roxy.my.id",
   },
-  // Daftarkan di: https://search.google.com/search-console
-  // Lalu aktifkan: verification: { google: "kode_dari_GSC" },
+  verification: {
+    google: "XR85QWJ82MPs_BR-GLxEyPAVL-8RdQqd90jNY34e2Vw",
+  },
   manifest: "/manifest.json",
 };
 
