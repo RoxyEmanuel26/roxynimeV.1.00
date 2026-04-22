@@ -16,14 +16,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const { slug } = await params;
     try {
         const anime = await sankaClient.getDetail(slug);
+        
+        // Buat deskripsi yang aman (menghindari hasil "undefined...")
+        const safeSynopsis = anime.synopsis ? `${anime.synopsis.slice(0, 150)}...` : '';
+        const description = `Nonton ${anime.title} sub indo gratis. ${safeSynopsis}`.trim();
+
         return {
             title: `${anime.title} Sub Indo — RoxyNime`,
-            description: anime.synopsis?.slice(0, 160) || `Nonton anime ${anime.title} subtitle Indonesia gratis di RoxyNime.`,
+            description: description,
+            keywords: [
+                anime.title,
+                `${anime.title} sub indo`,
+                `nonton ${anime.title}`,
+                `streaming ${anime.title}`,
+                `${anime.title} episode terbaru`
+            ],
             openGraph: {
                 title: `${anime.title} Sub Indo — RoxyNime`,
-                description: anime.synopsis?.slice(0, 160) || `Nonton anime ${anime.title} subtitle Indonesia gratis di RoxyNime.`,
-                images: [anime.poster],
+                description: description,
+                images: [anime.poster || "/placeholder-anime.svg"],
+                type: "website",
             },
+            twitter: {
+                card: "summary_large_image",
+                title: `${anime.title} Sub Indo — RoxyNime`,
+                description: description,
+                images: [anime.poster || "/placeholder-anime.svg"],
+            }
         };
     } catch (error) {
         return {
