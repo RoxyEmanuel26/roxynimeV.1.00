@@ -14,56 +14,19 @@ export const metadata: Metadata = {
     template: "%s | RoxyNime",
   },
   description:
-    "Stream your favorite anime for free in HD quality. Watch the latest episodes, movies, and series on RoxyNime.",
+    "Nonton anime sub indo gratis kualitas HD di RoxyNime. Episode terbaru, anime ongoing, film anime, dan ribuan judul lengkap dengan subtitle Indonesia.",
   keywords: [
-    // ── Keywords dasar (sudah ada) ──────────────────────────────────
-    "anime", "nonton anime", "anime sub indo", "anime subtitle indonesia",
-    "streaming anime", "anime online gratis", "nonton anime gratis",
-    "anime terbaru", "anime ongoing", "roxynime",
-
-    // ── Judul anime paling banyak dicari di Google 2025-2026 ────────
-    // Sumber: Google Trends, Netflix, Crunchyroll top charts
-    "one piece", "one piece sub indo",                  // #1 most searched anime worldwide [web:25]
-    "naruto", "naruto shippuden sub indo",              // #2 worldwide, #1 Netflix H1 2025 [web:29]
-    "demon slayer", "kimetsu no yaiba sub indo",        // Top Crunchyroll 2025 [web:29]
-    "solo leveling", "solo leveling sub indo",          // Crunchyroll Anime of the Year 2025 [web:29]
-    "attack on titan", "shingeki no kyojin sub indo",   // Paling banyak dicari di Indonesia [web:13]
-    "jujutsu kaisen", "jujutsu kaisen sub indo",        // Top trending [web:13]
-    "spy x family", "spy x family sub indo",            // #1 Anime Trending Fall 2025 [web:29]
-    "dragon ball", "dragon ball daima sub indo",        // Top 10 Google trending [web:17]
-    "my hero academia", "boku no hero academia",
-    "black clover sub indo",
-    "bleach sub indo", "bleach thousand year blood war",
-    "sakamoto days sub indo",                           // Google Top 10 Trending Anime 2025 [web:17]
-    "frieren sub indo",                                 // Popular 2025 [web:29]
-    "gachiakuta sub indo",                              // Trending 2025 [web:29]
-
-    // ── Kata kunci cara akses / intent pengguna ─────────────────────
-    "nonton anime episode terbaru",
-    "anime episode 1 sub indo",
+    "nonton anime sub indo",
+    "streaming anime gratis",
+    "anime subtitle indonesia",
     "anime batch sub indo",
-    "download anime sub indo",
-    "anime lengkap sub indo",
-    "samehadaku", "otakudesu", "anoboy",               // Brand competitor — dicari pengguna yang tahu situs sejenis
-    "gogoanime sub indo",
-    "nonton anime tanpa iklan",
-    "anime HD 1080p sub indo",
-    "anime season spring 2026",
-    "jadwal rilis anime 2026",
-
-    // ── Genre populer ───────────────────────────────────────────────
-    "anime action sub indo",
-    "anime romance sub indo",
-    "anime isekai sub indo",
-    "anime fantasy sub indo",
-    "anime shounen sub indo",
-    "anime seinen sub indo",
-    "anime horror sub indo",
-    "anime comedy sub indo",
-    "anime school sub indo",
-    "rekomendasi anime terbaik",
-    "anime movie sub indo",
-    "anime film bioskop sub indo",
+    "anime ongoing sub indo",
+    "roxynime",
+    "samehadaku",
+    "otakudesu",
+    "anoboy",
+    "anime HD sub indo",
+    "nonton anime online",
   ],
   authors: [{ name: "RoxyNime" }],
   creator: "RoxyNime",
