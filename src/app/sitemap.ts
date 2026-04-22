@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 import { getOngoingAnimeList } from "@/lib/animbus";
 
+export const revalidate = 3600; // Revalidate sitemap setiap 1 jam (3600 detik)
+
 const getBaseUrl = () => {
     if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
     if (process.env.NODE_ENV === "development") return "http://localhost:3000";
