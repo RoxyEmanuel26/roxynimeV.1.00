@@ -31,7 +31,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                     src={imgSrc}
                     alt={featured.title}
                     fill
-                    className={`object-cover transition-opacity duration-1000 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                    className={`object-cover animate-ken-burns transition-opacity duration-1000 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                     priority
                     sizes="100vw"
                     unoptimized
@@ -44,15 +44,15 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
             <div className="relative h-full flex items-end">
                 <div className="container mx-auto px-4 max-w-7xl pb-12">
                     <div className="max-w-2xl">
-                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4">
+                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 animate-fade-in-up">
                             {featured.title}
                         </h1>
                         {featured.description && (
-                            <p className="text-sm md:text-base text-muted-foreground mb-6 line-clamp-3">
+                            <p className="text-sm md:text-base text-muted-foreground mb-6 line-clamp-3 animate-fade-in-up delay-200">
                                 {featured.description}
                             </p>
                         )}
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 animate-fade-in-up delay-300">
                             <AdLink
                                 href={`/anime/${featured.id || featured.slug}`}
                                 adKey={`hero-watch-${featured.id || featured.slug}`}

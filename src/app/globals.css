@@ -206,14 +206,16 @@
 
   /* ─────────────── Anime Card ─────────────── */
   .anime-card {
-    @apply relative overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer;
+    @apply relative overflow-hidden rounded-2xl cursor-pointer;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
   }
   .anime-card:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-card-hover);
+    transform: scale(1.07);
+    box-shadow: var(--shadow-glow), var(--shadow-card-hover);
+    z-index: 10;
   }
   .dark .anime-card:hover {
-    box-shadow: var(--shadow-card-hover), 0 0 0 1px oklch(0.72 0.15 230 / 0.20);
+    box-shadow: var(--shadow-glow), var(--shadow-card-hover), 0 0 0 1px oklch(0.72 0.15 230 / 0.30);
   }
   .anime-card::before {
     content: "";
@@ -527,6 +529,34 @@
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-12px); }
+  }
+
+  /* ─────────────── Ken Burns (Hero Image) ─────────────── */
+  .animate-ken-burns {
+    animation: kenBurns 20s ease-out forwards;
+  }
+  @keyframes kenBurns {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+  }
+
+  /* ─────────────── Fade In Up (Hero Text) ─────────────── */
+  .animate-fade-in-up {
+    animation: fadeInUp 1s ease-out forwards;
+    opacity: 0;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─────────────── Utilities ─────────────── */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   /* ─────────────── Global Overflow Fix ─────────────── */

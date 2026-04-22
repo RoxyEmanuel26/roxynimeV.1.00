@@ -18,19 +18,20 @@ export function TrendingSection({ animes }: { animes: Anime[] }) {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+                <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-5 lg:gap-6 md:overflow-visible">
                     {animes.slice(0, 18).map((anime, index) => (
-                        <AnimeCard
-                            key={anime.id || anime.slug || `home-${index}`}
-                            id={anime.id || anime.slug || ""}
-                            slug={anime.slug}
-                            title={anime.title}
-                            image={anime.image}
-                            episode={anime.episode}
-                            rating={anime.rating}
-                            type={anime.type}
-                            priority={index < 6}
-                        />
+                        <div key={anime.id || anime.slug || `home-${index}`} className="flex-none w-[140px] sm:w-[160px] md:w-auto snap-start">
+                            <AnimeCard
+                                id={anime.id || anime.slug || ""}
+                                slug={anime.slug}
+                                title={anime.title}
+                                image={anime.image}
+                                episode={anime.episode}
+                                rating={anime.rating}
+                                type={anime.type}
+                                priority={index < 6}
+                            />
+                        </div>
                     ))}
                 </div>
 

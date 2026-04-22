@@ -107,7 +107,7 @@ export function Header() {
                 <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90} className="hidden lg:flex" />
 
                 <div className="container mx-auto px-4 max-w-7xl">
-                    <div className="flex items-center justify-between h-16 gap-4">
+                    <div className={`flex items-center justify-between transition-all duration-500 gap-4 ${scrolled ? "h-14" : "h-16 md:h-20"}`}>
 
                         {/* 3. LOGO */}
                         <Link href="/" className="flex flex-shrink-0 items-center gap-2.5 group">
