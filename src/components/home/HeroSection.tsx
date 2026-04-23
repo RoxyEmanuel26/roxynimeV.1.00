@@ -46,7 +46,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
             {/* Foreground Content */}
             <div className="relative w-full container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-24 pb-12 lg:pt-32 lg:pb-20">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-center">
-                    
+
                     {/* Left Side: Text Area */}
                     <div className="col-span-1 md:col-span-7 lg:col-span-7 flex flex-col justify-center">
                         {featured.episode && (
@@ -64,7 +64,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                         )}
                         <div className="flex flex-wrap gap-3 sm:gap-4 animate-fade-in-up delay-300">
                             <AdLink
-                                href={`/anime/${featured.id || featured.slug}`}
+                                href={`/watch/${featured.id || featured.slug}`}
                                 adKey={`hero-watch-${featured.id || featured.slug}`}
                                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-violet-600 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-300"
                             >

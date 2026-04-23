@@ -20,7 +20,7 @@ async function fetchWithTimeout<T>(
 
 const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
 
-async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: number) {
+async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: number, type?: string) {
     const results = await Promise.allSettled(
         ALL_PROVIDERS.map(async (provider) => {
             try {
@@ -54,10 +54,21 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
                 totalItems += data.length;
             }
 
-            // Deduplicate
+            // Deduplicate + server-side filter
             data.forEach((anime: any) => {
                 const titleKey = anime.title?.toLowerCase().trim();
                 const slugKey = anime.slug || anime.id || "";
+
+                // Strip completed anime from ongoing requests
+                if (type === "ongoing" && titleKey) {
+                    const status = (anime.status || "").toLowerCase();
+                    if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return;
+                    if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return;
+                    if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return;
+                    const ep = (anime.episode || "").toLowerCase();
+                    if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return;
+                }
+
                 if (titleKey && !seenTitles.has(titleKey) && (!slugKey || !seenSlugs.has(slugKey))) {
                     seenTitles.add(titleKey);
                     if (slugKey) seenSlugs.add(slugKey);
@@ -118,14 +129,29 @@ export async function GET(request: NextRequest) {
 
         if (source && source !== "all" && ALL_PROVIDERS.includes(source)) {
             const res = await fetchWithTimeout(fetcher(source), 8000);
-            animeList = (res.data || []).map((a: any) => ({ ...a, _source: source }));
+            let filteredData = res.data || [];
+            
+            if (type === "ongoing") {
+                filteredData = filteredData.filter((anime: any) => {
+                    const titleKey = (anime.title || "").toLowerCase().trim();
+                    const status = (anime.status || "").toLowerCase();
+                    if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return false;
+                    if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return false;
+                    if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return false;
+                    const ep = (anime.episode || "").toLowerCase();
+                    if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return false;
+                    return true;
+                });
+            }
+
+            animeList = filteredData.map((a: any) => ({ ...a, _source: source }));
             pagination = res.pagination || {
                 currentPage: page,
                 hasNextPage: false,
                 hasPrevPage: page > 1,
             };
         } else {
-            const result = await fetchFromAll(fetcher, page);
+            const result = await fetchFromAll(fetcher, page, type);
             animeList = result.data;
             pagination = result.pagination;
         }

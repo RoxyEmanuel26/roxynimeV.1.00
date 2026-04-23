@@ -181,9 +181,23 @@ function OngoingContent() {
                     genres: anime.genres || [],
                 }));
 
-                // Tolerant status filter — providers use varied status strings
+                // Tolerant status filter — detect completed anime from multiple signals
                 list = list.filter((anime: any) => {
                     const status = (anime.status || "").toLowerCase().trim();
+                    const title = (anime.title || "").toLowerCase();
+                    const episode = (anime.episode || "").toLowerCase();
+
+                    // 1. Title-based detection — always reject these patterns
+                    if (title.includes("batch") || title.includes("[batch]")) return false;
+                    if (title.includes("[end]") || title.includes("(end)")) return false;
+                    if (title.includes("complete subtitle") || title.includes("lengkap subtitle")) return false;
+                    if (/\bbd\b/.test(title) && title.includes("subtitle")) return false; // BD/Blu-ray release
+
+                    // 2. Episode field detection
+                    if (episode.includes("[end]") || episode.includes("(end)") || episode === "end") return false;
+                    if (episode.includes("batch") || episode.includes("complete")) return false;
+
+                    // 3. Status field detection
                     if (!status) return true; // empty = assume ongoing
                     if (status.includes("ongoing")) return true;
                     if (status.includes("airing")) return true;

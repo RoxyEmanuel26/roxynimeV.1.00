@@ -23,7 +23,7 @@ function mapItem(item: any): ProviderAnime {
         synopsis: "",
         genres: [],
         type: item.type || "Donghua",
-        status: item.status || "Ongoing",
+        status: item.status || "",
         totalEpisodes: item.current_episode
             ? parseInt(String(item.current_episode).replace(/\D/g, ""))
             : undefined,
