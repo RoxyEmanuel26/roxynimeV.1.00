@@ -79,6 +79,7 @@ function MoviesContent() {
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
   const currentPageRef = useRef(1);
+  const providerHasNextRef = useRef<Record<string, boolean>>({});
   const { isHemat, addSavedBytes } = useDataSaver();
 
   const buildUrl = (page: number, query: string, f: FilterState): string => {
@@ -115,13 +116,28 @@ function MoviesContent() {
 
     const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
     
-    let activeProviders = ALL_PROVIDERS.length;
+    if (pageNum === 1) {
+        providerHasNextRef.current = {};
+    }
+
+    const providersToFetch = ALL_PROVIDERS.filter(provider => 
+        pageNum === 1 || providerHasNextRef.current[provider] !== false
+    );
+    
+    let activeProviders = providersToFetch.length;
+
+    if (activeProviders === 0) {
+        setLoading(false);
+        setHasMore(false);
+        return;
+    }
+
     let anyHasNext = false;
     let anyHasPrev = pageNum > 1;
     let maxTotalPages = pageNum;
     let anySuccess = false;
 
-    ALL_PROVIDERS.forEach(async (provider) => {
+    providersToFetch.forEach(async (provider) => {
         try {
             let url: string;
             if (query) {
@@ -139,6 +155,8 @@ function MoviesContent() {
             const data: ApiResponse = await response.json();
             if (fetchId !== fetchIdRef.current) return;
             
+            providerHasNextRef.current[provider] = !!data.hasNext;
+
             anySuccess = true;
 
             // FIXED: Simpan hasNext SEBELUM filter
