@@ -61,11 +61,11 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
 
                 // Strip completed anime from ongoing requests
                 if (type === "ongoing" && titleKey) {
-                    const status = (anime.status || "").toLowerCase();
+                    const status = String(anime.status || "").toLowerCase();
                     if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return;
                     if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return;
                     if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return;
-                    const ep = (anime.episode || "").toLowerCase();
+                    const ep = String(anime.episode || "").toLowerCase();
                     if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return;
                 }
 
@@ -133,12 +133,12 @@ export async function GET(request: NextRequest) {
             
             if (type === "ongoing") {
                 filteredData = filteredData.filter((anime: any) => {
-                    const titleKey = (anime.title || "").toLowerCase().trim();
-                    const status = (anime.status || "").toLowerCase();
+                    const titleKey = String(anime.title || "").toLowerCase().trim();
+                    const status = String(anime.status || "").toLowerCase();
                     if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return false;
                     if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return false;
                     if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return false;
-                    const ep = (anime.episode || "").toLowerCase();
+                    const ep = String(anime.episode || "").toLowerCase();
                     if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return false;
                     return true;
                 });

@@ -183,9 +183,9 @@ function OngoingContent() {
 
                 // Tolerant status filter — detect completed anime from multiple signals
                 list = list.filter((anime: any) => {
-                    const status = (anime.status || "").toLowerCase().trim();
-                    const title = (anime.title || "").toLowerCase();
-                    const episode = (anime.episode || "").toLowerCase();
+                    const status = String(anime.status || "").toLowerCase().trim();
+                    const title = String(anime.title || "").toLowerCase();
+                    const episode = String(anime.episode || "").toLowerCase();
 
                     // 1. Title-based detection — always reject these patterns
                     if (title.includes("batch") || title.includes("[batch]")) return false;
