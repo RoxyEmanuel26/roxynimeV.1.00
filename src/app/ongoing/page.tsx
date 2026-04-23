@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
+import { RefreshCw, Zap } from "lucide-react";
 import { PaginationControl } from "@/components/common/PaginationControl";
 import { useDataSaver } from "@/context/DataSaverContext";
 import { DataSaverToggle } from "@/components/common/DataSaverToggle";
@@ -136,7 +136,6 @@ function OngoingContent() {
         return;
     }
 
-    let anyHasNext = false;
     let anyHasPrev = pageNum > 1;
     let maxTotalPages = pageNum;
     let totalItemsAcc = 0;
@@ -255,9 +254,9 @@ function OngoingContent() {
         if (err?.name === "AbortError") return;
         console.error(`[Ongoing] Promise.allSettled error:`, err);
     }
-  }, []);
+  }, [isHemat, addSavedBytes]);
 
-  // FIXED: URL params always take priority over localStorage
+  // URL params → state + fetch (reacts to browser navigation too)
   useEffect(() => {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const query = searchParams.get("search") || "";
@@ -271,7 +270,7 @@ function OngoingContent() {
 
     return () => { if (abortRef.current) abortRef.current.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const goToPage = useCallback((page: number) => {
     if (loading) return;

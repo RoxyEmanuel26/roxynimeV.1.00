@@ -78,16 +78,34 @@ export const donghuaProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return getCachedData("donghua_ongoing", async () => {
+        return getCachedData(`donghua_ongoing_${page}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/home?page=${page}`, { headers: headers() });
                 if (!res.ok) return { data: [] };
                 const json = await res.json();
 
                 const rawList = json?.latest_release || [];
-                if (!Array.isArray(rawList)) return { data: [] };
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
 
-                return { data: rawList.map(mapItem) };
+                const pagination = json?.pagination;
+                return {
+                    data: rawList.map(mapItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNext,
+                        hasPrevPage: !!pagination.hasPrev || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNext ? page + 1 : page),
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : {
+                        currentPage: page,
+                        hasNextPage: rawList.length >= 10,
+                        hasPrevPage: page > 1,
+                        totalPages: rawList.length >= 10 ? page + 1 : page,
+                        lastVisiblePage: page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    },
+                };
             } catch (e) {
                 console.error("[Donghua] Ongoing Error:", e);
                 return { data: [] };

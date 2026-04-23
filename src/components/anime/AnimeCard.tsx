@@ -35,12 +35,14 @@ export function AnimeCard({
     priority = false,
 }: AnimeCardProps) {
     const animeId = id || (slug?.match(/\/anime\/(\d+)/)?.[1]) || slug || "";
-    
     // Determine if the slug is an episode slug (from Anoboy, Donghua, etc. Ongoing pages)
-    const isEpisode = animeId.toLowerCase().includes("-episode-") || 
-                      animeId.toLowerCase().includes("-eps-") || 
-                      animeId.toLowerCase().endsWith("-subtitle-indonesia") || 
-                      animeId.toLowerCase().endsWith("-sub-indo");
+    // Otakudesu anime slugs end with -sub-indo, so we must not blindly check for -sub-indo
+    // Instead, we check if the slug contains 'episode' or 'eps' with a number.
+    const slugLower = animeId.toLowerCase();
+    const isEpisode = slugLower.match(/-episode-\d+/) || 
+                      slugLower.match(/-eps-\d+/) || 
+                      slugLower.match(/episode-\d+/) || 
+                      slugLower.match(/eps-\d+/);
 
     const baseUrl = isEpisode ? `/watch/${animeId}` : `/anime/${animeId}`;
     const href = source ? `${baseUrl}?source=${source}` : baseUrl;

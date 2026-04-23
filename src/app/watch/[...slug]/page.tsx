@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
@@ -41,10 +41,16 @@ interface AnimeInfo {
 export default function WatchPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { data: session } = useSession();
 
-    const animeId = params.slug?.[0] as string;
-    const episodeSlug = params.slug?.[1] as string; // Could be slug or number
+    const param1 = params.slug?.[0] as string;
+    const param2 = params.slug?.[1] as string;
+    
+    const isSingleSlug = !param2;
+    const animeId = isSingleSlug ? undefined : param1;
+    const episodeSlug = isSingleSlug ? param1 : param2;
+    const source = searchParams.get("source") || undefined;
 
     const [loading, setLoading] = useState(true);
     const [animeInfo, setAnimeInfo] = useState<AnimeInfo | null>(null);
@@ -65,57 +71,66 @@ export default function WatchPage() {
             console.log("Anime ID:", animeId);
             console.log("Episode Slug/Number:", episodeSlug);
 
-            // 1. Fetch anime details first
-            const animeRes = await fetch(`/api/anime/${animeId}`);
-            if (!animeRes.ok) {
-                const errorText = await animeRes.text();
-                console.error("Anime fetch failed:", animeRes.status, errorText);
-                throw new Error("Failed to fetch anime info");
+            let eps: Episode[] = [];
+
+            // 1. Fetch anime details first (if we have an anime ID)
+            if (animeId) {
+                const animeRes = await fetch(`/api/anime/${animeId}${source ? `?source=${source}` : ''}`);
+                if (!animeRes.ok) {
+                    const errorText = await animeRes.text();
+                    console.error("Anime fetch failed:", animeRes.status, errorText);
+                    throw new Error("Failed to fetch anime info");
+                }
+
+                const animeData = await animeRes.json();
+                console.log("Anime data received:", animeData);
+
+                if (!animeData.data) throw new Error("No anime data found");
+
+                setAnimeInfo(animeData.data);
+
+                // Parse episodes correctly from API
+                eps = (animeData.data.episodes || []).map((ep: any) => ({
+                    id: ep.id || ep.urlSlug || ep.slug,
+                    number: ep.number,
+                    title: ep.title,
+                    slug: ep.urlSlug || ep.slug || ep.id,
+                }));
+
+                console.log("Parsed episodes:", eps);
+                setEpisodes(eps);
             }
-
-            const animeData = await animeRes.json();
-            console.log("Anime data received:", animeData);
-
-            if (!animeData.data) throw new Error("No anime data found");
-
-            setAnimeInfo(animeData.data);
-
-            // Parse episodes correctly from API
-            const eps: Episode[] = (animeData.data.episodes || []).map((ep: any) => ({
-                id: ep.id || ep.urlSlug || ep.slug,
-                number: ep.number,
-                title: ep.title,
-                slug: ep.urlSlug || ep.slug || ep.id,
-            }));
-
-            console.log("Parsed episodes:", eps);
-            setEpisodes(eps);
 
             // 2. Determine current episode
             let currentEp: Episode | undefined;
 
-            // Try to match by slug first (if episodeSlug looks like a slug)
-            if (episodeSlug && isNaN(Number(episodeSlug))) {
-                console.log("Matching by slug:", episodeSlug);
-                currentEp = eps.find(
-                    (e) =>
-                        e.slug === episodeSlug ||
-                        e.id === episodeSlug ||
-                        e.slug?.toLowerCase() === episodeSlug.toLowerCase()
-                );
-            } else {
-                // Match by episode number
-                const epNum = parseInt(episodeSlug || "1");
-                console.log("Matching by number:", epNum);
-                currentEp = eps.find((e) => e.number === epNum);
-            }
+            if (eps.length > 0) {
+                // Try to match by slug first (if episodeSlug looks like a slug)
+                if (episodeSlug && isNaN(Number(episodeSlug))) {
+                    console.log("Matching by slug:", episodeSlug);
+                    currentEp = eps.find(
+                        (e) =>
+                            e.slug === episodeSlug ||
+                            e.id === episodeSlug ||
+                            e.slug?.toLowerCase() === episodeSlug.toLowerCase()
+                    );
+                } else {
+                    // Match by episode number
+                    const epNum = parseInt(episodeSlug || "1");
+                    console.log("Matching by number:", epNum);
+                    currentEp = eps.find((e) => e.number === epNum);
+                }
 
-            // Fallback to first episode if not found
-            if (!currentEp && eps.length > 0) {
-                console.warn(
-                    `Episode not found: ${episodeSlug}, using first episode`
-                );
-                currentEp = eps[0];
+                // Fallback to first episode if not found
+                if (!currentEp) {
+                    console.warn(
+                        `Episode not found: ${episodeSlug}, using first episode`
+                    );
+                    currentEp = eps[0];
+                }
+            } else {
+                // If we don't have anime details, just use the slug
+                currentEp = { id: episodeSlug, number: 1, slug: episodeSlug, title: `Episode` };
             }
 
             if (!currentEp) {
@@ -126,7 +141,7 @@ export default function WatchPage() {
             setCurrentEpisode(currentEp.number);
 
             // 3. Fetch streams using the episode's slug
-            const streamUrl = `/api/streaming/${animeId}/${currentEp.slug}`;
+            const streamUrl = `/api/streaming/${animeId || 'unknown'}/${currentEp.slug}${source ? `?source=${source}` : ''}`;
             console.log("Fetching streams from:", streamUrl);
 
             const streamRes = await fetch(streamUrl);
@@ -158,13 +173,13 @@ export default function WatchPage() {
         } finally {
             setLoading(false);
         }
-    }, [animeId, episodeSlug]);
+    }, [animeId, episodeSlug, source]);
 
     useEffect(() => {
-        if (animeId && episodeSlug) {
+        if (episodeSlug) {
             fetchData();
         }
-    }, [animeId, episodeSlug, fetchData]);
+    }, [animeId, episodeSlug, source, fetchData]);
 
     // Save watch progress
     const handleProgress = useCallback(
@@ -203,13 +218,15 @@ export default function WatchPage() {
 
     const goToPrev = () => {
         if (hasPrev) {
-            router.push(`/watch/${animeId}/${episodes[prevIndex].slug}`);
+            const baseUrl = animeId ? `/watch/${animeId}` : `/watch`;
+            router.push(`${baseUrl}/${episodes[prevIndex].slug}${source ? `?source=${source}` : ''}`);
         }
     };
 
     const goToNext = () => {
         if (hasNext) {
-            router.push(`/watch/${animeId}/${episodes[nextIndex].slug}`);
+            const baseUrl = animeId ? `/watch/${animeId}` : `/watch`;
+            router.push(`${baseUrl}/${episodes[nextIndex].slug}${source ? `?source=${source}` : ''}`);
         }
     };
 
@@ -227,7 +244,8 @@ export default function WatchPage() {
 
 
     const handleEpisodeSelect = (episode: Episode) => {
-        router.push(`/watch/${animeId}/${episode.slug}`);
+        const baseUrl = animeId ? `/watch/${animeId}` : `/watch`;
+        router.push(`${baseUrl}/${episode.slug}${source ? `?source=${source}` : ''}`);
         setShowEpisodeList(false);
     };
 
@@ -283,12 +301,18 @@ export default function WatchPage() {
                     <div className="flex items-center justify-between py-4">
                         {/* Title & Episode */}
                         <div className="flex-1 min-w-0">
-                            <Link
-                                href={`/anime/${animeId}`}
-                                className="font-semibold hover:text-primary transition-colors truncate block"
-                            >
-                                {animeInfo?.title || "Loading..."}
-                            </Link>
+                            {animeId ? (
+                                <Link
+                                    href={`/anime/${animeId}${source ? `?source=${source}` : ''}`}
+                                    className="font-semibold hover:text-primary transition-colors truncate block"
+                                >
+                                    {animeInfo?.title || streamData?.title || "Loading..."}
+                                </Link>
+                            ) : (
+                                <div className="font-semibold text-foreground truncate block">
+                                    {animeInfo?.title || streamData?.title || "Episode Viewer"}
+                                </div>
+                            )}
                             <p className="text-sm text-muted-foreground">
                                 Episode {currentEpisode}
                                 {episodes.length > 0 && ` of ${episodes.length}`}

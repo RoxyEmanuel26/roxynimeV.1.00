@@ -230,7 +230,7 @@ export default async function AnimeDetailPage({ params, searchParams }: PageProp
                                         return (
                                             <AdLink
                                                 key={ep.id}
-                                                href={`/watch/${ep.urlSlug}`}
+                                                href={`/watch/${slug}/${ep.urlSlug}${source ? `?source=${source}` : ''}`}
                                                 adKey={`ep-detail-${ep.id}`}
                                                 className="group flex flex-col justify-center p-4 rounded-xl border border-border bg-background hover:border-primary hover:shadow-md hover:bg-primary/5 transition-all relative overflow-hidden"
                                             >

@@ -59,7 +59,6 @@ export const anoboyProvider: AnimeProvider = {
                 if (!res.ok) { console.error("[Anoboy] Home HTTP:", res.status); return []; }
                 const json = await res.json();
 
-                // Response: { anime_list: [...], pagination: {...} }
                 const rawList = json?.anime_list;
                 if (!Array.isArray(rawList) || rawList.length === 0) {
                     console.warn("[Anoboy] No anime in anime_list");
@@ -75,14 +74,39 @@ export const anoboyProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        const homeData = await this.getHome();
-        return { data: homeData };
+        return getCachedData(`anoboy_ongoing_${page}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/home?page=${page}`, { headers: headers() });
+                if (!res.ok) { console.error("[Anoboy] Ongoing HTTP:", res.status); return { data: [] }; }
+                const json = await res.json();
+
+                const rawList = json?.anime_list;
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    return { data: [] };
+                }
+
+                const pagination = json?.pagination;
+                return {
+                    data: rawList.map(mapItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNext,
+                        hasPrevPage: !!pagination.hasPrev || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNext ? page + 1 : page),
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
+                };
+            } catch (e) {
+                console.error("[Anoboy] Ongoing Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Not supported — return home data
-        const homeData = await this.getHome();
-        return { data: homeData };
+        // Anoboy does not distinguish completed — reuse home with page
+        return this.getOngoing(page);
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {

@@ -90,18 +90,41 @@ export const samehadakuProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Samehadaku home = ongoing list
-        const homeData = await this.getHome();
-        return {
-            data: homeData,
-            pagination: {
-                currentPage: 1,
-                lastVisiblePage: 1,
-                hasNextPage: false,
-                hasPrevPage: false,
-                items: { count: homeData.length, total: homeData.length, per_page: homeData.length },
-            },
-        };
+        return getCachedData(`samehadaku_ongoing_${page}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/home?page=${page}`, { headers: headers() });
+                if (!res.ok) { console.error("[Samehadaku] Ongoing HTTP:", res.status); return { data: [] }; }
+                const json = await res.json();
+
+                const recentList = json?.data?.recent?.animeList || [];
+                if (!Array.isArray(recentList) || recentList.length === 0) {
+                    return { data: [] };
+                }
+
+                const pagination = json?.pagination;
+                return {
+                    data: recentList.map(mapHomeItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNext,
+                        hasPrevPage: !!pagination.hasPrev || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNext ? page + 1 : page),
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: recentList.length, total: recentList.length, per_page: recentList.length },
+                    } : {
+                        currentPage: page,
+                        hasNextPage: recentList.length >= 10,
+                        hasPrevPage: page > 1,
+                        totalPages: recentList.length >= 10 ? page + 1 : page,
+                        lastVisiblePage: page,
+                        items: { count: recentList.length, total: recentList.length, per_page: recentList.length },
+                    },
+                };
+            } catch (e) {
+                console.error("[Samehadaku] Ongoing Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {

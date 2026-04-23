@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { Loader2, RefreshCw, Zap } from "lucide-react";
+import { RefreshCw, Zap } from "lucide-react";
 import { PaginationControl } from "@/components/common/PaginationControl";
 import { useDataSaver } from "@/context/DataSaverContext";
 import { DataSaverToggle } from "@/components/common/DataSaverToggle";
@@ -145,7 +145,6 @@ function BrowseContent() {
         return;
     }
 
-    let anyHasNext = false;
     let anyHasPrev = pageNum > 1;
     let maxTotalPages = pageNum;
     let totalItemsAcc = 0;
@@ -244,7 +243,7 @@ function BrowseContent() {
         if (err?.name === "AbortError") return;
         console.error(`[Browse] Promise.allSettled error:`, err);
     }
-  }, []);
+  }, [isHemat, addSavedBytes]);
 
   // ── Mount: initialise state from URL then fetch ────────────────────────────
   useEffect(() => {
@@ -264,7 +263,7 @@ function BrowseContent() {
       if (abortRef.current) abortRef.current.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally runs once on mount only
+  }, [searchParams]);
 
   // ── Navigation — update URL + fetch directly, NO useEffect chain ──────────
   const goToPage = useCallback(

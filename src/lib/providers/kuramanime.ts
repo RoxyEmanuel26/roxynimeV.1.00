@@ -68,8 +68,32 @@ export const kuramanimeProvider: AnimeProvider = {
     },
 
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        const homeData = await this.getHome();
-        return { data: homeData };
+        return getCachedData(`kuramanime_ongoing_${page}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/home?page=${page}`, { headers: headers() });
+                if (!res.ok) return { data: [] };
+                const data = await res.json();
+
+                const rawList = data.data?.animeList || data.data?.recent || data.data || [];
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
+
+                const pagination = data?.pagination;
+                return {
+                    data: rawList.map(mapItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNext,
+                        hasPrevPage: !!pagination.hasPrev || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNext ? page + 1 : page),
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
+                };
+            } catch (e) {
+                console.error("[Kuramanime] Ongoing Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {

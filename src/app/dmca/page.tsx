@@ -1,76 +1,61 @@
 import { Metadata } from "next";
-import { Copyright, Scale, Info, Mail } from "lucide-react";
 
 export const metadata: Metadata = {
-    title: "DMCA",
-    description: "Digital Millennium Copyright Act (DMCA) policy for RoxyNime.",
+    title: "DMCA — RoxyNime",
+    description: "Digital Millennium Copyright Act (DMCA) Disclaimer untuk RoxyNime.",
 };
 
 export default function DMCAPage() {
     return (
-        <div className="container mx-auto px-4 py-12 max-w-4xl">
-            <div className="flex items-center gap-3 mb-8 border-b border-border/50 pb-6">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Copyright className="w-6 h-6" />
-                </div>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">DMCA Policy</h1>
-                    <p className="text-muted-foreground mt-1">Digital Millennium Copyright Act Notice</p>
-                </div>
-            </div>
+        <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen">
+            <div className="bg-card/50 backdrop-blur-xl border border-border rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                
+                <h1 className="text-3xl sm:text-4xl font-bold mb-8 bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
+                    DMCA Disclaimer
+                </h1>
 
-            <div className="space-y-8 text-muted-foreground leading-relaxed">
-                <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 sm:p-8 border-l-4 border-l-primary">
-                    <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                        <Info className="w-5 h-5 text-primary" />
-                        Disclaimer
-                    </h2>
-                    <p>
-                        <strong>RoxyNime does not host any of the video files or content found on this website.</strong>
-                    </p>
-                    <p className="mt-2">
-                        All videos are hosted by third-party services (such as Google Drive, DoodStream, Mp4Upload, Vidmoly, etc.) and are simply embedded or linked to on RoxyNime. We have no control over the content of these third-party websites and are not responsible for their content or operations.
-                    </p>
-                </section>
-
-                <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 sm:p-8">
-                    <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                        <Scale className="w-5 h-5 text-primary" />
-                        Copyright Infringement
-                    </h2>
-                    <p>
-                        RoxyNime is in compliance with 17 U.S.C. § 512 and the Digital Millennium Copyright Act (DMCA). It is our policy to respond to any infringement notices and take appropriate actions under the Digital Millennium Copyright Act and other applicable intellectual property laws.
-                    </p>
-                    <p className="mt-4">
-                        If your copyrighted material has been posted on RoxyNime or if hyperlinks to your copyrighted material are returned through our search engine and you want this material removed, you must provide a written communication that details the information listed in the following section.
-                    </p>
-                </section>
-
-                <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 sm:p-8">
-                    <h2 className="text-xl font-semibold text-foreground mb-4">
-                        Removal Request Requirements
-                    </h2>
-                    <ul className="list-disc list-inside space-y-3 marker:text-primary">
-                        <li>Provide evidence of the authorized person to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
-                        <li>Provide sufficient contact information so that we may contact you. You must also include a valid email address.</li>
-                        <li>Identify the copyrighted work claimed to have been infringed, or if multiple copyrighted works at a single online site are covered by a single notification, a representative list of such works at that site.</li>
-                        <li>Identify the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled, and information reasonably sufficient to permit the service provider to locate the material (i.e. URL).</li>
-                        <li>A statement that the complaining party has a good faith belief that use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law.</li>
-                        <li>A statement that the information in the notification is accurate, and under penalty of perjury, that the complaining party is authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
-                    </ul>
-                </section>
-
-                <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div>
-                        <h2 className="text-xl font-semibold text-foreground mb-2 flex items-center gap-2">
-                            <Mail className="w-5 h-5 text-primary" />
-                            Submit a Takedown Notice
-                        </h2>
-                        <p className="text-sm">
-                            Send the infringement notice via email to the address provided on our Contact page. Please allow up to 2-3 business days for an email response.
+                <div className="space-y-8 text-muted-foreground leading-relaxed">
+                    <section>
+                        <p>
+                            RoxyNime respects the intellectual property rights of others. We comply with the Digital Millennium Copyright Act (DMCA) and other applicable copyright laws.
                         </p>
-                    </div>
-                </section>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-semibold text-foreground mb-3">1. No Hosted Content</h2>
+                        <p>
+                            RoxyNime operates solely as a search engine and directory for anime links. <strong>We do not host, upload, or store any video, media file, or copyright-protected material on our servers.</strong> All content is hosted by non-affiliated third parties and content delivery networks across the internet.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-semibold text-foreground mb-3">2. Takedown Requests</h2>
+                        <p>
+                            Since we do not host the files, we cannot remove content from third-party servers. If you find a link on our site that points to your copyrighted material and you wish for it to be removed from our index, please contact us. Note that removing a link from our directory will not remove the actual video from the internet. You must contact the respective video hosting provider to take down the file.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-semibold text-foreground mb-3">3. How to Submit a Notice</h2>
+                        <p className="mb-3">
+                            If you represent a copyright owner and wish to request the removal of a specific URL from our directory, please provide a written notification containing:
+                        </p>
+                        <ul className="list-disc pl-5 space-y-2">
+                            <li>A physical or electronic signature of a person authorized to act on behalf of the copyright owner.</li>
+                            <li>Identification of the copyrighted work claimed to have been infringed.</li>
+                            <li>Exact URL(s) on our website where the link to the infringing material is located.</li>
+                            <li>Your contact information, including email address and phone number.</li>
+                            <li>A statement that you have a good faith belief that use of the material is not authorized by the copyright owner.</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <p>
+                            Silakan ajukan permintaan penghapusan DMCA Anda melalui halaman <a href="/contact" className="text-primary hover:underline font-medium">Contact</a> kami. Kami akan memproses permintaan penghapusan URL yang valid dalam waktu 3-5 hari kerja.
+                        </p>
+                    </section>
+                </div>
             </div>
         </div>
     );
