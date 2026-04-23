@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
+import { PaginationControl } from "@/components/common/PaginationControl";
 import { useDataSaver } from "@/context/DataSaverContext";
 import { DataSaverToggle } from "@/components/common/DataSaverToggle";
 import { SAVER_CONFIG } from "@/config/dataSaver";
@@ -69,6 +70,7 @@ function OngoingContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [hasPrev, setHasPrev] = useState(false);
+  const [totalItems, setTotalItems] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>({
     type: "ongoing",
@@ -136,112 +138,124 @@ function OngoingContent() {
     let anyHasNext = false;
     let anyHasPrev = pageNum > 1;
     let maxTotalPages = pageNum;
-    let anySuccess = false;
+    let totalItemsAcc = 0;
 
-    providersToFetch.forEach(async (provider) => {
-        try {
-            let url: string;
-            if (query) {
-                url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=${provider}`;
-            } else if (f.genre) {
-                url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${provider}`;
-            } else {
-                url = `/api/anime?type=ongoing&page=${pageNum}&source=${provider}`;
-            }
+    const promises = providersToFetch.map(async (provider) => {
+        let url: string;
+        if (query) {
+            url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=${provider}`;
+        } else if (f.genre) {
+            url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${provider}`;
+        } else {
+            url = `/api/anime?type=ongoing&page=${pageNum}&source=${provider}`;
+        }
 
-            const response = await fetch(url, { signal: controller.signal });
-            if (fetchId !== fetchIdRef.current) return;
-            if (!response.ok) {
-                providerHasNextRef.current[provider] = false; // Prevent zombie retry
-                return;
-            }
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { provider, data: await response.json() as ApiResponse, success: true };
+    });
 
-            const data: ApiResponse = await response.json();
-            if (fetchId !== fetchIdRef.current) return;
-            
-            providerHasNextRef.current[provider] = !!data.hasNext;
+    try {
+        const results = await Promise.allSettled(promises);
+        if (fetchId !== fetchIdRef.current) return;
 
-            anySuccess = true;
+        let anySuccess = false;
+        let anyHasNext = false;
+        const newAnimes: any[] = [];
 
-            // NORMALIZATION
-            let list = (data.data || []).map((anime: any) => ({
-                ...anime,
-                id: anime.id || anime.slug || "",
-                type: anime.type,
-                genres: anime.genres || [],
-            }));
+        results.forEach(res => {
+            if (res.status === "fulfilled" && res.value.success) {
+                const { provider, data } = res.value;
+                providerHasNextRef.current[provider] = !!data.hasNext;
+                anySuccess = true;
+                
+                if (data.hasNext) anyHasNext = true;
+                if (data.totalPages > maxTotalPages) maxTotalPages = data.totalPages;
+                if (data.total_item) totalItemsAcc += data.total_item;
 
-            // Tolerant status filter — providers use varied status strings
-            list = list.filter((anime: any) => {
-                const status = (anime.status || "").toLowerCase().trim();
-                if (!status) return true; // empty = assume ongoing
-                if (status.includes("ongoing")) return true;
-                if (status.includes("airing")) return true;
-                if (status.includes("sedang")) return true;
-                if (status.includes("belum tamat")) return true;
-                // Explicitly reject non-ongoing statuses
-                if (status.includes("completed")) return false;
-                if (status.includes("finished")) return false;
-                if (status.includes("tamat")) return false;
-                if (status.includes("movie")) return false;
-                if (status.includes("film")) return false;
-                // Unknown status = show (prefer over-include)
-                return true;
-            });
+                // NORMALIZATION
+                let list = (data.data || []).map((anime: any) => ({
+                    ...anime,
+                    id: anime.id || anime.slug || "",
+                    type: anime.type,
+                    genres: anime.genres || [],
+                }));
 
-            if (data.hasNext) anyHasNext = true;
-            if (data.totalPages > maxTotalPages) maxTotalPages = data.totalPages;
-
-            setAnimes(prev => {
-                const seenKeys = new Set(prev.map(a => a.slug || a.id || a.title?.toLowerCase().trim()));
-                const newItems = list.filter((anime: any) => {
-                    const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
-                    if (!key || seenKeys.has(key)) return false;
-                    seenKeys.add(key);
+                // Tolerant status filter — providers use varied status strings
+                list = list.filter((anime: any) => {
+                    const status = (anime.status || "").toLowerCase().trim();
+                    if (!status) return true; // empty = assume ongoing
+                    if (status.includes("ongoing")) return true;
+                    if (status.includes("airing")) return true;
+                    if (status.includes("sedang")) return true;
+                    if (status.includes("belum tamat")) return true;
+                    // Explicitly reject non-ongoing statuses
+                    if (status.includes("completed")) return false;
+                    if (status.includes("finished")) return false;
+                    if (status.includes("tamat")) return false;
+                    if (status.includes("movie")) return false;
+                    if (status.includes("film")) return false;
+                    // Unknown status = show (prefer over-include)
                     return true;
                 });
-                
-                let merged = [...prev, ...newItems];
 
-                if (f.order === "rating") {
-                    merged.sort((a: any, b: any) => {
-                        const ra = parseFloat(a.rating || a.score || "0") || 0;
-                        const rb = parseFloat(b.rating || b.score || "0") || 0;
-                        return rb - ra;
-                    });
-                }
-                
-                return merged;
+                newAnimes.push(...list);
+            } else {
+                let providerStr = "unknown";
+                if (res.status === "fulfilled") providerStr = res.value.provider;
+                providerHasNextRef.current[providerStr] = false; // Prevent zombie retry
+                console.error(`[Ongoing] Fetch error for ${providerStr}`);
+            }
+        });
+
+        if (!anySuccess) {
+            setLoading(false);
+            setError("Gagal memuat data anime. Silakan coba lagi.");
+            setHasMore(anyHasNext);
+            setHasPrev(anyHasPrev);
+            setTotalPages(anyHasNext && maxTotalPages <= pageNum ? pageNum + 1 : maxTotalPages);
+            setCurrentPage(pageNum);
+            return;
+        }
+
+        setAnimes(prev => {
+            const seenKeys = new Set(prev.map(a => a.slug || a.id || a.title?.toLowerCase().trim()));
+            const uniqueItems = newAnimes.filter(anime => {
+                const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
+                if (!key || seenKeys.has(key)) return false;
+                seenKeys.add(key);
+                return true;
             });
             
-            if (list.length > 0) {
-                setLoading(false);
-            }
+            let merged = [...prev, ...uniqueItems];
 
-        } catch (err: any) {
-            if (err?.name === "AbortError") return;
-            console.error(`[Ongoing] Fetch error for ${provider}:`, err);
-            providerHasNextRef.current[provider] = false; // Prevent zombie retry
-        } finally {
-            if (fetchId === fetchIdRef.current) {
-                activeProviders--;
-                if (activeProviders === 0) {
-                    setLoading(false);
-                    if (!anySuccess) setError("Gagal memuat data anime. Silakan coba lagi.");
-                    
-                    setHasMore(anyHasNext);
-                    setHasPrev(anyHasPrev);
-                    setTotalPages(anyHasNext && maxTotalPages <= pageNum ? pageNum + 1 : maxTotalPages);
-                    setCurrentPage(pageNum);
-
-                    if (pageNum !== currentPageRef.current) {
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                    }
-                    currentPageRef.current = pageNum;
-                }
+            if (f.order === "rating") {
+                merged.sort((a: any, b: any) => {
+                    const ra = parseFloat(a.rating || a.score || "0") || 0;
+                    const rb = parseFloat(b.rating || b.score || "0") || 0;
+                    return rb - ra;
+                });
             }
+            
+            return merged;
+        });
+        
+        setLoading(false);
+        setHasMore(anyHasNext);
+        setHasPrev(anyHasPrev);
+        setTotalPages(anyHasNext && maxTotalPages <= pageNum ? pageNum + 1 : maxTotalPages);
+        setTotalItems(totalItemsAcc > 0 ? totalItemsAcc : undefined);
+        setCurrentPage(pageNum);
+
+        if (pageNum !== currentPageRef.current) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
         }
-    });
+        currentPageRef.current = pageNum;
+
+    } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        console.error(`[Ongoing] Promise.allSettled error:`, err);
+    }
   }, []);
 
   // FIXED: URL params always take priority over localStorage
@@ -405,70 +419,16 @@ function OngoingContent() {
           )}
 
           {/* ── Pagination ──────────────────────────────────────────────── */}
-          {!loading && !error && (animes.length > 0 || hasMore) && (
-            <nav className="flex items-center justify-center gap-1 mt-8 flex-wrap" aria-label="Pagination">
-              <button
-                onClick={() => goToPage(1)}
-                disabled={currentPage === 1 || !hasPrev} // FIXED: logic first page
-                className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Halaman pertama"
-                aria-label="Halaman pertama"
-              >
-                <ChevronsLeft className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1 || !hasPrev} // FIXED: logic prev page
-                className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                aria-label="Halaman sebelumnya"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span className="hidden sm:inline text-sm">Prev</span>
-              </button>
-
-              {pages.map((p, i) =>
-                p === "..." ? (
-                  <span key={`ellipsis-${i}`} className="px-2 py-2 text-muted-foreground select-none" aria-hidden>
-                    …
-                  </span>
-                ) : (
-                  <button
-                    key={`page-${p}`}
-                    onClick={() => goToPage(p as number)}
-                    disabled={currentPage === p}
-                    aria-label={`Halaman ${p}`}
-                    aria-current={currentPage === p ? "page" : undefined}
-                    className={`min-w-[38px] px-3 py-2 rounded-md transition-colors text-sm font-medium
-                      ${currentPage === p
-                        ? "bg-primary text-primary-foreground cursor-default shadow-sm"
-                        : "hover:bg-muted"}`}
-                  >
-                    {p}
-                  </button>
-                )
-              )}
-
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={!hasMore} // FIXED: next disable rule
-                className="btn-outline px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                aria-label="Halaman berikutnya"
-              >
-                <span className="hidden sm:inline text-sm">Next</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => goToPage(effectiveTotalPages)}
-                disabled={!hasMore && currentPage >= effectiveTotalPages} // FIXED: disable logic last page
-                className="btn-outline p-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Halaman terakhir"
-                aria-label="Halaman terakhir"
-              >
-                <ChevronsRight className="w-4 h-4" />
-              </button>
-            </nav>
+          {(animes.length > 0 || hasMore) && (
+            <PaginationControl
+              currentPage={currentPage}
+              totalPages={totalPages}
+              hasMore={hasMore}
+              hasPrev={hasPrev}
+              loading={loading}
+              totalItems={totalItems}
+              onPageChange={goToPage}
+            />
           )}
 
           {/* FIXED: Ads — below pagination */}
