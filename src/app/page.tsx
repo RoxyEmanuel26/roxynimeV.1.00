@@ -30,12 +30,12 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz"];
+const PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
 
 export default async function HomePage() {
   // FIXED: Server component uses direct data layer call to avoid HTTP connection drops
   const fetchPromises = PROVIDERS.map((provider) =>
-    fetchWithTimeout(getOngoingAnimeList(1, provider), 3000)
+    fetchWithTimeout(getOngoingAnimeList(1, provider), 8000)
       .then((res) => (res.data || []).map((a: any) => ({ ...a, _source: provider })))
       .catch((err) => {
         console.error(`[Home] Error fetching provider ${provider}:`, err);

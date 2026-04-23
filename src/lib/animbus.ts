@@ -253,3 +253,24 @@ export async function searchAnimes(query: string, source?: string): Promise<Anim
 
 // Re-export PaginationInfo for backward compatibility
 export type { PaginationInfo } from "./providers";
+
+export async function getAnimeSchedule(source?: string): Promise<Record<string, Anime[]>> {
+    const provider = getProvider(source);
+    if (!provider.getSchedule) {
+        return {};
+    }
+
+    try {
+        const scheduleData = await provider.getSchedule();
+        const mappedSchedule: Record<string, Anime[]> = {};
+        
+        for (const [day, animeList] of Object.entries(scheduleData)) {
+            mappedSchedule[day] = animeList.map(toAnime);
+        }
+        
+        return mappedSchedule;
+    } catch (e) {
+        console.error("[animbus] Error getting schedule:", e);
+        return {};
+    }
+}

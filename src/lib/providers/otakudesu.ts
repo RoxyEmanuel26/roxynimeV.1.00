@@ -244,6 +244,35 @@ export const otakudesuProvider: AnimeProvider = {
             }
         });
     },
+
+    async getSchedule(): Promise<Record<string, ProviderAnime[]>> {
+        return getCachedData("otakudesu_schedule", async () => {
+            try {
+                const res = await fetch(`${SANKA_API_BASE}/anime/schedule`, {
+                    headers: defaultHeaders(),
+                });
+                if (!res.ok) return {};
+                const response = await res.json();
+                
+                const data = response.data;
+                if (!Array.isArray(data)) return {};
+
+                const schedule: Record<string, ProviderAnime[]> = {};
+                data.forEach((dayData: any) => {
+                    const day = dayData.day;
+                    const list = dayData.anime_list || dayData.animeList || [];
+                    if (day && Array.isArray(list)) {
+                        schedule[day] = list.map((item: any) => mapItem(item, "Ongoing"));
+                    }
+                });
+
+                return schedule;
+            } catch (e) {
+                console.error("[Otakudesu] Schedule Error:", e);
+                return {};
+            }
+        });
+    },
 };
 
 // --- Helpers ---

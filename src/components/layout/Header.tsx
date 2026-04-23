@@ -20,6 +20,7 @@ import {
     Film,
     Home,
     Sparkles,
+    Calendar,
 } from "lucide-react";
 import { BannerAd } from "../ads/BannerAd";
 
@@ -28,6 +29,7 @@ const NAV_LINKS = [
     { href: "/browse", label: "Browse", icon: Compass },
     { href: "/ongoing", label: "Ongoing", icon: Play },
     { href: "/movies", label: "Movies", icon: Film },
+    { href: "/schedule", label: "Jadwal", icon: Calendar },
 ];
 
 export function Header() {

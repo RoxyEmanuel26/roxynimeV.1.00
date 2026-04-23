@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAnimes } from "@/lib/animbus";
 
-const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz"];
+const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
 
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     try {
         const results = await Promise.allSettled(
             ALL_PROVIDERS.map(p => 
-                fetchWithTimeout(searchAnimes(query, p), 3000)
+                fetchWithTimeout(searchAnimes(query, p), 8000)
                     .catch(() => ({ data: [] }))
             )
         );
