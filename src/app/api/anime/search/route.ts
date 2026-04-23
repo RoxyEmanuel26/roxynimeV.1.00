@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") || "";
     const page = parseInt(searchParams.get("page") || "1");
 
+    const source = searchParams.get("source");
+
     if (!query) {
         return NextResponse.json(
             { error: "Search query is required" },
@@ -27,45 +29,51 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const results = await Promise.allSettled(
-            ALL_PROVIDERS.map(p => 
-                fetchWithTimeout(searchAnimes(query, p), 8000)
-                    .catch(() => ({ data: [] }))
-            )
-        );
+        let allAnimes: any[] = [];
+        
+        if (source && source !== "all" && ALL_PROVIDERS.includes(source)) {
+            const res = await fetchWithTimeout(searchAnimes(query, source), 8000).catch(() => ({ data: [] }));
+            allAnimes = ((res as any).data || []).map((a: any) => ({ ...a, _source: source }));
+        } else {
+            const results = await Promise.allSettled(
+                ALL_PROVIDERS.map(p => 
+                    fetchWithTimeout(searchAnimes(query, p), 8000)
+                        .catch(() => ({ data: [] }))
+                )
+            );
 
-        // Merge and deduplicate
-        const allAnimes: any[] = [];
-        const seenTitles = new Set<string>();
-        const seenSlugs = new Set<string>();
+            // Merge and deduplicate
+            const seenTitles = new Set<string>();
+            const seenSlugs = new Set<string>();
 
-        results.forEach((result, i) => {
-            const provider = ALL_PROVIDERS[i];
-            if (result.status === "fulfilled" && (result.value as any)?.data) {
-                ((result.value as any).data || []).forEach((anime: any) => {
-                    const titleKey = anime.title?.toLowerCase().trim() || "";
-                    const slugKey = anime.slug || anime.id || "";
-                    
-                    if (!titleKey && !slugKey) return;
+            results.forEach((result, i) => {
+                const provider = ALL_PROVIDERS[i];
+                if (result.status === "fulfilled" && (result.value as any)?.data) {
+                    ((result.value as any).data || []).forEach((anime: any) => {
+                        const titleKey = anime.title?.toLowerCase().trim() || "";
+                        const slugKey = anime.slug || anime.id || "";
+                        
+                        if (!titleKey && !slugKey) return;
 
-                    const isTitleDuplicate = titleKey && seenTitles.has(titleKey);
-                    const isSlugDuplicate = slugKey && seenSlugs.has(slugKey);
+                        const isTitleDuplicate = titleKey && seenTitles.has(titleKey);
+                        const isSlugDuplicate = slugKey && seenSlugs.has(slugKey);
 
-                    if (!isTitleDuplicate && !isSlugDuplicate) {
-                        if (titleKey) seenTitles.add(titleKey);
-                        if (slugKey) seenSlugs.add(slugKey);
-                        allAnimes.push({ ...anime, _source: provider });
-                    }
-                });
-            }
-        });
+                        if (!isTitleDuplicate && !isSlugDuplicate) {
+                            if (titleKey) seenTitles.add(titleKey);
+                            if (slugKey) seenSlugs.add(slugKey);
+                            allAnimes.push({ ...anime, _source: provider });
+                        }
+                    });
+                }
+            });
 
-        // Prioritize anoboy
-        allAnimes.sort((a: any, b: any) => {
-            if (a._source === "anoboy" && b._source !== "anoboy") return -1;
-            if (a._source !== "anoboy" && b._source === "anoboy") return 1;
-            return 0;
-        });
+            // Prioritize anoboy
+            allAnimes.sort((a: any, b: any) => {
+                if (a._source === "anoboy" && b._source !== "anoboy") return -1;
+                if (a._source !== "anoboy" && b._source === "anoboy") return 1;
+                return 0;
+            });
+        }
 
         // Pagination untuk search hasil gabungan
         const perPage = 20;

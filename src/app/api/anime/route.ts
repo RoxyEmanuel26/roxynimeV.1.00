@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type") || "completed";
     const genre = searchParams.get("genre");
     const page = parseInt(searchParams.get("page") || "1");
+    const source = searchParams.get("source");
 
     try {
         let fetcher: (provider: string) => Promise<any>;
@@ -113,7 +114,22 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        const { data: animeList, pagination } = await fetchFromAll(fetcher, page);
+        let animeList: Anime[] = [];
+        let pagination: any;
+
+        if (source && source !== "all" && ALL_PROVIDERS.includes(source)) {
+            const res = await fetchWithTimeout(fetcher(source), 8000);
+            animeList = (res.data || []).map((a: any) => ({ ...a, _source: source }));
+            pagination = res.pagination || {
+                currentPage: page,
+                hasNextPage: animeList.length > 0,
+                hasPrevPage: page > 1,
+            };
+        } else {
+            const result = await fetchFromAll(fetcher, page);
+            animeList = result.data;
+            pagination = result.pagination;
+        }
 
         const safeHasNext = pagination.hasNextPage && animeList.length > 0;
         const safeTotalPages = Math.max(pagination.totalPages || 1, page, safeHasNext ? page + 1 : 1);

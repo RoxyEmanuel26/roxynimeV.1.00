@@ -112,7 +112,7 @@ function BrowseContent() {
 
     setLoading(true);
     setError(null);
-    // FIXED: Pertahankan data lama saat loading agar grid tidak kosong
+    setAnimes([]); // Clear immediately when fetching new page/query
 
     // MODE HEMAT: block all API fetches
     if (isHemat) {
@@ -123,80 +123,92 @@ function BrowseContent() {
       return;
     }
 
-    try {
-      let url: string;
+    const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
+    
+    let activeProviders = ALL_PROVIDERS.length;
+    let anyHasNext = false;
+    let anyHasPrev = pageNum > 1;
+    let maxTotalPages = pageNum;
+    let anySuccess = false;
 
-      if (query) {
-        url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}`;
-      } else if (f.genre) {
-        url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}`;
-      } else {
-        url = `/api/anime?type=${f.type || "completed"}&page=${pageNum}`;
-      }
+    ALL_PROVIDERS.forEach(async (provider) => {
+        try {
+            let url: string;
+            if (query) {
+                url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=${provider}`;
+            } else if (f.genre) {
+                url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${provider}`;
+            } else {
+                url = `/api/anime?type=${f.type || "completed"}&page=${pageNum}&source=${provider}`;
+            }
 
-      const response = await fetch(url, { signal: controller.signal });
+            const response = await fetch(url, { signal: controller.signal });
+            if (fetchId !== fetchIdRef.current) return;
+            if (!response.ok) return; // skip this provider if error
 
-      // Discard stale response if a newer fetch was started
-      if (fetchId !== fetchIdRef.current) return;
+            const data: ApiResponse = await response.json();
+            if (fetchId !== fetchIdRef.current) return;
+            
+            anySuccess = true;
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            let list = (data.data || []).map((anime: any) => ({
+                ...anime,
+                id: anime.id || anime.slug || "",
+                type: f.type === "completed" || anime.status === "Completed" ? ["Completed"] : anime.type,
+                genres: anime.genres || [],
+            }));
 
-      const data: ApiResponse = await response.json();
-      if (fetchId !== fetchIdRef.current) return;
+            if (data.hasNext) anyHasNext = true;
+            if (data.totalPages > maxTotalPages) maxTotalPages = data.totalPages;
 
-      // FIXED: Simpan hasNext SEBELUM filter
-      const rawHasNext = data.hasNext ?? false;
+            setAnimes(prev => {
+                const seenKeys = new Set(prev.map(a => a.slug || a.id || a.title?.toLowerCase().trim()));
+                const newItems = list.filter((anime: any) => {
+                    const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
+                    if (!key || seenKeys.has(key)) return false;
+                    seenKeys.add(key);
+                    return true;
+                });
+                
+                let merged = [...prev, ...newItems];
 
-      // Normalise anime list
-      let list = (data.data || []).map((anime: any) => ({
-        ...anime,
-        id: anime.id || anime.slug || "",
-        type:
-          f.type === "completed" || anime.status === "Completed"
-            ? ["Completed"]
-            : anime.type,
-        genres: anime.genres || [],
-      }));
+                if (f.order === "rating") {
+                    merged.sort((a: any, b: any) => {
+                        const ra = parseFloat(a.rating || a.score || "0") || 0;
+                        const rb = parseFloat(b.rating || b.score || "0") || 0;
+                        return rb - ra;
+                    });
+                }
+                
+                return merged;
+            });
+            
+            // The moment we have some data, turn off loading so the grid appears
+            setLoading(false);
 
-      // FIXED: Frontend safety dedup — menangkap duplikat yang lolos dari API
-      const seenKeys = new Set<string>();
-      list = list.filter((anime: any) => {
-        const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
-        if (!key || seenKeys.has(key)) return false;
-        seenKeys.add(key);
-        return true;
-      });
+        } catch (err: any) {
+            if (err?.name === "AbortError") return;
+            console.error(`[Browse] Fetch error for ${provider}:`, err);
+        } finally {
+            if (fetchId === fetchIdRef.current) {
+                activeProviders--;
+                if (activeProviders === 0) {
+                    setLoading(false);
+                    if (!anySuccess) setError("Gagal memuat data anime. Silakan coba lagi.");
+                    
+                    setHasMore(anyHasNext);
+                    setHasPrev(anyHasPrev);
+                    setTotalPages(anyHasNext && maxTotalPages <= pageNum ? pageNum + 1 : maxTotalPages);
+                    setCurrentPage(pageNum);
 
-      // Client-side sort by rating if requested
-      if (f.order === "rating") {
-        list.sort((a: any, b: any) => {
-          const ra = parseFloat(a.rating || a.score || "0") || 0;
-          const rb = parseFloat(b.rating || b.score || "0") || 0;
-          return rb - ra;
-        });
-      }
-
-      const tp = Math.max(data.totalPages || 1, pageNum);
-
-      setAnimes(list);
-      // FIXED: pakai rawHasNext dari API, bukan dari filtered list
-      setHasMore(rawHasNext);
-      setHasPrev(data.hasPrev ?? pageNum > 1);
-      setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
-      setCurrentPage(pageNum);
-
-      // FIXED: scroll hanya setelah data berhasil dimuat, bukan saat mulai fetch
-      if (pageNum !== currentPageRef.current) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-      currentPageRef.current = pageNum;
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      console.error("[Browse] Fetch error:", err);
-      setError("Gagal memuat data anime. Silakan coba lagi.");
-    } finally {
-      if (fetchId === fetchIdRef.current) setLoading(false);
-    }
+                    if (pageNum !== currentPageRef.current) {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                    currentPageRef.current = pageNum;
+                }
+            }
+        }
+    });
   }, []);
 
   // ── Mount: initialise state from URL then fetch ────────────────────────────
