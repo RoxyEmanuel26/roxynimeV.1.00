@@ -88,6 +88,10 @@ export async function GET(request: NextRequest) {
             hasPrev: page > 1,
             current_page: page,
             totalPages: Math.max(1, Math.ceil(allAnimes.length / perPage)),
+        }, {
+            headers: {
+                "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400",
+            },
         });
     } catch (error) {
         console.error("Error searching anime:", error);
