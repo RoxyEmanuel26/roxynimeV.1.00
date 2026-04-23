@@ -150,7 +150,10 @@ function MoviesContent() {
 
             const response = await fetch(url, { signal: controller.signal });
             if (fetchId !== fetchIdRef.current) return;
-            if (!response.ok) return;
+            if (!response.ok) {
+                providerHasNextRef.current[provider] = false; // Prevent zombie retry
+                return;
+            }
 
             const data: ApiResponse = await response.json();
             if (fetchId !== fetchIdRef.current) return;
@@ -207,6 +210,7 @@ function MoviesContent() {
         } catch (err: any) {
             if (err?.name === "AbortError") return;
             console.error(`[Movies] Fetch error for ${provider}:`, err);
+            providerHasNextRef.current[provider] = false; // Prevent zombie retry
         } finally {
             if (fetchId === fetchIdRef.current) {
                 activeProviders--;

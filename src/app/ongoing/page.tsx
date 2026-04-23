@@ -151,7 +151,10 @@ function OngoingContent() {
 
             const response = await fetch(url, { signal: controller.signal });
             if (fetchId !== fetchIdRef.current) return;
-            if (!response.ok) return;
+            if (!response.ok) {
+                providerHasNextRef.current[provider] = false; // Prevent zombie retry
+                return;
+            }
 
             const data: ApiResponse = await response.json();
             if (fetchId !== fetchIdRef.current) return;
@@ -218,6 +221,7 @@ function OngoingContent() {
         } catch (err: any) {
             if (err?.name === "AbortError") return;
             console.error(`[Ongoing] Fetch error for ${provider}:`, err);
+            providerHasNextRef.current[provider] = false; // Prevent zombie retry
         } finally {
             if (fetchId === fetchIdRef.current) {
                 activeProviders--;

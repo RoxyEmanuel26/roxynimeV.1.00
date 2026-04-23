@@ -160,7 +160,10 @@ function BrowseContent() {
 
             const response = await fetch(url, { signal: controller.signal });
             if (fetchId !== fetchIdRef.current) return;
-            if (!response.ok) return; // skip this provider if error
+            if (!response.ok) {
+                providerHasNextRef.current[provider] = false; // Prevent zombie retry
+                return;
+            }
 
             const data: ApiResponse = await response.json();
             if (fetchId !== fetchIdRef.current) return;
@@ -209,6 +212,7 @@ function BrowseContent() {
         } catch (err: any) {
             if (err?.name === "AbortError") return;
             console.error(`[Browse] Fetch error for ${provider}:`, err);
+            providerHasNextRef.current[provider] = false; // Prevent zombie retry
         } finally {
             if (fetchId === fetchIdRef.current) {
                 activeProviders--;
