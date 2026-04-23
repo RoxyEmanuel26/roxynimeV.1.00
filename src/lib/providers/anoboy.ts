@@ -27,6 +27,7 @@ function mapItem(item: any): ProviderAnime {
         totalEpisodes: item.episode
             ? parseInt(String(item.episode).replace(/\D/g, ""))
             : undefined,
+        episode: item.episode ? String(item.episode) : undefined,
         rating: undefined,
     };
 }

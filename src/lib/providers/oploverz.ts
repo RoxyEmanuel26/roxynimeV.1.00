@@ -15,6 +15,8 @@ const headers = () => ({
 // Oploverz home item fields: title, poster, slug, episode, status, type, oploverz_url
 function mapItem(item: any): ProviderAnime {
     const slug = item.slug || "";
+    const rawEp = item.episode ? String(item.episode) : "";
+    const parsedNum = rawEp ? parseInt(rawEp.replace(/\D/g, "")) : undefined;
     return {
         id: slug,
         slug,
@@ -24,9 +26,8 @@ function mapItem(item: any): ProviderAnime {
         genres: [],
         type: item.type || "TV",
         status: item.status || "",
-        totalEpisodes: item.episode
-            ? parseInt(String(item.episode).replace(/\D/g, ""))
-            : undefined,
+        totalEpisodes: parsedNum && !isNaN(parsedNum) ? parsedNum : undefined,
+        episode: rawEp || undefined,
         rating: undefined,
     };
 }

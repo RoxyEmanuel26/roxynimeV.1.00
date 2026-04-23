@@ -10,6 +10,7 @@ export interface ProviderAnime {
     type?: string;       // TV, Movie, OVA, Donghua, etc.
     status?: string;     // Ongoing, Completed, Unknown
     totalEpisodes?: number;
+    episode?: string | number; // Raw episode info from API (e.g. "Ep 12", "Episode 4")
     rating?: number;
     releaseDate?: string;
     studio?: string;

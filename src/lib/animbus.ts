@@ -48,7 +48,7 @@ function toAnime(p: ProviderAnime): Anime {
         rating: numRating?.toString(),
         image: p.poster,
         poster: p.poster,
-        episode: p.totalEpisodes,
+        episode: p.episode || p.totalEpisodes,
         description: p.synopsis,
         released: p.releaseDate,
         synopsis: p.synopsis,

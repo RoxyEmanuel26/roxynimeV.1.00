@@ -36,11 +36,13 @@ export const otakudesuProvider: AnimeProvider = {
 
                 const ongoingList = data.data?.ongoing?.animeList || [];
                 const completedList = data.data?.completed?.animeList || [];
-                const rawList = [...ongoingList, ...completedList];
 
-                if (!Array.isArray(rawList) || rawList.length === 0) return [];
+                const ongoingMapped = ongoingList.map((item: any) => mapItem(item, "Ongoing"));
+                const completedMapped = completedList.map((item: any) => mapItem(item, "Completed"));
+                const rawList = [...ongoingMapped, ...completedMapped];
 
-                return rawList.map((item: any) => mapItem(item, "Ongoing"));
+                if (rawList.length === 0) return [];
+                return rawList;
             } catch (e) {
                 console.error("[Otakudesu] Home Error:", e);
                 return [];
@@ -63,7 +65,11 @@ export const otakudesuProvider: AnimeProvider = {
 
                 const animeList = rawList
                     .map((item: any) => mapItem(item, "Ongoing"))
-                    .filter((a: ProviderAnime) => !a.status || a.status.toLowerCase() === "ongoing");
+                    .filter((a: ProviderAnime) => {
+                        const s = (a.status || "").toLowerCase();
+                        if (s.includes("completed") || s.includes("finished") || s.includes("tamat")) return false;
+                        return true;
+                    });
 
                 return { data: animeList, pagination };
             } catch (e) {
@@ -296,7 +302,8 @@ function mapItem(item: any, defaultStatus: string): ProviderAnime {
         genres: item.genres || item.genre || [],
         type: item.type || "TV",
         status: item.status || defaultStatus,
-        totalEpisodes: item.episodes || item.episode || item.total_episode,
+        totalEpisodes: item.episodes || item.total_episode,
+        episode: item.episode ? String(item.episode) : (item.episodes ? String(item.episodes) : undefined),
         rating: item.score ? parseFloat(item.score) : undefined,
     };
 }
