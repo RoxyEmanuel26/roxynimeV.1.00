@@ -165,8 +165,8 @@ export default function WatchPlayer({ servers }: WatchPlayerProps) {
 
             {/* Server Selection */}
             <div className="bg-card/50 p-4 sm:p-6 rounded-xl border border-border/50">
-                <div className="w-full bg-primary/10 border border-primary/20 text-primary rounded-xl p-4 mb-6 flex flex-col items-center justify-center text-center gap-2">
-                    <Info className="w-6 h-6 mb-1" />
+                <div className="w-full bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl p-4 mb-6 flex flex-col items-center justify-center text-center gap-2 shadow-sm">
+                    <span className="text-3xl mb-1">⚠️</span>
                     <span className="text-base sm:text-lg font-bold">
                         Pilih server lain jika video mengalami error atau tidak bisa diputar
                     </span>
