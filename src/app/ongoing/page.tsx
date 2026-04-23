@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
+import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
 import { useDataSaver } from "@/context/DataSaverContext";
@@ -70,7 +70,6 @@ function OngoingContent() {
   const [hasMore, setHasMore] = useState(true);
   const [hasPrev, setHasPrev] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [source, setSource] = useState("otakudesu");
   const [filters, setFilters] = useState<FilterState>({
     type: "ongoing",
     genre: "",
@@ -83,11 +82,10 @@ function OngoingContent() {
   const { isHemat, addSavedBytes } = useDataSaver();
 
   // FIXED: always write source to URL so it stays in sync
-  const buildUrl = (page: number, query: string, f: FilterState, src: string): string => {
+  const buildUrl = (page: number, query: string, f: FilterState): string => {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (f.genre) params.set("genre", f.genre);
-    if (src) params.set("source", src);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/ongoing${qs ? `?${qs}` : ""}`;
@@ -96,8 +94,7 @@ function OngoingContent() {
   const fetchAnime = useCallback(async (
     pageNum: number,
     query: string,
-    f: FilterState,
-    src: string
+    f: FilterState
   ) => {
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -117,80 +114,110 @@ function OngoingContent() {
       return;
     }
 
-    try {
-      let url: string;
-      if (query) {
-        url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=all`;
-      } else if (f.genre) {
-        url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${src}`;
-      } else {
-        url = `/api/anime?type=ongoing&page=${pageNum}&source=${src}`;
-      }
+    const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
+    
+    let activeProviders = ALL_PROVIDERS.length;
+    let anyHasNext = false;
+    let anyHasPrev = pageNum > 1;
+    let maxTotalPages = pageNum;
+    let anySuccess = false;
 
-      const response = await fetch(url, { signal: controller.signal });
-      if (fetchId !== fetchIdRef.current) return;
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    ALL_PROVIDERS.forEach(async (provider) => {
+        try {
+            let url: string;
+            if (query) {
+                url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=${provider}`;
+            } else if (f.genre) {
+                url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${provider}`;
+            } else {
+                url = `/api/anime?type=ongoing&page=${pageNum}&source=${provider}`;
+            }
 
-      const data: ApiResponse = await response.json();
-      const rawHasNext = data.hasNext ?? false;
-      if (fetchId !== fetchIdRef.current) return;
+            const response = await fetch(url, { signal: controller.signal });
+            if (fetchId !== fetchIdRef.current) return;
+            if (!response.ok) return;
 
-      // NORMALIZATION
-      let list = (data.data || []).map((anime: any) => ({
-        ...anime,
-        id: anime.id || anime.slug || "",
-        type: anime.type,
-        genres: anime.genres || [],
-      }));
+            const data: ApiResponse = await response.json();
+            if (fetchId !== fetchIdRef.current) return;
+            
+            anySuccess = true;
 
-      // FIXED: Tolerant status filter — providers use varied status strings
-      list = list.filter((anime: any) => {
-        const status = (anime.status || "").toLowerCase().trim();
-        if (!status) return true; // empty = assume ongoing
-        if (status.includes("ongoing")) return true;
-        if (status.includes("airing")) return true;
-        if (status.includes("sedang")) return true;
-        if (status.includes("belum tamat")) return true;
-        // Explicitly reject non-ongoing statuses
-        if (status.includes("completed")) return false;
-        if (status.includes("finished")) return false;
-        if (status.includes("tamat")) return false;
-        if (status.includes("movie")) return false;
-        if (status.includes("film")) return false;
-        // Unknown status = show (prefer over-include)
-        return true;
-      });
+            // NORMALIZATION
+            let list = (data.data || []).map((anime: any) => ({
+                ...anime,
+                id: anime.id || anime.slug || "",
+                type: anime.type,
+                genres: anime.genres || [],
+            }));
 
-      // Client-side sort by rating if requested
-      if (f.order === "rating") {
-        list.sort((a: any, b: any) => {
-          const ra = parseFloat(a.rating || a.score || "0") || 0;
-          const rb = parseFloat(b.rating || b.score || "0") || 0;
-          return rb - ra;
-        });
-      }
+            // Tolerant status filter — providers use varied status strings
+            list = list.filter((anime: any) => {
+                const status = (anime.status || "").toLowerCase().trim();
+                if (!status) return true; // empty = assume ongoing
+                if (status.includes("ongoing")) return true;
+                if (status.includes("airing")) return true;
+                if (status.includes("sedang")) return true;
+                if (status.includes("belum tamat")) return true;
+                // Explicitly reject non-ongoing statuses
+                if (status.includes("completed")) return false;
+                if (status.includes("finished")) return false;
+                if (status.includes("tamat")) return false;
+                if (status.includes("movie")) return false;
+                if (status.includes("film")) return false;
+                // Unknown status = show (prefer over-include)
+                return true;
+            });
 
-      const tp = Math.max(data.totalPages || 1, pageNum);
+            if (data.hasNext) anyHasNext = true;
+            if (data.totalPages > maxTotalPages) maxTotalPages = data.totalPages;
 
-      setAnimes(list);
-      // FIXED: pakai rawHasNext dari API, bukan dari filtered list
-      setHasMore(rawHasNext);
-      setHasPrev(data.hasPrev ?? pageNum > 1);
-      setTotalPages(rawHasNext && tp <= pageNum ? pageNum + 1 : tp);
-      setCurrentPage(pageNum);
+            setAnimes(prev => {
+                const seenKeys = new Set(prev.map(a => a.slug || a.id || a.title?.toLowerCase().trim()));
+                const newItems = list.filter((anime: any) => {
+                    const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
+                    if (!key || seenKeys.has(key)) return false;
+                    seenKeys.add(key);
+                    return true;
+                });
+                
+                let merged = [...prev, ...newItems];
 
-      // FIXED: scroll hanya setelah data berhasil dimuat, bukan saat mulai fetch
-      if (pageNum !== currentPageRef.current) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-      currentPageRef.current = pageNum;
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      console.error("[Ongoing] Fetch error:", err);
-      setError("Gagal memuat data anime. Silakan coba lagi.");
-    } finally {
-      if (fetchId === fetchIdRef.current) setLoading(false);
-    }
+                if (f.order === "rating") {
+                    merged.sort((a: any, b: any) => {
+                        const ra = parseFloat(a.rating || a.score || "0") || 0;
+                        const rb = parseFloat(b.rating || b.score || "0") || 0;
+                        return rb - ra;
+                    });
+                }
+                
+                return merged;
+            });
+            
+            setLoading(false);
+
+        } catch (err: any) {
+            if (err?.name === "AbortError") return;
+            console.error(`[Ongoing] Fetch error for ${provider}:`, err);
+        } finally {
+            if (fetchId === fetchIdRef.current) {
+                activeProviders--;
+                if (activeProviders === 0) {
+                    setLoading(false);
+                    if (!anySuccess) setError("Gagal memuat data anime. Silakan coba lagi.");
+                    
+                    setHasMore(anyHasNext);
+                    setHasPrev(anyHasPrev);
+                    setTotalPages(anyHasNext && maxTotalPages <= pageNum ? pageNum + 1 : maxTotalPages);
+                    setCurrentPage(pageNum);
+
+                    if (pageNum !== currentPageRef.current) {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                    currentPageRef.current = pageNum;
+                }
+            }
+        }
+    });
   }, []);
 
   // FIXED: URL params always take priority over localStorage
@@ -198,18 +225,12 @@ function OngoingContent() {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const query = searchParams.get("search") || "";
     const genre = searchParams.get("genre") || "";
-    const srcFromUrl = searchParams.get("source");
-    const srcFromStorage = typeof window !== "undefined"
-      ? localStorage.getItem("roxynime_provider")
-      : null;
-    const src = srcFromUrl || srcFromStorage || "otakudesu";
     const f: FilterState = { type: "ongoing", genre, order: "updated" };
 
     setSearchQuery(query);
     setFilters(f);
-    setSource(src);
     setCurrentPage(page);
-    fetchAnime(page, query, f, src);
+    fetchAnime(page, query, f);
 
     return () => { if (abortRef.current) abortRef.current.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -218,32 +239,22 @@ function OngoingContent() {
   const goToPage = useCallback((page: number) => {
     if (loading) return;
     const p = Math.max(1, page);
-    router.replace(buildUrl(p, searchQuery, filters, source), { scroll: false });
-    fetchAnime(p, searchQuery, filters, source);
-  }, [loading, router, searchQuery, filters, source, fetchAnime]);
+    router.replace(buildUrl(p, searchQuery, filters), { scroll: false });
+    fetchAnime(p, searchQuery, filters);
+  }, [loading, router, searchQuery, filters, fetchAnime]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-    router.replace(buildUrl(1, query, filters, source), { scroll: false });
-    fetchAnime(1, query, filters, source);
-  }, [filters, source, router, fetchAnime]);
+    router.replace(buildUrl(1, query, filters), { scroll: false });
+    fetchAnime(1, query, filters);
+  }, [filters, router, fetchAnime]);
 
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     const f = { ...newFilters, type: "ongoing" };
     setFilters(f);
-    router.replace(buildUrl(1, searchQuery, f, source), { scroll: false });
-    fetchAnime(1, searchQuery, f, source);
-  }, [searchQuery, source, router, fetchAnime]);
-
-  // FIXED: persist provider selection to localStorage
-  const handleProviderChange = useCallback((providerId: string) => {
-    setSource(providerId);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("roxynime_provider", providerId);
-    }
-    router.replace(buildUrl(1, searchQuery, filters, providerId), { scroll: false });
-    fetchAnime(1, searchQuery, filters, providerId);
-  }, [searchQuery, filters, router, fetchAnime]);
+    router.replace(buildUrl(1, searchQuery, f), { scroll: false });
+    fetchAnime(1, searchQuery, f);
+  }, [searchQuery, router, fetchAnime]);
 
   const effectiveTotalPages =
     hasMore && totalPages <= currentPage ? currentPage + 1 : Math.max(totalPages, 1);
@@ -313,7 +324,6 @@ function OngoingContent() {
               Anime yang sedang tayang saat ini
             </p>
           </div>
-          <ProviderSelector onProviderChange={handleProviderChange} />
         </div>
       </div>
 
@@ -343,7 +353,7 @@ function OngoingContent() {
             <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
               <p className="text-destructive font-medium">{error}</p>
               <button
-                onClick={() => fetchAnime(currentPage, searchQuery, filters, source)}
+                onClick={() => fetchAnime(currentPage, searchQuery, filters)}
                 className="btn-primary inline-flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" /> Coba Lagi
@@ -365,7 +375,7 @@ function OngoingContent() {
               {hasMore ? (
                 <p className="text-sm text-muted-foreground">Tapi masih ada halaman berikutnya, silakan klik tombol Next.</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Coba ubah provider.</p>
+                <p className="text-sm text-muted-foreground">Coba gunakan filter pencarian lain.</p>
               )}
             </div>
           )}
