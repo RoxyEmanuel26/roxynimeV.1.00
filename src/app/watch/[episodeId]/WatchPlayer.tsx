@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SankaStreamServer } from "@/lib/sankaClient";
-import { Play, Loader2, RefreshCw } from "lucide-react";
+import { Play, Loader2, RefreshCw, Server, CheckCircle2 } from "lucide-react";
 
 interface WatchPlayerProps {
     servers: SankaStreamServer[];
@@ -147,22 +147,68 @@ export default function WatchPlayer({ servers }: WatchPlayerProps) {
             </div>
 
             {/* Server Selection */}
-            <div className="bg-card p-4 sm:p-6 rounded-xl border border-border shadow-sm">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Pilih Server (Jika Video Error)</h3>
-                <div className="flex flex-wrap gap-2">
+            <div className="bg-card/50 p-4 sm:p-6 rounded-xl border border-border/50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Server className="w-4 h-4 text-primary" />
+                        Daftar Server ({servers.length})
+                    </h3>
+                    <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-md border border-border/50">
+                        Pilih server lain jika video error
+                    </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {servers.map((server, idx) => {
                         const isActive = activeServer?.streamUrl === server.streamUrl;
+                        const quality = server.quality && server.quality !== "default" && server.quality !== "auto" ? server.quality : "Auto";
+                        
                         return (
                             <button
                                 key={`${server.name}-${idx}`}
                                 onClick={() => setActiveServer(server)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive
-                                        ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background"
-                                        : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                                    }`}
+                                className={`group flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 text-left ${
+                                    isActive 
+                                        ? "bg-primary/10 border-primary/50 shadow-sm shadow-primary/5" 
+                                        : "bg-background border-border hover:bg-muted/80 hover:border-muted-foreground/30"
+                                }`}
                             >
-                                <div className={`w-2 h-2 rounded-full ${isActive ? "bg-white" : "bg-primary/50"}`} />
-                                {server.name} {server.quality && server.quality !== "default" && server.quality !== "auto" ? `(${server.quality})` : ""}
+                                <div className="flex items-center gap-3.5">
+                                    <div className={`p-2.5 rounded-lg transition-colors ${
+                                        isActive 
+                                            ? "bg-primary text-primary-foreground shadow-sm" 
+                                            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                                    }`}>
+                                        <Play className="w-4 h-4 fill-current" />
+                                    </div>
+                                    <div>
+                                        <p className={`font-semibold leading-none mb-1.5 transition-colors ${
+                                            isActive ? "text-primary" : "text-foreground group-hover:text-primary"
+                                        }`}>
+                                            {server.name}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 text-[11px] uppercase font-bold tracking-wider">
+                                            <span className="text-muted-foreground/70">Resolusi</span>
+                                            <span className="text-muted-foreground/40">•</span>
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                                isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                                            }`}>
+                                                {quality}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="pl-4 pr-1">
+                                    {isActive ? (
+                                        <div className="flex items-center gap-1.5 text-primary">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline-block">Diputar</span>
+                                            <CheckCircle2 className="w-5 h-5 drop-shadow-sm" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors" />
+                                    )}
+                                </div>
                             </button>
                         );
                     })}
