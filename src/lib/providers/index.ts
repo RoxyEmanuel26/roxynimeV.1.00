@@ -16,7 +16,7 @@ const providers: Record<string, AnimeProvider> = {
     oploverz: oploverzProvider,
 };
 
-const DEFAULT_PROVIDER = "otakudesu";
+const DEFAULT_PROVIDER = "anoboy";
 
 /**
  * Get a provider by its ID. Falls back to default if not found.

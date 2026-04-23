@@ -19,19 +19,24 @@ export const metadata: Metadata = {
   },
 };
 
-const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "oploverz"];
-
-// Deterministic shuffle using a seed (so it's constant for SEO bots for a day, but changes daily)
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
+// Helper timeout wrapper
+async function fetchWithTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs = 3000
+): Promise<T> {
+    const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), timeoutMs)
+    );
+    return Promise.race([promise, timeout]);
 }
+
+const PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz"];
 
 export default async function HomePage() {
   // FIXED: Server component uses direct data layer call to avoid HTTP connection drops
   const fetchPromises = PROVIDERS.map((provider) =>
-    getOngoingAnimeList(1, provider)
-      .then((res) => res.data || [])
+    fetchWithTimeout(getOngoingAnimeList(1, provider), 3000)
+      .then((res) => (res.data || []).map((a: any) => ({ ...a, _source: provider })))
       .catch((err) => {
         console.error(`[Home] Error fetching provider ${provider}:`, err);
         return [];
@@ -46,29 +51,34 @@ export default async function HomePage() {
 
   const allAnimes: Anime[] = [];
   const seenTitles = new Set<string>();
+  const seenSlugs = new Set<string>();
 
   results.forEach((result) => {
     if (result.status === "fulfilled" && Array.isArray(result.value)) {
       result.value.forEach((anime: any) => {
-        // Deduplicate by title (case-insensitive)
-        const key = anime.title?.toLowerCase().trim();
-        if (key && !seenTitles.has(key)) {
-          seenTitles.add(key);
-          allAnimes.push(anime as Anime);
+        const titleKey = anime.title?.toLowerCase().trim() || "";
+        const slugKey = anime.slug || anime.id || "";
+        
+        if (!titleKey && !slugKey) return;
+
+        const isTitleDuplicate = titleKey && seenTitles.has(titleKey);
+        const isSlugDuplicate = slugKey && seenSlugs.has(slugKey);
+
+        if (!isTitleDuplicate && !isSlugDuplicate) {
+            if (titleKey) seenTitles.add(titleKey);
+            if (slugKey) seenSlugs.add(slugKey);
+            allAnimes.push(anime as Anime);
         }
       });
     }
   });
 
-  // Shuffle intelligently based on today's date so the SSR UI is stable for the day
-  let seed = new Date().setHours(0, 0, 0, 0) / 100000;
-  let m = allAnimes.length, t, i;
-  while (m) {
-    i = Math.floor(seededRandom(seed++) * m--);
-    t = allAnimes[m];
-    allAnimes[m] = allAnimes[i];
-    allAnimes[i] = t;
-  }
+  // FIXED: Mengurutkan hasil agar Anoboy selalu berada di atas
+  allAnimes.sort((a: any, b: any) => {
+    if (a._source === "anoboy" && b._source !== "anoboy") return -1;
+    if (a._source !== "anoboy" && b._source === "anoboy") return 1;
+    return 0;
+  });
 
   const featured = allAnimes[0];
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AnimeGrid, SearchFilter, ProviderSelector, type FilterState } from "@/components/anime";
+import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
 import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
 import { useDataSaver } from "@/context/DataSaverContext";
@@ -71,7 +71,6 @@ function BrowseContent() {
   const [hasMore, setHasMore] = useState(true);
   const [hasPrev, setHasPrev] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [source, setSource] = useState("otakudesu");
   const [filters, setFilters] = useState<FilterState>({
     type: "completed",
     genre: "",
@@ -88,15 +87,12 @@ function BrowseContent() {
   const buildBrowseUrl = (
     page: number,
     query: string,
-    f: FilterState,
-    src: string
+    f: FilterState
   ): string => {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (f.type) params.set("type", f.type);
     if (f.genre) params.set("genre", f.genre);
-    // FIXED: Always write the source to URL to prevent stale loops
-    if (src) params.set("source", src);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/browse${qs ? `?${qs}` : ""}`;
@@ -106,8 +102,7 @@ function BrowseContent() {
   const fetchAnime = useCallback(async (
     pageNum: number,
     query: string,
-    f: FilterState,
-    src: string
+    f: FilterState
   ) => {
     // Cancel previous in-flight request
     if (abortRef.current) abortRef.current.abort();
@@ -132,11 +127,11 @@ function BrowseContent() {
       let url: string;
 
       if (query) {
-        url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}&source=all`;
+        url = `/api/anime/search?q=${encodeURIComponent(query)}&page=${pageNum}`;
       } else if (f.genre) {
-        url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}&source=${src}`;
+        url = `/api/anime?genre=${encodeURIComponent(f.genre)}&page=${pageNum}`;
       } else {
-        url = `/api/anime?type=${f.type || "completed"}&page=${pageNum}&source=${src}`;
+        url = `/api/anime?type=${f.type || "completed"}&page=${pageNum}`;
       }
 
       const response = await fetch(url, { signal: controller.signal });
@@ -210,21 +205,13 @@ function BrowseContent() {
     const query = searchParams.get("search") || "";
     const type = searchParams.get("type") || "completed";
     const genre = searchParams.get("genre") || "";
-    // FIXED: URL parameters have absolute priority over cached localStorage
-    const srcFromUrl = searchParams.get("source");
-    const srcFromStorage = typeof window !== "undefined"
-      ? localStorage.getItem("roxynime_provider")
-      : null;
-    const src = srcFromUrl || srcFromStorage || "otakudesu";
-
     const f: FilterState = { type, genre, order: "updated" };
 
     setSearchQuery(query);
     setFilters(f);
-    setSource(src);
     setCurrentPage(page);
 
-    fetchAnime(page, query, f, src);
+    fetchAnime(page, query, f);
 
     return () => {
       if (abortRef.current) abortRef.current.abort();
@@ -237,48 +224,34 @@ function BrowseContent() {
     (page: number) => {
       if (loading) return;
       const clamped = Math.max(1, page);
-      router.replace(buildBrowseUrl(clamped, searchQuery, filters, source), {
+      router.replace(buildBrowseUrl(clamped, searchQuery, filters), {
         scroll: false,
       });
-      fetchAnime(clamped, searchQuery, filters, source);
+      fetchAnime(clamped, searchQuery, filters);
     },
-    [loading, router, searchQuery, filters, source, fetchAnime]
+    [loading, router, searchQuery, filters, fetchAnime]
   );
 
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      router.replace(buildBrowseUrl(1, query, filters, source), { scroll: false });
-      fetchAnime(1, query, filters, source);
+      router.replace(buildBrowseUrl(1, query, filters), { scroll: false });
+      fetchAnime(1, query, filters);
     },
-    [filters, source, router, fetchAnime]
+    [filters, router, fetchAnime]
   );
 
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
       setFilters(newFilters);
-      router.replace(buildBrowseUrl(1, searchQuery, newFilters, source), {
+      router.replace(buildBrowseUrl(1, searchQuery, newFilters), {
         scroll: false,
       });
-      fetchAnime(1, searchQuery, newFilters, source);
+      fetchAnime(1, searchQuery, newFilters);
     },
-    [searchQuery, source, router, fetchAnime]
+    [searchQuery, router, fetchAnime]
   );
 
-  const handleProviderChange = useCallback(
-    (providerId: string) => {
-      setSource(providerId);
-      // FIXED: Synchronize explicit UI provider choices down to storage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("roxynime_provider", providerId);
-      }
-      router.replace(buildBrowseUrl(1, searchQuery, filters, providerId), {
-        scroll: false,
-      });
-      fetchAnime(1, searchQuery, filters, providerId);
-    },
-    [searchQuery, filters, router, fetchAnime]
-  );
 
   // ── Pagination numbers ─────────────────────────────────────────────────────
   // If API says no more pages but we still got a full page, trust the data
@@ -355,7 +328,6 @@ function BrowseContent() {
               Temukan dan nonton anime favorit kamu
             </p>
           </div>
-          <ProviderSelector onProviderChange={handleProviderChange} />
         </div>
       </div>
 
@@ -391,7 +363,7 @@ function BrowseContent() {
             <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
               <p className="text-destructive font-medium">{error}</p>
               <button
-                onClick={() => fetchAnime(currentPage, searchQuery, filters, source)}
+                onClick={() => fetchAnime(currentPage, searchQuery, filters)}
                 className="btn-primary inline-flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -415,7 +387,7 @@ function BrowseContent() {
               {hasMore ? (
                 <p className="text-sm text-muted-foreground">Tapi masih ada halaman berikutnya, silakan klik tombol Next.</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Coba ubah filter atau ganti provider.</p>
+                <p className="text-sm text-muted-foreground">Coba ubah filter pencarian Anda.</p>
               )}
             </div>
           )}
