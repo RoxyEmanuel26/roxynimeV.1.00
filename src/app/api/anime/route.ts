@@ -51,7 +51,6 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
                 if (tp > maxTotalPages) maxTotalPages = tp;
                 totalItems += pagination.items?.total || data.length;
             } else if (data.length > 0) {
-                anyHasNext = true;
                 totalItems += data.length;
             }
 
@@ -122,7 +121,7 @@ export async function GET(request: NextRequest) {
             animeList = (res.data || []).map((a: any) => ({ ...a, _source: source }));
             pagination = res.pagination || {
                 currentPage: page,
-                hasNextPage: animeList.length > 0,
+                hasNextPage: false,
                 hasPrevPage: page > 1,
             };
         } else {
