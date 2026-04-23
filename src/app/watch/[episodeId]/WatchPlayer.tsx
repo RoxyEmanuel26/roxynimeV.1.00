@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SankaStreamServer } from "@/lib/sankaClient";
-import { Play, Loader2, RefreshCw, Server, CheckCircle2 } from "lucide-react";
+import { Play, Loader2, RefreshCw, Server, CheckCircle2, Info } from "lucide-react";
 
 interface WatchPlayerProps {
     servers: SankaStreamServer[];
@@ -165,14 +165,18 @@ export default function WatchPlayer({ servers }: WatchPlayerProps) {
 
             {/* Server Selection */}
             <div className="bg-card/50 p-4 sm:p-6 rounded-xl border border-border/50">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Server className="w-4 h-4 text-primary" />
+                <div className="w-full bg-primary/10 border border-primary/20 text-primary rounded-xl p-4 mb-6 flex flex-col items-center justify-center text-center gap-2">
+                    <Info className="w-6 h-6 mb-1" />
+                    <span className="text-base sm:text-lg font-bold">
+                        Pilih server lain jika video mengalami error atau tidak bisa diputar
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-center sm:justify-start mb-6">
+                    <h3 className="text-base font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Server className="w-5 h-5 text-primary" />
                         Daftar Server ({servers.length})
                     </h3>
-                    <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-md border border-border/50">
-                        Pilih server lain jika video error
-                    </span>
                 </div>
                 
                 <div className="space-y-6">
