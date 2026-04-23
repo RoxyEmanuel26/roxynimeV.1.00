@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import * as animbus from "@/lib/animbus";
 import { sankaClient } from "@/lib/sankaClient";
 import { Play, Calendar, Star, Film, Clock, ChevronRight } from "lucide-react";
 import { BannerAd, InFeedAd, SidebarAd } from "@/components/ads";
@@ -10,12 +11,16 @@ import { getBlurDataURL } from "@/lib/utils";
 
 interface PageProps {
     params: Promise<{ slug: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
     const { slug } = await params;
+    const resolvedSearchParams = await searchParams;
+    const source = resolvedSearchParams?.source as string | undefined;
+    
     try {
-        const anime = await sankaClient.getDetail(slug);
+        const anime = await animbus.getAnimeInfo(slug, source);
         
         // Buat deskripsi yang aman (menghindari hasil "undefined...")
         const safeSynopsis = anime.synopsis ? `${anime.synopsis.slice(0, 150)}...` : '';
@@ -53,17 +58,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 }
 
-export default async function AnimeDetailPage({ params }: PageProps) {
+export default async function AnimeDetailPage({ params, searchParams }: PageProps) {
     const { slug } = await params;
+    const resolvedSearchParams = await searchParams;
+    const source = resolvedSearchParams?.source as string | undefined;
 
     let anime;
     try {
-        anime = await sankaClient.getDetail(slug);
+        anime = await animbus.getAnimeInfo(slug, source);
     } catch (error) {
         notFound();
     }
 
-    const { title, poster, synopsis, genres, type, status, totalEpisodes, rating, releaseDate, studio, episodes } = anime;
+    const { title, poster, synopsis, genres, type, status, totalEpisodes, rating, released: releaseDate, studio, episodes } = anime;
 
     return (
         <div className="min-h-screen pb-12">

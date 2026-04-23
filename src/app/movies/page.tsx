@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
 import { PaginationControl } from "@/components/common/PaginationControl";
 import { useDataSaver } from "@/context/DataSaverContext";
 import { DataSaverToggle } from "@/components/common/DataSaverToggle";
@@ -69,6 +69,7 @@ function MoviesContent() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [hasPrev, setHasPrev] = useState(false);
   const [totalItems, setTotalItems] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");

@@ -26,6 +26,7 @@ export interface Episode {
     number: number;
     title?: string;
     urlSlug?: string;
+    date?: string;
 }
 
 export interface StreamingData {
@@ -64,6 +65,7 @@ function toAnimeDetail(p: ProviderAnimeDetail): AnimeDetail {
             number: ep.number,
             title: ep.title,
             urlSlug: ep.urlSlug,
+            date: ep.date,
         })),
     };
 }

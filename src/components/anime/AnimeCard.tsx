@@ -17,6 +17,7 @@ interface AnimeCardProps {
     episode?: string | number;
     rating?: number | string;
     type?: string | string[];
+    source?: string;
     className?: string;
     priority?: boolean;
 }
@@ -29,11 +30,20 @@ export function AnimeCard({
     episode,
     rating,
     type,
+    source,
     className,
     priority = false,
 }: AnimeCardProps) {
     const animeId = id || (slug?.match(/\/anime\/(\d+)/)?.[1]) || slug || "";
-    const href = `/anime/${animeId}`;
+    
+    // Determine if the slug is an episode slug (from Anoboy, Donghua, etc. Ongoing pages)
+    const isEpisode = animeId.toLowerCase().includes("-episode-") || 
+                      animeId.toLowerCase().includes("-eps-") || 
+                      animeId.toLowerCase().endsWith("-subtitle-indonesia") || 
+                      animeId.toLowerCase().endsWith("-sub-indo");
+
+    const baseUrl = isEpisode ? `/watch/${animeId}` : `/anime/${animeId}`;
+    const href = source ? `${baseUrl}?source=${source}` : baseUrl;
 
     const [imgSrc, setImgSrc] = useState(image || '/placeholder-anime.svg');
     const { isHemat, addSavedBytes } = useDataSaver();

@@ -1,13 +1,14 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { sankaClient } from "@/lib/sankaClient";
+import * as animbus from "@/lib/animbus";
 import { ChevronLeft, ChevronRight, Home, Info, Film } from "lucide-react";
 import WatchPlayer from "./WatchPlayer";
 import { BannerAd, PopunderAd, StickyMobileAd } from "@/components/ads";
 
 interface PageProps {
     params: Promise<{ episodeId: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -24,11 +25,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
 }
 
-export default async function WatchPage({ params }: PageProps) {
+export default async function WatchPage({ params, searchParams }: PageProps) {
     const { episodeId } = await params;
+    const resolvedSearchParams = await searchParams;
+    const source = resolvedSearchParams?.source as string | undefined;
 
     // Fetch streaming links
-    const servers = await sankaClient.getStreams(episodeId);
+    const streamData = await animbus.getEpisodeStreams(episodeId, source);
+    const servers = streamData?.servers || [];
 
     // Attempt to guess anime slug to fetch details for Prev/Next navigation
     // e.g. "ramen-akaneko-episode-3-sub-indo" -> "ramen-akaneko"
@@ -40,21 +44,21 @@ export default async function WatchPage({ params }: PageProps) {
     let currentEpNumber: string | null = null;
 
     // Extract current episode number from slug
-    const epMatch = episodeId.match(/-episode-(\d+)/i);
+    const epMatch = episodeId.match(/-eps?-\d+/i) || episodeId.match(/-episode-(\d+)/i) || episodeId.match(/episode-(\d+)/i);
     if (epMatch) {
-        currentEpNumber = epMatch[1];
+        currentEpNumber = epMatch[1] || epMatch[0].replace(/\D/g, "");
     }
 
     try {
         if (guessSlug && guessSlug !== episodeId) {
-            anime = await sankaClient.getDetail(guessSlug);
+            anime = await animbus.getAnimeInfo(guessSlug, source);
 
             if (anime && anime.episodes && currentEpNumber) {
                 const currentEpNum = parseInt(currentEpNumber, 10);
 
                 // Find prev/next in episodes array
                 // Sanka episodes are usually sorted descending (latest first)
-                const currentIdx = anime.episodes.findIndex(ep => ep.number === currentEpNum);
+                const currentIdx = anime.episodes.findIndex(ep => ep.number === currentEpNum || String(ep.number) === currentEpNumber);
 
                 if (currentIdx !== -1) {
                     // Since array is descending (e.g., 3, 2, 1):

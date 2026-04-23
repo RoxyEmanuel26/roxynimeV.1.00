@@ -9,6 +9,7 @@ interface Anime {
     episode?: string | number;
     type?: string | string[];
     rating?: number;
+    _source?: string;
 }
 
 interface AnimeGridProps {
@@ -60,6 +61,7 @@ export function AnimeGrid({ animes, className, loading }: AnimeGridProps) {
                     episode={anime.episode}
                     type={anime.type}
                     rating={anime.rating}
+                    source={anime._source}
                     priority={index < 6}
                 />
             ))}

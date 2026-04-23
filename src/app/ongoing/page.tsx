@@ -26,6 +26,7 @@ interface ApiResponse {
   hasPrev: boolean;
   current_page: number;
   totalPages: number;
+  total_item?: number;
 }
 
 function OngoingLoading() {
