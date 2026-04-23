@@ -15,8 +15,11 @@ interface Anime {
   slug: string;
   title: string;
   image: string;
-  episode?: string;
-  type?: string[];
+  episode?: string | number;
+  type?: string | string[];
+  rating?: number;
+  status?: string;
+  _source?: string;
 }
 
 interface ApiResponse {
@@ -182,12 +185,36 @@ function BrowseContent() {
                 if (data.totalPages > maxTotalPages) maxTotalPages = data.totalPages;
                 if (data.total_item) totalItemsAcc += data.total_item;
 
-                const list = (data.data || []).map((anime: any) => ({
-                    ...anime,
-                    id: anime.id || anime.slug || "",
-                    type: f.type === "completed" || anime.status === "Completed" ? ["Completed"] : anime.type,
-                    genres: anime.genres || [],
-                }));
+                const list = (data.data || []).map((anime: any) => {
+                    // Format episode display
+                    let epDisplay = anime.episode;
+                    if (!epDisplay && anime.totalEpisodes) {
+                        epDisplay = `${anime.totalEpisodes} Eps`;
+                    }
+                    // If episode is just a raw number, format it
+                    if (epDisplay && /^\d+$/.test(String(epDisplay))) {
+                        epDisplay = `${epDisplay} Eps`;
+                    }
+
+                    // Parse rating
+                    const ratingVal = anime.rating
+                        ? (typeof anime.rating === "string" ? parseFloat(anime.rating) : anime.rating)
+                        : undefined;
+
+                    // Determine status badge
+                    const status = anime.status || "";
+                    const isCompleted = f.type === "completed" || status.toLowerCase().includes("completed");
+                    
+                    return {
+                        ...anime,
+                        id: anime.id || anime.slug || "",
+                        type: isCompleted ? ["Completed"] : (anime.type ? (Array.isArray(anime.type) ? anime.type : [anime.type]) : undefined),
+                        episode: epDisplay,
+                        rating: ratingVal && !isNaN(ratingVal) ? ratingVal : undefined,
+                        status,
+                        genres: anime.genres || [],
+                    };
+                });
                 newAnimes.push(...list);
             } else {
                 let providerStr = "unknown";

@@ -15,6 +15,24 @@ const headers = () => ({
 // Donghua home item fields: title, poster, slug, type, status, current_episode, href, anichinUrl
 function mapItem(item: any): ProviderAnime {
     const slug = item.slug || "";
+    
+    // Try to extract episode count from slug for completed items
+    // e.g. "throne-of-seal-episode-208-tamat" → 208
+    let epCount = item.current_episode
+        ? parseInt(String(item.current_episode).replace(/\D/g, ""))
+        : undefined;
+    
+    let epDisplay = item.current_episode ? String(item.current_episode) : undefined;
+    
+    // For completed donghua, extract episode count from slug if not available
+    if (!epCount && slug) {
+        const match = slug.match(/episode-(\d+)/i);
+        if (match) {
+            epCount = parseInt(match[1]);
+            epDisplay = `${epCount} Eps`;
+        }
+    }
+    
     return {
         id: slug,
         slug,
@@ -24,10 +42,8 @@ function mapItem(item: any): ProviderAnime {
         genres: [],
         type: item.type || "Donghua",
         status: item.status || "",
-        totalEpisodes: item.current_episode
-            ? parseInt(String(item.current_episode).replace(/\D/g, ""))
-            : undefined,
-        episode: item.current_episode ? String(item.current_episode) : undefined,
+        totalEpisodes: epCount && !isNaN(epCount) ? epCount : undefined,
+        episode: epDisplay,
         rating: undefined,
     };
 }

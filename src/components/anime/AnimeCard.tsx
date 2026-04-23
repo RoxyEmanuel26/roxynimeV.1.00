@@ -153,7 +153,7 @@ export function AnimeCard({
                         {episode && (
                             <div className="absolute bottom-2 left-2 z-20">
                                 <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-black/70 text-white border border-white/30">
-                                    {episode}
+                                    {typeof episode === "number" ? `${episode} Eps` : episode}
                                 </span>
                             </div>
                         )}

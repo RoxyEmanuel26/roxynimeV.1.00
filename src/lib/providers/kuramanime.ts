@@ -24,6 +24,7 @@ function mapItem(item: any): ProviderAnime {
         type: item.type || "TV",
         status: item.status || "Ongoing",
         totalEpisodes: item.episodes ? parseInt(String(item.episodes)) : undefined,
+        episode: item.episodes ? String(item.episodes) : undefined,
         rating: item.score ? parseFloat(item.score) : undefined,
     };
 }
