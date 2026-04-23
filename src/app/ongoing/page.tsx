@@ -193,7 +193,9 @@ function OngoingContent() {
                 return merged;
             });
             
-            setLoading(false);
+            if (list.length > 0) {
+                setLoading(false);
+            }
 
         } catch (err: any) {
             if (err?.name === "AbortError") return;

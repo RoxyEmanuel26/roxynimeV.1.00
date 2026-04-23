@@ -184,7 +184,9 @@ function BrowseContent() {
             });
             
             // The moment we have some data, turn off loading so the grid appears
-            setLoading(false);
+            if (list.length > 0) {
+                setLoading(false);
+            }
 
         } catch (err: any) {
             if (err?.name === "AbortError") return;
