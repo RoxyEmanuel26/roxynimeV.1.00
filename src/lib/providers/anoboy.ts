@@ -106,8 +106,9 @@ export const anoboyProvider: AnimeProvider = {
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Anoboy does not distinguish completed — reuse home with page
-        return this.getOngoing(page);
+        // Anoboy has no completed anime endpoint — only episode feeds.
+        // Returning empty to avoid polluting browse/completed with episode-level data.
+        return { data: [] };
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {

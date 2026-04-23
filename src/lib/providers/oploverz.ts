@@ -107,9 +107,8 @@ export const oploverzProvider: AnimeProvider = {
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Not supported — return home data
-        const homeData = await this.getHome();
-        return { data: homeData };
+        // Oploverz has no dedicated completed endpoint — only episode feeds.
+        return { data: [] };
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {

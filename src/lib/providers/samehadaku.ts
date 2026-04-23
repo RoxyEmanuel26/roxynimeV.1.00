@@ -129,9 +129,9 @@ export const samehadakuProvider: AnimeProvider = {
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Not supported — return same as home
-        const homeData = await this.getHome();
-        return { data: homeData };
+        // Samehadaku has no dedicated completed endpoint — only recent episode feeds.
+        // Return empty to avoid polluting browse/completed with low-quality data.
+        return { data: [] };
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
