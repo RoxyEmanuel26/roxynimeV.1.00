@@ -207,26 +207,24 @@ function MoviesContent() {
             return;
         }
 
-        setAnimes(prev => {
-            const seenKeys = new Set(prev.map(a => a.slug || a.id || a.title?.toLowerCase().trim()));
+        setAnimes(() => {
+            const seenKeys = new Set();
             const uniqueItems = newAnimes.filter(anime => {
                 const key = anime.slug || anime.id || anime.title?.toLowerCase().trim();
                 if (!key || seenKeys.has(key)) return false;
                 seenKeys.add(key);
                 return true;
             });
-            
-            let merged = [...prev, ...uniqueItems];
 
             if (f.order === "rating") {
-                merged.sort((a: any, b: any) => {
+                uniqueItems.sort((a: any, b: any) => {
                     const ra = parseFloat(a.rating || a.score || "0") || 0;
                     const rb = parseFloat(b.rating || b.score || "0") || 0;
                     return rb - ra;
                 });
             }
             
-            return merged;
+            return uniqueItems;
         });
         
         setLoading(false);
