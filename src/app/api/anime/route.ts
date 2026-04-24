@@ -18,7 +18,7 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
+const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
 
 async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: number, type?: string) {
     const results = await Promise.allSettled(
@@ -78,12 +78,7 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
         }
     });
 
-    // Prioritize anoboy
-    allAnimes.sort((a: any, b: any) => {
-        if (a._source === "anoboy" && b._source !== "anoboy") return -1;
-        if (a._source !== "anoboy" && b._source === "anoboy") return 1;
-        return 0;
-    });
+    // No sorting needed anymore
 
     return {
         data: allAnimes,

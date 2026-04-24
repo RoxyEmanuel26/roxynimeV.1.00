@@ -30,7 +30,7 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
+const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
 
 export default async function HomePage() {
   // FIXED: Server component uses direct data layer call to avoid HTTP connection drops

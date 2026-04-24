@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAnimes } from "@/lib/animbus";
 
-const ALL_PROVIDERS = ["anoboy", "otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
+const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
 
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
@@ -67,12 +67,7 @@ export async function GET(request: NextRequest) {
                 }
             });
 
-            // Prioritize anoboy
-            allAnimes.sort((a: any, b: any) => {
-                if (a._source === "anoboy" && b._source !== "anoboy") return -1;
-                if (a._source !== "anoboy" && b._source === "anoboy") return 1;
-                return 0;
-            });
+            // No sorting needed anymore
         }
 
         // Pagination untuk search hasil gabungan
