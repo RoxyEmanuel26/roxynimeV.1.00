@@ -45,8 +45,8 @@ const GENRES = [
 
 const ORDERS = [
     { value: "updated", label: "Recently Updated" },
-    { value: "popular", label: "Most Popular" },
     { value: "rating", label: "Highest Rated" },
+    { value: "title", label: "A-Z (Alphabetical)" },
 ];
 
 export function SearchFilter({
@@ -128,22 +128,8 @@ export function SearchFilter({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {/* Type Filter */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Type</label>
-                            <select
-                                value={filters.type}
-                                onChange={(e) => handleFilterChange("type", e.target.value)}
-                                className="input"
-                            >
-                                {TYPES.map((type) => (
-                                    <option key={type.value} value={type.value}>
-                                        {type.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
 
                         {/* Genre Filter */}
                         <div>

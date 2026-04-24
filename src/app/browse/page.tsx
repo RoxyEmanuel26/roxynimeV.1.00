@@ -196,10 +196,13 @@ function BrowseContent() {
                         epDisplay = `${epDisplay} Eps`;
                     }
 
-                    // Parse rating
-                    const ratingVal = anime.rating
-                        ? (typeof anime.rating === "string" ? parseFloat(anime.rating) : anime.rating)
-                        : undefined;
+                    // Parse rating using regex to catch numbers hiding in strings like "⭐ 8.5"
+                    let ratingVal = undefined;
+                    const rawRating = anime.rating || anime.score;
+                    if (rawRating) {
+                        const match = String(rawRating).match(/(\d+(\.\d+)?)/);
+                        if (match) ratingVal = parseFloat(match[1]);
+                    }
 
                     // Determine status badge
                     const status = anime.status || "";
@@ -245,10 +248,19 @@ function BrowseContent() {
 
             if (f.order === "rating") {
                 uniqueItems.sort((a: any, b: any) => {
-                    const ra = parseFloat(a.rating || a.score || "0") || 0;
-                    const rb = parseFloat(b.rating || b.score || "0") || 0;
+                    const ra = a.rating || 0;
+                    const rb = b.rating || 0;
                     return rb - ra;
                 });
+            } else if (f.order === "title") {
+                uniqueItems.sort((a: any, b: any) => {
+                    const ta = (a.title || "").toLowerCase();
+                    const tb = (b.title || "").toLowerCase();
+                    return ta.localeCompare(tb);
+                });
+            } else {
+                // For 'updated' or default, we maintain the original API order
+                // The API already returns them sorted by recently updated
             }
             
             return uniqueItems;

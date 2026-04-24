@@ -45,9 +45,13 @@ export default async function HomePage() {
             epDisplay = `${epDisplay} Eps`;
         }
 
-        const ratingVal = a.rating
-            ? (typeof a.rating === "string" ? parseFloat(a.rating) : a.rating)
-            : undefined;
+        // Parse rating using regex to catch numbers hiding in strings like "⭐ 8.5"
+        let ratingVal = undefined;
+        const rawRating = a.rating || a.score;
+        if (rawRating) {
+            const match = String(rawRating).match(/(\d+(\.\d+)?)/);
+            if (match) ratingVal = parseFloat(match[1]);
+        }
 
         return { 
             ...a, 
