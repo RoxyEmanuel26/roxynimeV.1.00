@@ -70,17 +70,24 @@ export default async function HomePage() {
   const successCount = results.filter((r) => r.status === "fulfilled").length;
   if (successCount === 0) hasNetworkError = true;
 
+  const providerAnimes: any[][] = results.map(r => r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);
   const allAnimes: Anime[] = [];
   const seenTitles = new Set<string>();
   const seenSlugs = new Set<string>();
 
-  results.forEach((result) => {
-    if (result.status === "fulfilled" && Array.isArray(result.value)) {
-      result.value.forEach((anime: any) => {
+  let hasMore = true;
+  let idx = 0;
+  while (hasMore) {
+    hasMore = false;
+    for (let i = 0; i < providerAnimes.length; i++) {
+      if (idx < providerAnimes[i].length) {
+        hasMore = true;
+        const anime = providerAnimes[i][idx];
+        
         const titleKey = anime.title?.toLowerCase().trim() || "";
         const slugKey = anime.slug || anime.id || "";
         
-        if (!titleKey && !slugKey) return;
+        if (!titleKey && !slugKey) continue;
 
         const isTitleDuplicate = titleKey && seenTitles.has(titleKey);
         const isSlugDuplicate = slugKey && seenSlugs.has(slugKey);
@@ -90,16 +97,10 @@ export default async function HomePage() {
             if (slugKey) seenSlugs.add(slugKey);
             allAnimes.push(anime as Anime);
         }
-      });
+      }
     }
-  });
-
-  // FIXED: Mengurutkan hasil agar Anoboy selalu berada di atas
-  allAnimes.sort((a: any, b: any) => {
-    if (a._source === "anoboy" && b._source !== "anoboy") return -1;
-    if (a._source !== "anoboy" && b._source === "anoboy") return 1;
-    return 0;
-  });
+    idx++;
+  }
 
   const featured = allAnimes[0];
 
