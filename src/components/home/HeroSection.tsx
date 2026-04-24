@@ -65,7 +65,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                         )}
                         <div className="flex flex-wrap gap-3 sm:gap-4 animate-fade-in-up delay-300">
                             <AdLink
-                                href={`/watch/${featured.id || featured.slug}${featured._source ? `?source=${featured._source}` : ''}`}
+                                href={`/anime/${featured.id || featured.slug}${featured._source ? `?source=${featured._source}` : ''}`}
                                 adKey={`hero-watch-${featured.id || featured.slug}`}
                                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-violet-600 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-300"
                             >
