@@ -195,6 +195,11 @@ function BrowseContent() {
                     if (epDisplay && /^\d+$/.test(String(epDisplay))) {
                         epDisplay = `${epDisplay} Eps`;
                     }
+                    
+                    // Fallback to status if episode is missing
+                    if (!epDisplay && anime.status && anime.status !== "Unknown" && anime.status !== "null") {
+                        epDisplay = anime.status;
+                    }
 
                     // Parse rating using regex to catch numbers hiding in strings like "⭐ 8.5"
                     let ratingVal = undefined;
@@ -288,7 +293,7 @@ function BrowseContent() {
   useEffect(() => {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const query = searchParams.get("search") || "";
-    const type = searchParams.get("type") || "completed";
+    const type = searchParams.get("type") || "";
     const genre = searchParams.get("genre") || "";
     const f: FilterState = { type, genre, order: "updated" };
 

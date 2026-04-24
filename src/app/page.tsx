@@ -45,6 +45,10 @@ export default async function HomePage() {
             epDisplay = `${epDisplay} Eps`;
         }
 
+        if (!epDisplay && a.status && a.status !== "Unknown" && a.status !== "null") {
+            epDisplay = a.status;
+        }
+
         // Parse rating using regex to catch numbers hiding in strings like "⭐ 8.5"
         let ratingVal = undefined;
         const rawRating = a.rating || a.score;
