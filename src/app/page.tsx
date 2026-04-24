@@ -36,7 +36,28 @@ export default async function HomePage() {
   // FIXED: Server component uses direct data layer call to avoid HTTP connection drops
   const fetchPromises = PROVIDERS.map((provider) =>
     fetchWithTimeout(getOngoingAnimeList(1, provider), 8000)
-      .then((res) => (res.data || []).map((a: any) => ({ ...a, _source: provider })))
+      .then((res) => (res.data || []).map((a: any) => {
+        let epDisplay = a.episode;
+        if (!epDisplay && a.totalEpisodes) {
+            epDisplay = `${a.totalEpisodes} Eps`;
+        }
+        if (epDisplay && /^\d+$/.test(String(epDisplay))) {
+            epDisplay = `${epDisplay} Eps`;
+        }
+
+        const ratingVal = a.rating
+            ? (typeof a.rating === "string" ? parseFloat(a.rating) : a.rating)
+            : undefined;
+
+        return { 
+            ...a, 
+            _source: provider,
+            episode: epDisplay,
+            rating: ratingVal && !isNaN(ratingVal) ? ratingVal : undefined,
+            // Provide explicit status if available, fallback to Ongoing for home page feed
+            status: a.status || "Ongoing"
+        };
+      }))
       .catch((err) => {
         console.error(`[Home] Error fetching provider ${provider}:`, err);
         return [];

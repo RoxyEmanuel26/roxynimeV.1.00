@@ -51,7 +51,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                     <div className="col-span-1 md:col-span-7 lg:col-span-7 flex flex-col justify-center">
                         {featured.episode && (
                             <span className="inline-block px-3 py-1 mb-4 text-xs sm:text-sm font-semibold tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-full w-fit animate-fade-in-up">
-                                Episode {featured.episode}
+                                {String(featured.episode).toLowerCase().includes('ep') ? featured.episode : `Episode ${featured.episode}`}
                             </span>
                         )}
                         <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 leading-[1.1] tracking-tight animate-fade-in-up delay-100" style={{ fontFamily: "var(--font-heading)" }}>
