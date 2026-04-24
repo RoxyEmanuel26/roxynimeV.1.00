@@ -16,6 +16,7 @@ export interface Anime {
     rating?: string;
     type?: string[];
     description?: string;
+    _source?: string;
 }
 
 export function HeroSection({ featured }: { featured: Anime | undefined }) {
@@ -64,7 +65,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                         )}
                         <div className="flex flex-wrap gap-3 sm:gap-4 animate-fade-in-up delay-300">
                             <AdLink
-                                href={`/watch/${featured.id || featured.slug}`}
+                                href={`/watch/${featured.id || featured.slug}${featured._source ? `?source=${featured._source}` : ''}`}
                                 adKey={`hero-watch-${featured.id || featured.slug}`}
                                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-violet-600 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/50 hover:scale-105 transition-all duration-300"
                             >
@@ -72,7 +73,7 @@ export function HeroSection({ featured }: { featured: Anime | undefined }) {
                                 Watch Now
                             </AdLink>
                             <Link
-                                href={`/anime/${featured.id || featured.slug}`}
+                                href={`/anime/${featured.id || featured.slug}${featured._source ? `?source=${featured._source}` : ''}`}
                                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-semibold text-white bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-white/20 hover:scale-105 transition-all duration-300"
                             >
                                 More Info

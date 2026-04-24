@@ -29,6 +29,7 @@ export function TrendingSection({ animes }: { animes: Anime[] }) {
                                 episode={anime.episode}
                                 rating={anime.rating}
                                 type={anime.type}
+                                source={anime._source}
                                 priority={index < 6}
                             />
                         </div>
