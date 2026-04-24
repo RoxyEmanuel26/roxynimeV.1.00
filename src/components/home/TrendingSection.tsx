@@ -11,10 +11,10 @@ export function TrendingSection({ animes }: { animes: Anime[] }) {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                 <div className="mb-6 sm:mb-8">
                     <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-                        🔥 Trending Now
+                        🆕 Episode Terbaru
                     </h2>
                     <p className="text-sm sm:text-base text-muted-foreground">
-                        Anime populer dari semua sumber
+                        Update anime sedang tayang (Ongoing) dari semua sumber
                     </p>
                 </div>
 
