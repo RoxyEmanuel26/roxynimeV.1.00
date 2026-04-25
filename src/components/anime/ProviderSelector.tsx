@@ -18,6 +18,7 @@ const PROVIDERS: ProviderOption[] = [
     { id: "donghua", name: "Donghua", icon: "🐉", description: "Chinese Animation", contentType: "Donghua" },
 
     { id: "oploverz", name: "Oploverz", icon: "💎", description: "Kualitas terbaik", contentType: "Anime" },
+    { id: "winbu", name: "Winbu", icon: "🌟", description: "Anime, Film, Series & Donghua", contentType: "Mixed" },
 ];
 
 const STORAGE_KEY = "roxynime_provider";

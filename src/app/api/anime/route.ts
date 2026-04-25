@@ -18,7 +18,7 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "kuramanime"];
+const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "winbu"];
 
 async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: number, type?: string) {
     const results = await Promise.allSettled(
