@@ -235,6 +235,14 @@ export const donghuaProvider: AnimeProvider = {
                             });
                         }
                     });
+                } else if (data.streaming && Array.isArray(data.streaming.servers)) {
+                    data.streaming.servers.forEach((srv: any) => {
+                        if (srv.url) {
+                            servers.push({ name: srv.name || "Server", quality: "auto", streamUrl: srv.url });
+                        }
+                    });
+                } else if (data.streaming?.main_url?.url) {
+                    servers.push({ name: data.streaming.main_url.name || "Default", quality: "auto", streamUrl: data.streaming.main_url.url });
                 }
 
                 if (servers.length === 0 && data.defaultStreamingUrl) {
