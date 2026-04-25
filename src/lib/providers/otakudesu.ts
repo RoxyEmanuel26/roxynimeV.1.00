@@ -109,7 +109,10 @@ export const otakudesuProvider: AnimeProvider = {
                     const response = await res.json();
                     const data = response.data;
 
-                    const genres = (data.genreList || []).map((g: any) => g.title || g);
+                    const genres = (data.genreList || []).map((g: any) => {
+                        if (typeof g === "string") return g;
+                        return g.title || g.genreId || "Unknown";
+                    }).filter(Boolean);
                     const episodes: ProviderEpisode[] = (data.episodeList || [])
                         .map((ep: any) => ({
                             id: ep.episodeId,
