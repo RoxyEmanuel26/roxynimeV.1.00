@@ -36,14 +36,21 @@ export const metadata: Metadata = {
     url: "https://roxy.my.id",
     siteName: "RoxyNime",
     title: "RoxyNime - Watch Anime Online Free",
-    description:
-      "Stream your favorite anime for free in HD quality. Watch the latest episodes, movies, and series on RoxyNime.",
+    description: "Nonton anime sub indo gratis kualitas HD di RoxyNime. Episode terbaru, anime ongoing, film anime, dan ribuan judul lengkap dengan subtitle Indonesia.",
+    images: [
+      {
+        url: "/og-default.jpg",
+        width: 1200,
+        height: 630,
+        alt: "RoxyNime Default OG Image",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "RoxyNime - Watch Anime Online Free",
-    description:
-      "Stream your favorite anime for free in HD quality. Watch the latest episodes, movies, and series on RoxyNime.",
+    description: "Nonton anime sub indo gratis kualitas HD di RoxyNime. Episode terbaru, anime ongoing, film anime, dan ribuan judul lengkap dengan subtitle Indonesia.",
+    images: ["/og-default.jpg"],
   },
   robots: {
     index: true,
@@ -100,7 +107,7 @@ export default function RootLayout({
               "potentialAction": {
                 "@type": "SearchAction",
                 "target": "https://roxy.my.id/browse?search={search_term}",
-                "query-input": "required name=search_term"
+                "query": "required name=search_term"
               }
             })
           }}

@@ -24,6 +24,31 @@ const nextConfig: NextConfig = {
         hostname: "otakudesu.blog",
         pathname: "/wp-content/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "i.imgur.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.otakudesu.best",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.otakudesu.best",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.otakudesu.blog",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.otakudesu.blog",
+        pathname: "/**",
+      },
       // Samehadaku
       {
         protocol: "https",

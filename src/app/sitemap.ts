@@ -1,5 +1,6 @@
 // src/app/sitemap.ts
 import { MetadataRoute } from "next";
+import { getTrendingAnime, getOngoingAnimeList } from "@/lib/animbus";
 
 export const revalidate = 3600;
 
@@ -39,5 +40,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
     ];
 
-    return staticPages;
+    let dynamicPages: MetadataRoute.Sitemap = [];
+
+    try {
+        // Fetch trending and ongoing anime to populate dynamic sitemap
+        const [trending, ongoing] = await Promise.all([
+            getTrendingAnime(),
+            getOngoingAnimeList(1)
+        ]);
+
+        const allAnimes = [...trending, ...(ongoing?.data || [])];
+        
+        // Remove duplicates based on anime id
+        const uniqueAnimes = Array.from(new Map(allAnimes.map(anime => [anime.id, anime])).values());
+
+        dynamicPages = uniqueAnimes.map((anime) => ({
+            url: `${BASE_URL}/anime/${anime.id}`,
+            lastModified: new Date(),
+            changeFrequency: "weekly",
+            priority: 0.8,
+        }));
+    } catch (error) {
+        console.error("Failed to fetch anime for sitemap:", error);
+    }
+
+    return [...staticPages, ...dynamicPages];
 }

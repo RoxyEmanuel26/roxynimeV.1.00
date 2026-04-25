@@ -11,19 +11,69 @@ interface PageProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
     const { slug } = await params;
+    const resolvedSearchParams = await searchParams;
+    const source = resolvedSearchParams?.source as string | undefined;
+
     const isSingleSlug = slug.length === 1;
+    const urlAnimeId = isSingleSlug ? undefined : slug[0];
     const episodeId = isSingleSlug ? slug[0] : slug[1];
 
-    // Try to create a readable title from episodeId (e.g., ramen-akaneko-episode-3-sub-indo)
-    const readableName = episodeId
-        .replace(/-/g, " ")
-        .replace(/\b\w/g, c => c.toUpperCase());
+    const targetSlug = urlAnimeId || episodeId.replace(/-episode-\d+.*$/i, "");
+    
+    let title = "";
+    let description = "";
+    let image = "/og-default.jpg";
+    let currentEpNumber = "";
+
+    const epMatch = episodeId.match(/-eps?-\d+/i) || episodeId.match(/-episode-(\d+)/i) || episodeId.match(/episode-(\d+)/i);
+    if (epMatch) {
+        currentEpNumber = epMatch[1] || epMatch[0].replace(/\D/g, "");
+    }
+
+    try {
+        if (targetSlug) {
+            const anime = await animbus.getAnimeInfo(targetSlug, source);
+            if (anime) {
+                title = `Nonton ${anime.title} Episode ${currentEpNumber || "?"} Sub Indo — RoxyNime`;
+                description = `Streaming ${anime.title} episode ${currentEpNumber || "?"} subtitle Indonesia gratis HD di RoxyNime`;
+                if (anime.image) image = anime.image;
+            }
+        }
+    } catch (e) {
+        // Fallback on error
+    }
+
+    if (!title) {
+        const readableName = episodeId
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, c => c.toUpperCase());
+        title = `Nonton ${readableName} — RoxyNime`;
+        description = `Streaming ${readableName} subtitle Indonesia gratis dan cepat di RoxyNime.`;
+    }
+
+    const currentUrl = `https://roxy.my.id/watch/${slug.join('/')}`;
 
     return {
-        title: `Nonton ${readableName} — RoxyNime`,
-        description: `Streaming ${readableName} subtitle Indonesia gratis dan cepat di RoxyNime.`,
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            images: [image],
+            url: currentUrl,
+            type: "video.episode",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: [image],
+        },
+        alternates: {
+            canonical: currentUrl,
+        }
     };
 }
 
