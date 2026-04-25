@@ -5,6 +5,7 @@ import * as animbus from "@/lib/animbus";
 import { ChevronLeft, ChevronRight, Home, Info, Film } from "lucide-react";
 import WatchPlayer from "./WatchPlayer";
 import { BannerAd, PopunderAd, StickyMobileAd } from "@/components/ads";
+import { ShareButtons } from "@/components/common/ShareButtons";
 
 interface PageProps {
     params: Promise<{ slug: string[] }>;
@@ -188,6 +189,13 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                             {anime.synopsis}
                         </p>
                     )}
+                    <div className="mt-4">
+                        <ShareButtons 
+                            url={`/watch/${slug.join('/')}${source ? `?source=${source}` : ''}`} 
+                            title={anime ? `Nonton ${anime.title} Episode ${currentEpNumber || "?"} Sub Indo` : formattedTitle}
+                            image={anime?.image || "/og-default.jpg"}
+                        />
+                    </div>
                 </div>
 
                 {/* Video Player Component (Client) */}

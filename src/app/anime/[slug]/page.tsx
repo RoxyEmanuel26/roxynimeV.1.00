@@ -8,6 +8,7 @@ import { Play, Calendar, Star, Film, Clock, ChevronRight } from "lucide-react";
 import { BannerAd, InFeedAd, SidebarAd } from "@/components/ads";
 import { AdLink } from "@/components/ads/AdLink";
 import { getBlurDataURL } from "@/lib/utils";
+import { ShareButtons } from "@/components/common/ShareButtons";
 
 interface PageProps {
     params: Promise<{ slug: string }>;
