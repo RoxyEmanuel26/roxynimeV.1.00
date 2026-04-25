@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: "api-cdn.myanimelist.net",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "myanimelist.net",
+        pathname: "/**",
+      },
       // Otakudesu domains (changes periodically)
       {
         protocol: "https",
