@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -112,11 +113,14 @@ export function Header() {
 
                         {/* 3. LOGO */}
                         <Link href="/" className="flex flex-shrink-0 items-center gap-2.5 group">
-                            <div className="relative">
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-400 to-violet-600 blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300 scale-110" />
-                                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-500/50 transition-shadow duration-300">
-                                    <Play className="h-4 w-4 text-white fill-white ml-0.5" />
-                                </div>
+                            <div className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 overflow-hidden group-hover:border-cyan-500/50 transition-colors shadow-lg group-hover:shadow-cyan-500/25">
+                                <Image
+                                    src="/logo.png"
+                                    alt="RoxyNime Logo"
+                                    fill
+                                    className="object-contain p-1"
+                                    priority
+                                />
                             </div>
                             <div className="flex flex-col leading-none">
                                 <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:to-violet-300 transition-all duration-300" style={{ fontFamily: "var(--font-heading)" }}>
@@ -293,8 +297,13 @@ export function Header() {
                 {/* Sidebar header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-                            <Play className="h-3.5 w-3.5 text-white fill-white ml-0.5" />
+                        <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                            <Image
+                                src="/logo.png"
+                                alt="RoxyNime Logo"
+                                fill
+                                className="object-contain p-0.5"
+                            />
                         </div>
                         <span className="font-bold text-base text-white tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>RoxyNime</span>
                     </div>
