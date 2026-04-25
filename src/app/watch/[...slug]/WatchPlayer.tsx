@@ -1,14 +1,26 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { SankaStreamServer } from "@/lib/sankaClient";
 import { Play, Loader2, RefreshCw, Server, CheckCircle2, Info } from "lucide-react";
 
 interface WatchPlayerProps {
     servers: SankaStreamServer[];
+    animeId?: string;
+    currentEpisode?: number;
+    animeTitle?: string;
+    animeImage?: string;
 }
 
-export default function WatchPlayer({ servers }: WatchPlayerProps) {
+export default function WatchPlayer({ 
+    servers,
+    animeId,
+    currentEpisode = 1,
+    animeTitle,
+    animeImage
+}: WatchPlayerProps) {
+    const { data: session } = useSession();
     const [activeServer, setActiveServer] = useState<SankaStreamServer | null>(
         servers.length > 0 ? servers[0] : null
     );
@@ -98,6 +110,31 @@ export default function WatchPlayer({ servers }: WatchPlayerProps) {
             resolveStreamUrl(activeServer);
         }
     }, [activeServer, resolveStreamUrl]);
+
+    // Save watch progress
+    useEffect(() => {
+        if (!session?.user?.id || !animeId || !resolvedUrl) return;
+
+        const saveHistory = async () => {
+            try {
+                await fetch("/api/history", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        animeId,
+                        episode: currentEpisode,
+                        progress: 0, // Mark as started
+                        title: animeTitle || "",
+                        image: animeImage || "",
+                    }),
+                });
+            } catch (err) {
+                console.error("Failed to save history:", err);
+            }
+        };
+
+        saveHistory();
+    }, [session?.user?.id, animeId, currentEpisode, resolvedUrl, animeTitle, animeImage]);
 
     if (!servers || servers.length === 0) {
         return (
