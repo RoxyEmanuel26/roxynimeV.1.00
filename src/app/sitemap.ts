@@ -140,7 +140,7 @@ export default async function sitemap({ id }: { id: number | string }): Promise<
     // ───────────────────────────────────────────────────────────────────────
     // SITEMAP ID 4: Movies (Page 1 & 2)
     // ───────────────────────────────────────────────────────────────────────
-    if (id === 4) {
+    if (parsedId === 4) {
         let moviePages: MetadataRoute.Sitemap = [];
         try {
             const [p1, p2] = await Promise.allSettled([getMoviesList(1), getMoviesList(2)]);
