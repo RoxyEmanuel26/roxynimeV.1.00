@@ -40,8 +40,9 @@ export async function generateSitemaps() {
     ];
 }
 
-export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({ id }: { id: number | string }): Promise<MetadataRoute.Sitemap> {
     const now = new Date();
+    const parsedId = Number(id);
 
     // Fungsi pembantu untuk memformat URL anime dan mencegah duplikasi
     const formatAnimeUrls = (animes: any[], freq: "daily" | "weekly" | "monthly", prio: number): MetadataRoute.Sitemap => {
@@ -63,7 +64,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     // ───────────────────────────────────────────────────────────────────────
     // SITEMAP ID 0: Halaman Statis, Filter, Genre & Trending Anime
     // ───────────────────────────────────────────────────────────────────────
-    if (id === 0) {
+    if (parsedId === 0) {
         const staticPages: MetadataRoute.Sitemap = [
             { url: BASE_URL, lastModified: now, changeFrequency: "hourly", priority: 1.0 },
             { url: `${BASE_URL}/browse`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
@@ -91,7 +92,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     // ───────────────────────────────────────────────────────────────────────
     // SITEMAP ID 1: Ongoing Anime (Page 1 & 2)
     // ───────────────────────────────────────────────────────────────────────
-    if (id === 1) {
+    if (parsedId === 1) {
         let ongoingPages: MetadataRoute.Sitemap = [];
         try {
             const [p1, p2] = await Promise.allSettled([getOngoingAnimeList(1), getOngoingAnimeList(2)]);
@@ -107,7 +108,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     // ───────────────────────────────────────────────────────────────────────
     // SITEMAP ID 2: Completed Anime (Page 1 & 2)
     // ───────────────────────────────────────────────────────────────────────
-    if (id === 2) {
+    if (parsedId === 2) {
         let completedPages: MetadataRoute.Sitemap = [];
         try {
             const [p1, p2] = await Promise.allSettled([getCompletedAnimeList(1), getCompletedAnimeList(2)]);
@@ -123,7 +124,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     // ───────────────────────────────────────────────────────────────────────
     // SITEMAP ID 3: Completed Anime (Page 3 & 4)
     // ───────────────────────────────────────────────────────────────────────
-    if (id === 3) {
+    if (parsedId === 3) {
         let completedPages: MetadataRoute.Sitemap = [];
         try {
             const [p3, p4] = await Promise.allSettled([getCompletedAnimeList(3), getCompletedAnimeList(4)]);
