@@ -10,51 +10,77 @@ import { VERIFICATION_META_TAGS } from "@/config/ads.config";
 
 export const metadata: Metadata = {
   title: {
-    default: "RoxyNime - Watch Anime Online Free",
+    default: "RoxyNime - Nonton Anime Sub Indo Gratis Streaming HD",
     template: "%s | RoxyNime",
   },
   description:
-    "Nonton anime sub indo gratis kualitas HD di RoxyNime. Episode terbaru, anime ongoing, film anime, dan ribuan judul lengkap dengan subtitle Indonesia.",
+    "Nonton anime sub indo gratis streaming HD di RoxyNime. Update episode terbaru setiap hari, anime ongoing, completed, donghua, dan film anime lengkap dengan subtitle Indonesia. Alternatif terbaik otakudesu, samehadaku, dan anoboy.",
   keywords: [
     "nonton anime sub indo",
     "streaming anime gratis",
     "anime subtitle indonesia",
     "anime batch sub indo",
     "anime ongoing sub indo",
+    "anime terbaru sub indo",
+    "download anime sub indo",
+    "anime completed sub indo",
+    "donghua sub indo",
+    "anime HD sub indo",
+    "nonton anime online",
+    "anime gratis",
     "roxynime",
     "samehadaku",
     "otakudesu",
     "anoboy",
-    "anime HD sub indo",
-    "nonton anime online",
+    "oploverz",
+    "nonton donghua",
+    "anime 2026",
+    "anime spring 2026",
+    "jadwal anime",
+    "rekomendasi anime",
   ],
-  authors: [{ name: "RoxyNime" }],
+  authors: [{ name: "RoxyNime", url: "https://roxy.my.id" }],
   creator: "RoxyNime",
+  publisher: "RoxyNime",
+  category: "Entertainment",
   openGraph: {
     type: "website",
     locale: "id_ID",
     url: "https://roxy.my.id",
     siteName: "RoxyNime",
-    title: "RoxyNime - Watch Anime Online Free",
-    description: "Nonton anime sub indo gratis kualitas HD di RoxyNime. Episode terbaru, anime ongoing, film anime, dan ribuan judul lengkap dengan subtitle Indonesia.",
+    title: "RoxyNime - Nonton Anime Sub Indo Gratis Streaming HD",
+    description: "Nonton anime sub indo gratis streaming HD di RoxyNime. Update episode terbaru setiap hari, anime ongoing, completed, donghua, dan film anime lengkap dengan subtitle Indonesia.",
     images: [
       {
         url: "/og-default.jpg",
         width: 1200,
         height: 630,
-        alt: "RoxyNime Default OG Image",
+        alt: "RoxyNime - Situs Nonton Anime Sub Indo Gratis",
+        type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "RoxyNime - Watch Anime Online Free",
-    description: "Nonton anime sub indo gratis kualitas HD di RoxyNime. Episode terbaru, anime ongoing, film anime, dan ribuan judul lengkap dengan subtitle Indonesia.",
+    title: "RoxyNime - Nonton Anime Sub Indo Gratis Streaming HD",
+    description: "Nonton anime sub indo gratis streaming HD di RoxyNime. Update episode terbaru setiap hari, anime ongoing, completed, donghua, dan film anime.",
     images: ["/og-default.jpg"],
+    creator: "@roxynime",
+    site: "@roxynime",
   },
   robots: {
     index: true,
     follow: true,
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   alternates: {
     canonical: "https://roxy.my.id",
@@ -63,6 +89,9 @@ export const metadata: Metadata = {
     google: "lxQwbH-7VW2FYYEneCTqBQn17blivO8GECadcUZxyz0",
   },
   manifest: "/manifest.json",
+  other: {
+    "google-site-verification": "lxQwbH-7VW2FYYEneCTqBQn17blivO8GECadcUZxyz0",
+  },
 };
 
 export default function RootLayout({
@@ -95,20 +124,76 @@ export default function RootLayout({
       <body
         className={`font-sans antialiased min-h-screen flex flex-col`}
       >
+        {/* ── JSON-LD Structured Data ──────────────────────────────── */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "RoxyNime",
-              "url": "https://roxy.my.id",
-              "description": "Nonton anime sub indo online gratis",
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://roxy.my.id/browse?search={search_term}",
-                "query": "required name=search_term"
-              }
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://roxy.my.id/#website",
+                  "name": "RoxyNime",
+                  "url": "https://roxy.my.id",
+                  "description": "Nonton anime sub indo gratis streaming HD. Update episode terbaru setiap hari.",
+                  "inLanguage": "id-ID",
+                  "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                      "@type": "EntryPoint",
+                      "urlTemplate": "https://roxy.my.id/browse?search={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                  }
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://roxy.my.id/#organization",
+                  "name": "RoxyNime",
+                  "url": "https://roxy.my.id",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://roxy.my.id/android-chrome-512x512.png",
+                    "width": 512,
+                    "height": 512
+                  },
+                  "sameAs": []
+                },
+                {
+                  "@type": "WebPage",
+                  "@id": "https://roxy.my.id/#webpage",
+                  "url": "https://roxy.my.id",
+                  "name": "RoxyNime - Nonton Anime Sub Indo Gratis Streaming HD",
+                  "description": "Nonton anime sub indo gratis streaming HD di RoxyNime. Update episode terbaru setiap hari, anime ongoing, completed, donghua, dan film anime lengkap dengan subtitle Indonesia.",
+                  "isPartOf": { "@id": "https://roxy.my.id/#website" },
+                  "about": { "@id": "https://roxy.my.id/#organization" },
+                  "inLanguage": "id-ID"
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "name": "Home",
+                      "item": "https://roxy.my.id"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 2,
+                      "name": "Browse Anime",
+                      "item": "https://roxy.my.id/browse"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 3,
+                      "name": "Anime Ongoing",
+                      "item": "https://roxy.my.id/ongoing"
+                    }
+                  ]
+                }
+              ]
             })
           }}
         />

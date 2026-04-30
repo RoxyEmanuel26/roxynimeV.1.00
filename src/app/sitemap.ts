@@ -6,100 +6,154 @@ import {
     getMoviesList,
 } from "@/lib/animbus";
 
-export const revalidate = 3600;
+// Revalidate sitemap setiap 6 jam agar Google selalu mendapat data fresh
+export const revalidate = 21600;
 
 const BASE_URL = "https://roxy.my.id";
 
-// Halaman statis legal & informasi
+// ── Daftar semua genre populer (untuk indexing halaman genre) ──────────────
+const POPULAR_GENRES = [
+    "action", "adventure", "comedy", "drama", "ecchi", "fantasy",
+    "harem", "horror", "isekai", "martial-arts", "mecha", "military",
+    "music", "mystery", "psychological", "romance", "school",
+    "sci-fi", "seinen", "shoujo", "shounen", "slice-of-life",
+    "sports", "supernatural", "thriller",
+];
+
+// ── Semua provider yang didukung ──────────────────────────────────────────
+const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "winbu"];
+
+// ── Halaman statis legal & informasi ─────────────────────────────────────
 const STATIC_INFO_PAGES = [
     "/privacy",
     "/terms",
     "/dmca",
     "/contact",
-    "/schedule",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    // ── 1. Halaman Statis Utama ───────────────────────────────────────────────
+    // ── 1. Halaman Statis Utama ──────────────────────────────────────────────
+    const now = new Date();
+
     const staticPages: MetadataRoute.Sitemap = [
         {
             url: BASE_URL,
-            lastModified: new Date(),
-            changeFrequency: "daily",
+            lastModified: now,
+            changeFrequency: "hourly",
             priority: 1.0,
         },
         {
             url: `${BASE_URL}/browse`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: "daily",
             priority: 0.9,
         },
         {
             url: `${BASE_URL}/ongoing`,
-            lastModified: new Date(),
-            changeFrequency: "daily",
-            priority: 0.9,
+            lastModified: now,
+            changeFrequency: "hourly",
+            priority: 0.95,
         },
         {
             url: `${BASE_URL}/movies`,
-            lastModified: new Date(),
-            changeFrequency: "weekly",
-            priority: 0.8,
+            lastModified: now,
+            changeFrequency: "daily",
+            priority: 0.85,
         },
         {
             url: `${BASE_URL}/schedule`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: "daily",
-            priority: 0.7,
+            priority: 0.8,
         },
-        ...STATIC_INFO_PAGES.filter((p) => p !== "/schedule").map((path) => ({
+        // Halaman legal
+        ...STATIC_INFO_PAGES.map((path) => ({
             url: `${BASE_URL}${path}`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: "monthly" as const,
             priority: 0.3,
         })),
     ];
 
-    // ── 2. Halaman Dinamis Anime ─────────────────────────────────────────────
+    // ── 2. Halaman Browse berdasarkan Filter Type ────────────────────────────
+    const browseFilterPages: MetadataRoute.Sitemap = [
+        { url: `${BASE_URL}/browse?type=ongoing`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+        { url: `${BASE_URL}/browse?type=completed`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+        { url: `${BASE_URL}/browse?type=movie`, lastModified: now, changeFrequency: "weekly", priority: 0.75 },
+    ];
+
+    // ── 3. Halaman Genre ─────────────────────────────────────────────────────
+    const genrePages: MetadataRoute.Sitemap = POPULAR_GENRES.map((genre) => ({
+        url: `${BASE_URL}/browse?genre=${genre}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+    }));
+
+    // ── 4. Halaman Dinamis Anime ─────────────────────────────────────────────
     let dynamicPages: MetadataRoute.Sitemap = [];
 
     try {
-        // Fetch semua sumber sekaligus (paralel)
-        const [trending, ongoing, completed, movies] = await Promise.allSettled([
+        // Fetch dari semua provider (paralel, multi-page untuk completed)
+        const fetchPromises = [
             getTrendingAnime(),
             getOngoingAnimeList(1),
+            getOngoingAnimeList(2),
             getCompletedAnimeList(1),
+            getCompletedAnimeList(2),
+            getCompletedAnimeList(3),
             getMoviesList(1),
-        ]);
-
-        const allAnimes = [
-            ...(trending.status === "fulfilled" ? trending.value : []),
-            ...(ongoing.status === "fulfilled" ? ongoing.value.data : []),
-            ...(completed.status === "fulfilled" ? completed.value.data : []),
-            ...(movies.status === "fulfilled" ? movies.value.data : []),
         ];
 
-        // Hapus duplikat berdasarkan id, filter yang tidak punya id valid
+        // Tambahan: fetch dari provider lain secara langsung
+        for (const provider of PROVIDERS) {
+            if (provider !== "otakudesu") { // otakudesu sudah default
+                fetchPromises.push(getOngoingAnimeList(1, provider));
+                fetchPromises.push(getCompletedAnimeList(1, provider));
+            }
+        }
+
+        const results = await Promise.allSettled(fetchPromises);
+
+        const allAnimes: any[] = [];
+        results.forEach((result) => {
+            if (result.status === "fulfilled") {
+                const val = result.value;
+                if (Array.isArray(val)) {
+                    allAnimes.push(...val);
+                } else if (val?.data && Array.isArray(val.data)) {
+                    allAnimes.push(...val.data);
+                }
+            }
+        });
+
+        // Deduplikasi berdasarkan slug/id
         const seen = new Set<string>();
         const uniqueAnimes = allAnimes.filter((anime) => {
-            if (!anime.id || seen.has(anime.id)) return false;
-            seen.add(anime.id);
+            const key = anime.slug || anime.id;
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
             return true;
         });
 
-        dynamicPages = uniqueAnimes.map((anime) => ({
-            // anime.id adalah slug yang dipakai di URL /anime/[slug]
-            url: `${BASE_URL}/anime/${anime.id}`,
-            lastModified: new Date(),
-            changeFrequency: "weekly" as const,
-            priority: 0.8,
-        }));
+        // Tentukan source terbaik untuk setiap anime berdasarkan provider
+        dynamicPages = uniqueAnimes.map((anime) => {
+            const slug = anime.slug || anime.id;
+            const source = anime._source || "otakudesu";
+            const isOngoing = anime.status?.toLowerCase?.()?.includes("ongoing");
+
+            return {
+                url: `${BASE_URL}/anime/${slug}?source=${source}`,
+                lastModified: now,
+                changeFrequency: (isOngoing ? "daily" : "weekly") as "daily" | "weekly",
+                priority: isOngoing ? 0.8 : 0.7,
+            };
+        });
 
         console.log(`[sitemap] Generated ${dynamicPages.length} dynamic anime pages`);
     } catch (error) {
-        // Jika fetch gagal total, sitemap tetap berjalan dengan halaman statis
         console.error("[sitemap] Failed to fetch anime list:", error);
     }
 
-    return [...staticPages, ...dynamicPages];
+    return [...staticPages, ...browseFilterPages, ...genrePages, ...dynamicPages];
 }
