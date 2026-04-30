@@ -133,7 +133,11 @@ export default function robots(): MetadataRoute.Robots {
             },
         ],
         sitemap: [
-            "https://roxy.my.id/sitemap.xml",
+            "https://roxy.my.id/sitemap/0.xml",
+            "https://roxy.my.id/sitemap/1.xml",
+            "https://roxy.my.id/sitemap/2.xml",
+            "https://roxy.my.id/sitemap/3.xml",
+            "https://roxy.my.id/sitemap/4.xml",
             "https://roxy.my.id/sitemap2.xml"
         ],
         host: "https://roxy.my.id",
