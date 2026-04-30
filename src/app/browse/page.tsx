@@ -132,17 +132,42 @@ function BrowseContent() {
 
     const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "winbu"];
     
+    // Only fetch from providers that support the current filter type
+    const PROVIDER_FEATURES: Record<string, { ongoing: boolean; completed: boolean; movie: boolean }> = {
+        otakudesu:  { ongoing: true,  completed: true,  movie: false },
+        samehadaku: { ongoing: true,  completed: true,  movie: true  },
+        donghua:    { ongoing: true,  completed: true,  movie: false },
+        oploverz:   { ongoing: true,  completed: false, movie: false },
+        winbu:      { ongoing: true,  completed: true,  movie: true  },
+    };
+
+    const getActiveProviders = (queryStr: string, filterType: string) => {
+        // For search queries, use all providers
+        if (queryStr) return ALL_PROVIDERS;
+        return ALL_PROVIDERS.filter(p => {
+            const feat = PROVIDER_FEATURES[p];
+            if (!feat) return true;
+            switch (filterType) {
+                case "completed": return feat.completed;
+                case "movie": return feat.movie;
+                default: return feat.ongoing;
+            }
+        });
+    };
+
     if (pageNum === 1) {
         providerHasNextRef.current = {};
     }
 
-    const providersToFetch = ALL_PROVIDERS.filter(provider => 
+    const activeProviders = getActiveProviders(query, f.type || "completed");
+    
+    const providersToFetch = activeProviders.filter(provider => 
         pageNum === 1 || providerHasNextRef.current[provider] !== false
     );
     
-    let activeProviders = providersToFetch.length;
+    let activeProvidersCount = providersToFetch.length;
 
-    if (activeProviders === 0) {
+    if (activeProvidersCount === 0) {
         setLoading(false);
         setHasMore(false);
         return;

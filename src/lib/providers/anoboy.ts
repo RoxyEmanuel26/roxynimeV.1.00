@@ -117,13 +117,13 @@ export const anoboyProvider: AnimeProvider = {
                 const res = await fetch(`${BASE}${PREFIX}/anime/${slug}`, { headers: headers() });
                 if (!res.ok) throw new Error(`Anoboy detail failed: ${res.status}`);
                 const response = await res.json();
-                const data = response.data || response;
+                const data = response.detail || response.data || response;
 
                 const genres = (data.genreList || data.genres || []).map((g: any) =>
                     typeof g === "string" ? g : g.title || g.name || g
                 );
 
-                const episodes: ProviderEpisode[] = (data.episodeList || data.episodes || [])
+                const episodes: ProviderEpisode[] = (data.episodeList || data.episode_list || data.episodes || [])
                     .map((ep: any, idx: number) => ({
                         id: ep.episodeId || ep.slug || `ep-${idx}`,
                         number: ep.eps || ep.number || idx + 1,

@@ -6,11 +6,12 @@ import {
     getAnimeByGenre,
     Anime,
 } from "@/lib/animbus";
+import { getProvider } from "@/lib/providers";
 
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
     promise: Promise<T>,
-    timeoutMs = 3000
+    timeoutMs = 5000
 ): Promise<T> {
     const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), timeoutMs)
@@ -20,11 +21,30 @@ async function fetchWithTimeout<T>(
 
 const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "winbu"];
 
+// Determine which providers actually support the requested feature
+function getActiveProviders(type?: string): string[] {
+    return ALL_PROVIDERS.filter((id) => {
+        const p = getProvider(id);
+        if (!p?.info?.features) return true; // include unknown by default
+        switch (type) {
+            case "completed": return !!p.info.features.completed;
+            case "movie":     return !!p.info.features.movies;
+            case "ongoing":
+            default:          return !!p.info.features.ongoing;
+        }
+    });
+}
+
 async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: number, type?: string) {
+    const activeProviders = getActiveProviders(type);
+    if (activeProviders.length === 0) {
+        return { data: [], pagination: { currentPage: page, hasNextPage: false, hasPrevPage: page > 1, totalPages: 1, items: { count: 0, total: 0, per_page: 20 } } };
+    }
+
     const results = await Promise.allSettled(
-        ALL_PROVIDERS.map(async (provider) => {
+        activeProviders.map(async (provider) => {
             try {
-                const res = await fetchWithTimeout(fetcher(provider), 8000);
+                const res = await fetchWithTimeout(fetcher(provider), 5000);
                 return { provider, data: res.data || [], pagination: res.pagination };
             } catch {
                 return { provider, data: [], pagination: null };
@@ -123,7 +143,7 @@ export async function GET(request: NextRequest) {
         let pagination: any;
 
         if (source && source !== "all" && ALL_PROVIDERS.includes(source)) {
-            const res = await fetchWithTimeout(fetcher(source), 8000);
+            const res = await fetchWithTimeout(fetcher(source), 5000);
             let filteredData = res.data || [];
             
             if (type === "ongoing") {

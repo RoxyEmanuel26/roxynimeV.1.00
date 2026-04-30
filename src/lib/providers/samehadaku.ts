@@ -30,16 +30,19 @@ function mapHomeItem(item: any): ProviderAnime {
     };
 }
 
-// Samehadaku detail item fields vary — more detailed
-function mapDetailItem(item: any): ProviderAnime {
+// Samehadaku list item (completed, movies, ongoing, search)
+function mapListItem(item: any): ProviderAnime {
     const id = item.animeId || item.slug || "";
+    const genres = (item.genreList || item.genres || []).map((g: any) =>
+        typeof g === "string" ? g : g.title || g.genreId || "Unknown"
+    ).filter(Boolean);
     return {
         id,
         slug: id,
         title: item.title || "",
         poster: item.poster || item.image || item.thumb || "",
         synopsis: "",
-        genres: item.genres || [],
+        genres,
         type: item.type || "TV",
         status: item.status || "Ongoing",
         totalEpisodes: item.episodes ? parseInt(String(item.episodes)) : undefined,
@@ -58,11 +61,11 @@ export const samehadakuProvider: AnimeProvider = {
         features: {
             home: true,
             ongoing: true,
-            completed: false,
+            completed: true,
             search: true,
             detail: true,
             streaming: true,
-            schedule: false,
+            schedule: true,
             genres: true,
             movies: true,
         },
@@ -93,33 +96,24 @@ export const samehadakuProvider: AnimeProvider = {
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
         return getCachedData(`samehadaku_ongoing_${page}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/home?page=${page}`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/ongoing?page=${page}`, { headers: headers() });
                 if (!res.ok) { console.error("[Samehadaku] Ongoing HTTP:", res.status); return { data: [] }; }
                 const json = await res.json();
 
-                const recentList = json?.data?.recent?.animeList || [];
-                if (!Array.isArray(recentList) || recentList.length === 0) {
-                    return { data: [] };
-                }
+                const rawList = json?.data?.animeList || json?.data || [];
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
 
                 const pagination = json?.pagination;
                 return {
-                    data: recentList.map(mapHomeItem),
+                    data: rawList.map(mapListItem),
                     pagination: pagination ? {
                         currentPage: pagination.currentPage || page,
-                        hasNextPage: !!pagination.hasNext,
-                        hasPrevPage: !!pagination.hasPrev || page > 1,
-                        totalPages: pagination.totalPages || (pagination.hasNext ? page + 1 : page),
+                        hasNextPage: !!pagination.hasNextPage,
+                        hasPrevPage: !!pagination.hasPrevPage || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNextPage ? page + 1 : page),
                         lastVisiblePage: pagination.totalPages || page,
-                        items: { count: recentList.length, total: recentList.length, per_page: recentList.length },
-                    } : {
-                        currentPage: page,
-                        hasNextPage: recentList.length >= 10,
-                        hasPrevPage: page > 1,
-                        totalPages: recentList.length >= 10 ? page + 1 : page,
-                        lastVisiblePage: page,
-                        items: { count: recentList.length, total: recentList.length, per_page: recentList.length },
-                    },
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
                 };
             } catch (e) {
                 console.error("[Samehadaku] Ongoing Error:", e);
@@ -129,9 +123,32 @@ export const samehadakuProvider: AnimeProvider = {
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Samehadaku has no dedicated completed endpoint — only recent episode feeds.
-        // Return empty to avoid polluting browse/completed with low-quality data.
-        return { data: [] };
+        return getCachedData(`samehadaku_completed_${page}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/completed?page=${page}&order=latest`, { headers: headers() });
+                if (!res.ok) { console.error("[Samehadaku] Completed HTTP:", res.status); return { data: [] }; }
+                const json = await res.json();
+
+                const rawList = json?.data?.animeList || json?.data || [];
+                if (!Array.isArray(rawList) || rawList.length === 0) return { data: [] };
+
+                const pagination = json?.pagination;
+                return {
+                    data: rawList.map(mapListItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNextPage,
+                        hasPrevPage: !!pagination.hasPrevPage || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNextPage ? page + 1 : page),
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
+                };
+            } catch (e) {
+                console.error("[Samehadaku] Completed Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
@@ -196,7 +213,7 @@ export const samehadakuProvider: AnimeProvider = {
                 const rawList = json?.data?.animeList || json?.data || json?.anime_list || [];
                 if (!Array.isArray(rawList)) return { data: [] };
 
-                return { data: rawList.map(mapDetailItem), pagination: json.pagination };
+                return { data: rawList.map(mapListItem), pagination: json.pagination };
             } catch (e) {
                 console.error("[Samehadaku] Search Error:", e);
                 return { data: [] };
@@ -241,7 +258,32 @@ export const samehadakuProvider: AnimeProvider = {
     },
 
     async getMovies(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        return { data: [] };
+        return getCachedData(`samehadaku_movies_${page}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/movies?page=${page}&order=update`, { headers: headers() });
+                if (!res.ok) return { data: [] };
+                const json = await res.json();
+
+                const rawList = json?.data?.animeList || json?.data || [];
+                if (!Array.isArray(rawList)) return { data: [] };
+
+                const pagination = json?.pagination;
+                return {
+                    data: rawList.map(mapListItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNextPage,
+                        hasPrevPage: !!pagination.hasPrevPage || page > 1,
+                        totalPages: pagination.totalPages || page,
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
+                };
+            } catch (e) {
+                console.error("[Samehadaku] Movies Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getByGenre(genre: string, page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
@@ -254,7 +296,7 @@ export const samehadakuProvider: AnimeProvider = {
                 const json = await res.json();
                 const rawList = json?.data?.animeList || json?.data || [];
                 if (!Array.isArray(rawList)) return { data: [] };
-                return { data: rawList.map(mapDetailItem), pagination: json.pagination };
+                return { data: rawList.map(mapListItem), pagination: json.pagination };
             } catch (e) {
                 console.error("[Samehadaku] Genre Error:", e);
                 return { data: [] };

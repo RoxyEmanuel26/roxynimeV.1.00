@@ -151,16 +151,16 @@ export const donghuaProvider: AnimeProvider = {
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
         return getCachedData(`donghua_detail_${slug}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/anime/${slug}`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/detail/${slug}`, { headers: headers() });
                 if (!res.ok) throw new Error(`Donghua detail failed: ${res.status}`);
                 const response = await res.json();
-                const data = response.data || response;
+                const data = response.donghua_details || response.data || response;
 
                 const genres = (data.genreList || data.genres || []).map((g: any) =>
                     typeof g === "string" ? g : g.title || g.name || g
                 );
 
-                const episodes: ProviderEpisode[] = (data.episodeList || data.episodes || [])
+                const episodes: ProviderEpisode[] = (data.episodeList || data.episodes_list || data.episodes || [])
                     .map((ep: any, idx: number) => ({
                         id: ep.episodeId || ep.slug || `ep-${idx}`,
                         number: ep.eps || ep.number || idx + 1,
