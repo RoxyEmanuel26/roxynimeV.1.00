@@ -94,24 +94,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let dynamicPages: MetadataRoute.Sitemap = [];
 
     try {
-        // Fetch dari semua provider (paralel, multi-page untuk completed)
+        // Fetch data secukupnya saja untuk mencegah Error 504 Timeout di Vercel.
+        // Google akan merayapi anime lain secara otomatis melalui halaman /browse (pagination).
         const fetchPromises = [
             getTrendingAnime(),
             getOngoingAnimeList(1),
-            getOngoingAnimeList(2),
             getCompletedAnimeList(1),
-            getCompletedAnimeList(2),
-            getCompletedAnimeList(3),
-            getMoviesList(1),
         ];
 
-        // Tambahan: fetch dari provider lain secara langsung
-        for (const provider of PROVIDERS) {
-            if (provider !== "otakudesu") { // otakudesu sudah default
-                fetchPromises.push(getOngoingAnimeList(1, provider));
-                fetchPromises.push(getCompletedAnimeList(1, provider));
-            }
-        }
+        // Kita hapus loop yang me-request semua provider secara berlebihan
+        // karena itu memakan waktu lama dan menyebabkan sitemap gagal di-load oleh Google.
 
         const results = await Promise.allSettled(fetchPromises);
 
