@@ -40,9 +40,10 @@ export async function generateSitemaps() {
     ];
 }
 
-export default async function sitemap({ id }: { id: number | string }): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({ id }: { id: Promise<number | string> | number | string }): Promise<MetadataRoute.Sitemap> {
+    const resolvedId = await id;
+    const parsedId = Number(resolvedId);
     const now = new Date();
-    const parsedId = Number(id);
 
     // Fungsi pembantu untuk memformat URL anime dan mencegah duplikasi
     const formatAnimeUrls = (animes: any[], freq: "daily" | "weekly" | "monthly", prio: number): MetadataRoute.Sitemap => {
