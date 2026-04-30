@@ -20,9 +20,6 @@ const POPULAR_GENRES = [
     "sports", "supernatural", "thriller",
 ];
 
-// ── Semua provider yang didukung ──────────────────────────────────────────
-const PROVIDERS = ["otakudesu", "samehadaku", "donghua", "winbu"];
-
 // ── Halaman statis legal & informasi ─────────────────────────────────────
 const STATIC_INFO_PAGES = [
     "/privacy",
@@ -31,121 +28,129 @@ const STATIC_INFO_PAGES = [
     "/contact",
 ];
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    // ── 1. Halaman Statis Utama ──────────────────────────────────────────────
+// ── FITUR BARU: Multiple Sitemaps (generateSitemaps) ──────────────────────
+// Fungsi ini membagi sitemap menjadi 5 file terpisah agar server tidak timeout (504)
+export async function generateSitemaps() {
+    return [
+        { id: 0 }, // sitemap/0.xml: Halaman statis, genre, dan trending (Prioritas 1)
+        { id: 1 }, // sitemap/1.xml: Ongoing halaman 1 & 2
+        { id: 2 }, // sitemap/2.xml: Completed halaman 1 & 2
+        { id: 3 }, // sitemap/3.xml: Completed halaman 3 & 4
+        { id: 4 }, // sitemap/4.xml: Movies halaman 1 & 2
+    ];
+}
+
+export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
     const now = new Date();
 
-    const staticPages: MetadataRoute.Sitemap = [
-        {
-            url: BASE_URL,
-            lastModified: now,
-            changeFrequency: "hourly",
-            priority: 1.0,
-        },
-        {
-            url: `${BASE_URL}/browse`,
-            lastModified: now,
-            changeFrequency: "daily",
-            priority: 0.9,
-        },
-        {
-            url: `${BASE_URL}/ongoing`,
-            lastModified: now,
-            changeFrequency: "hourly",
-            priority: 0.95,
-        },
-        {
-            url: `${BASE_URL}/movies`,
-            lastModified: now,
-            changeFrequency: "daily",
-            priority: 0.85,
-        },
-        {
-            url: `${BASE_URL}/schedule`,
-            lastModified: now,
-            changeFrequency: "daily",
-            priority: 0.8,
-        },
-        // Halaman legal
-        ...STATIC_INFO_PAGES.map((path) => ({
-            url: `${BASE_URL}${path}`,
-            lastModified: now,
-            changeFrequency: "monthly" as const,
-            priority: 0.3,
-        })),
-    ];
-
-    // ── 2. Halaman Browse berdasarkan Filter Type ────────────────────────────
-    const browseFilterPages: MetadataRoute.Sitemap = [
-        { url: `${BASE_URL}/browse?type=ongoing`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
-        { url: `${BASE_URL}/browse?type=completed`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
-        { url: `${BASE_URL}/browse?type=movie`, lastModified: now, changeFrequency: "weekly", priority: 0.75 },
-    ];
-
-    // ── 3. Halaman Genre ─────────────────────────────────────────────────────
-    const genrePages: MetadataRoute.Sitemap = POPULAR_GENRES.map((genre) => ({
-        url: `${BASE_URL}/browse?genre=${genre}`,
-        lastModified: now,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-    }));
-
-    // ── 4. Halaman Dinamis Anime ─────────────────────────────────────────────
-    let dynamicPages: MetadataRoute.Sitemap = [];
-
-    try {
-        // Fetch data secukupnya saja untuk mencegah Error 504 Timeout di Vercel.
-        // Google akan merayapi anime lain secara otomatis melalui halaman /browse (pagination).
-        const fetchPromises = [
-            getTrendingAnime(),
-            getOngoingAnimeList(1),
-            getCompletedAnimeList(1),
-        ];
-
-        // Kita hapus loop yang me-request semua provider secara berlebihan
-        // karena itu memakan waktu lama dan menyebabkan sitemap gagal di-load oleh Google.
-
-        const results = await Promise.allSettled(fetchPromises);
-
-        const allAnimes: any[] = [];
-        results.forEach((result) => {
-            if (result.status === "fulfilled") {
-                const val = result.value;
-                if (Array.isArray(val)) {
-                    allAnimes.push(...val);
-                } else if (val?.data && Array.isArray(val.data)) {
-                    allAnimes.push(...val.data);
-                }
-            }
-        });
-
-        // Deduplikasi berdasarkan slug/id
+    // Fungsi pembantu untuk memformat URL anime dan mencegah duplikasi
+    const formatAnimeUrls = (animes: any[], freq: "daily" | "weekly" | "monthly", prio: number): MetadataRoute.Sitemap => {
         const seen = new Set<string>();
-        const uniqueAnimes = allAnimes.filter((anime) => {
-            const key = anime.slug || anime.id;
+        const unique = animes.filter(a => {
+            const key = a.slug || a.id;
             if (!key || seen.has(key)) return false;
             seen.add(key);
             return true;
         });
+        return unique.map(a => ({
+            url: `${BASE_URL}/anime/${a.slug || a.id}?source=${a._source || "otakudesu"}`,
+            lastModified: now,
+            changeFrequency: freq,
+            priority: prio
+        }));
+    };
 
-        // Tentukan source terbaik untuk setiap anime berdasarkan provider
-        dynamicPages = uniqueAnimes.map((anime) => {
-            const slug = anime.slug || anime.id;
-            const source = anime._source || "otakudesu";
-            const isOngoing = anime.status?.toLowerCase?.()?.includes("ongoing");
+    // ───────────────────────────────────────────────────────────────────────
+    // SITEMAP ID 0: Halaman Statis, Filter, Genre & Trending Anime
+    // ───────────────────────────────────────────────────────────────────────
+    if (id === 0) {
+        const staticPages: MetadataRoute.Sitemap = [
+            { url: BASE_URL, lastModified: now, changeFrequency: "hourly", priority: 1.0 },
+            { url: `${BASE_URL}/browse`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+            { url: `${BASE_URL}/ongoing`, lastModified: now, changeFrequency: "hourly", priority: 0.95 },
+            { url: `${BASE_URL}/movies`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+            { url: `${BASE_URL}/schedule`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+            ...STATIC_INFO_PAGES.map((path) => ({ url: `${BASE_URL}${path}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.3 })),
+            { url: `${BASE_URL}/browse?type=ongoing`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+            { url: `${BASE_URL}/browse?type=completed`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+            { url: `${BASE_URL}/browse?type=movie`, lastModified: now, changeFrequency: "weekly", priority: 0.75 },
+            ...POPULAR_GENRES.map((genre) => ({ url: `${BASE_URL}/browse?genre=${genre}`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.7 })),
+        ];
 
-            return {
-                url: `${BASE_URL}/anime/${slug}?source=${source}`,
-                lastModified: now,
-                changeFrequency: (isOngoing ? "daily" : "weekly") as "daily" | "weekly",
-                priority: isOngoing ? 0.8 : 0.7,
-            };
-        });
-
-        console.log(`[sitemap] Generated ${dynamicPages.length} dynamic anime pages`);
-    } catch (error) {
-        console.error("[sitemap] Failed to fetch anime list:", error);
+        let trendingPages: MetadataRoute.Sitemap = [];
+        try {
+            const trending = await getTrendingAnime();
+            const animes = Array.isArray(trending) ? trending : ((trending as any)?.data || []);
+            trendingPages = formatAnimeUrls(animes, "daily", 0.9);
+        } catch (error) {
+            console.error("[sitemap] Failed to fetch trending:", error);
+        }
+        return [...staticPages, ...trendingPages];
     }
 
-    return [...staticPages, ...browseFilterPages, ...genrePages, ...dynamicPages];
+    // ───────────────────────────────────────────────────────────────────────
+    // SITEMAP ID 1: Ongoing Anime (Page 1 & 2)
+    // ───────────────────────────────────────────────────────────────────────
+    if (id === 1) {
+        let ongoingPages: MetadataRoute.Sitemap = [];
+        try {
+            const [p1, p2] = await Promise.allSettled([getOngoingAnimeList(1), getOngoingAnimeList(2)]);
+            const a1 = p1.status === "fulfilled" ? (Array.isArray(p1.value) ? p1.value : p1.value?.data || []) : [];
+            const a2 = p2.status === "fulfilled" ? (Array.isArray(p2.value) ? p2.value : p2.value?.data || []) : [];
+            ongoingPages = formatAnimeUrls([...a1, ...a2], "daily", 0.8);
+        } catch (error) {
+            console.error("[sitemap] Failed to fetch ongoing:", error);
+        }
+        return ongoingPages;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // SITEMAP ID 2: Completed Anime (Page 1 & 2)
+    // ───────────────────────────────────────────────────────────────────────
+    if (id === 2) {
+        let completedPages: MetadataRoute.Sitemap = [];
+        try {
+            const [p1, p2] = await Promise.allSettled([getCompletedAnimeList(1), getCompletedAnimeList(2)]);
+            const a1 = p1.status === "fulfilled" ? (Array.isArray(p1.value) ? p1.value : p1.value?.data || []) : [];
+            const a2 = p2.status === "fulfilled" ? (Array.isArray(p2.value) ? p2.value : p2.value?.data || []) : [];
+            completedPages = formatAnimeUrls([...a1, ...a2], "weekly", 0.7);
+        } catch (error) {
+            console.error("[sitemap] Failed to fetch completed p1-p2:", error);
+        }
+        return completedPages;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // SITEMAP ID 3: Completed Anime (Page 3 & 4)
+    // ───────────────────────────────────────────────────────────────────────
+    if (id === 3) {
+        let completedPages: MetadataRoute.Sitemap = [];
+        try {
+            const [p3, p4] = await Promise.allSettled([getCompletedAnimeList(3), getCompletedAnimeList(4)]);
+            const a3 = p3.status === "fulfilled" ? (Array.isArray(p3.value) ? p3.value : p3.value?.data || []) : [];
+            const a4 = p4.status === "fulfilled" ? (Array.isArray(p4.value) ? p4.value : p4.value?.data || []) : [];
+            completedPages = formatAnimeUrls([...a3, ...a4], "weekly", 0.6);
+        } catch (error) {
+            console.error("[sitemap] Failed to fetch completed p3-p4:", error);
+        }
+        return completedPages;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // SITEMAP ID 4: Movies (Page 1 & 2)
+    // ───────────────────────────────────────────────────────────────────────
+    if (id === 4) {
+        let moviePages: MetadataRoute.Sitemap = [];
+        try {
+            const [p1, p2] = await Promise.allSettled([getMoviesList(1), getMoviesList(2)]);
+            const a1 = p1.status === "fulfilled" ? (Array.isArray(p1.value) ? p1.value : p1.value?.data || []) : [];
+            const a2 = p2.status === "fulfilled" ? (Array.isArray(p2.value) ? p2.value : p2.value?.data || []) : [];
+            moviePages = formatAnimeUrls([...a1, ...a2], "monthly", 0.6);
+        } catch (error) {
+            console.error("[sitemap] Failed to fetch movies:", error);
+        }
+        return moviePages;
+    }
+
+    return [];
 }
