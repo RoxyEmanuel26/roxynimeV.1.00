@@ -19,7 +19,7 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "winbu"];
+const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "winbu"];
 
 // Determine which providers actually support the requested feature
 function getActiveProviders(type?: string): string[] {
