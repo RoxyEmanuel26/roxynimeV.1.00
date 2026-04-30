@@ -77,6 +77,7 @@ function BrowseContent() {
   const [hasPrev, setHasPrev] = useState(false);
   const [totalItems, setTotalItems] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState("all");
   const [filters, setFilters] = useState<FilterState>({
     type: "completed",
     genre: "",
@@ -94,12 +95,14 @@ function BrowseContent() {
   const buildBrowseUrl = (
     page: number,
     query: string,
-    f: FilterState
+    f: FilterState,
+    provider: string = "all"
   ): string => {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (f.type) params.set("type", f.type);
     if (f.genre) params.set("genre", f.genre);
+    if (provider && provider !== "all") params.set("source", provider);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/browse${qs ? `?${qs}` : ""}`;
@@ -109,7 +112,8 @@ function BrowseContent() {
   const fetchAnime = useCallback(async (
     pageNum: number,
     query: string,
-    f: FilterState
+    f: FilterState,
+    provider: string = "all"
   ) => {
     // Cancel previous in-flight request
     if (abortRef.current) abortRef.current.abort();
@@ -130,40 +134,18 @@ function BrowseContent() {
       return;
     }
 
-    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "winbu"];
-    
-    // Only fetch from providers that support the current filter type
-    const PROVIDER_FEATURES: Record<string, { ongoing: boolean; completed: boolean; movie: boolean }> = {
-        otakudesu:  { ongoing: true,  completed: true,  movie: false },
-        samehadaku: { ongoing: true,  completed: true,  movie: true  },
-        donghua:    { ongoing: true,  completed: true,  movie: false },
-        oploverz:   { ongoing: true,  completed: false, movie: false },
-        winbu:      { ongoing: true,  completed: true,  movie: true  },
-    };
-
-    const getActiveProviders = (queryStr: string, filterType: string) => {
-        // For search queries, use all providers
-        if (queryStr) return ALL_PROVIDERS;
-        return ALL_PROVIDERS.filter(p => {
-            const feat = PROVIDER_FEATURES[p];
-            if (!feat) return true;
-            switch (filterType) {
-                case "completed": return feat.completed;
-                case "movie": return feat.movie;
-                default: return feat.ongoing;
-            }
-        });
-    };
+    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "winbu"];
 
     if (pageNum === 1) {
         providerHasNextRef.current = {};
     }
 
-    const activeProviders = getActiveProviders(query, f.type || "completed");
-    
-    const providersToFetch = activeProviders.filter(provider => 
-        pageNum === 1 || providerHasNextRef.current[provider] !== false
-    );
+    // If a specific provider is selected, only fetch from that one
+    const providersToFetch = provider !== "all"
+        ? [provider]
+        : ALL_PROVIDERS.filter(p => 
+            pageNum === 1 || providerHasNextRef.current[p] !== false
+          );
     
     let activeProvidersCount = providersToFetch.length;
 
@@ -326,7 +308,10 @@ function BrowseContent() {
     setFilters(f);
     setCurrentPage(page);
 
-    fetchAnime(page, query, f);
+    const source = searchParams.get("source") || "all";
+    setSelectedProvider(source);
+
+    fetchAnime(page, query, f, source);
 
     return () => {
       if (abortRef.current) abortRef.current.abort();
@@ -339,32 +324,43 @@ function BrowseContent() {
     (page: number) => {
       if (loading) return;
       const clamped = Math.max(1, page);
-      router.replace(buildBrowseUrl(clamped, searchQuery, filters), {
+      router.replace(buildBrowseUrl(clamped, searchQuery, filters, selectedProvider), {
         scroll: false,
       });
-      fetchAnime(clamped, searchQuery, filters);
+      fetchAnime(clamped, searchQuery, filters, selectedProvider);
     },
-    [loading, router, searchQuery, filters, fetchAnime]
+    [loading, router, searchQuery, filters, selectedProvider, fetchAnime]
   );
 
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      router.replace(buildBrowseUrl(1, query, filters), { scroll: false });
-      fetchAnime(1, query, filters);
+      router.replace(buildBrowseUrl(1, query, filters, selectedProvider), { scroll: false });
+      fetchAnime(1, query, filters, selectedProvider);
     },
-    [filters, router, fetchAnime]
+    [filters, selectedProvider, router, fetchAnime]
   );
 
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
       setFilters(newFilters);
-      router.replace(buildBrowseUrl(1, searchQuery, newFilters), {
+      router.replace(buildBrowseUrl(1, searchQuery, newFilters, selectedProvider), {
         scroll: false,
       });
-      fetchAnime(1, searchQuery, newFilters);
+      fetchAnime(1, searchQuery, newFilters, selectedProvider);
     },
-    [searchQuery, router, fetchAnime]
+    [searchQuery, selectedProvider, router, fetchAnime]
+  );
+
+  const handleProviderChange = useCallback(
+    (newProvider: string) => {
+      setSelectedProvider(newProvider);
+      router.replace(buildBrowseUrl(1, searchQuery, filters, newProvider), {
+        scroll: false,
+      });
+      fetchAnime(1, searchQuery, filters, newProvider);
+    },
+    [searchQuery, filters, router, fetchAnime]
   );
 
 
@@ -433,13 +429,13 @@ function BrowseContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8 max-w-7xl">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-1 sm:mb-2">
           <div>
-            <h1 className="text-3xl font-bold mb-1">Browse Anime</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-0.5 sm:mb-1">Browse Anime</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Temukan dan nonton anime favorit kamu
             </p>
           </div>
@@ -456,7 +452,9 @@ function BrowseContent() {
       <SearchFilter
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
-        className="mb-8"
+        onProviderChange={handleProviderChange}
+        selectedProvider={selectedProvider}
+        className="mb-4 sm:mb-6 lg:mb-8"
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -464,10 +462,11 @@ function BrowseContent() {
         <div className="flex-1 min-w-0">
           {/* Status bar */}
           {!loading && !error && (
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
               {searchQuery
                 ? `Hasil untuk "${searchQuery}"`
                 : `Anime ${filters.type || "completed"}`}
+              {selectedProvider !== "all" && ` dari ${selectedProvider}`}
               {animes.length > 0 &&
                 ` • Halaman ${currentPage}${effectiveTotalPages > 1 ? ` dari ${effectiveTotalPages}` : ""} • ${animes.length} judul`}
             </p>
