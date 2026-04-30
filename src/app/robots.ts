@@ -132,7 +132,10 @@ export default function robots(): MetadataRoute.Robots {
                 disallow: ["/"],
             },
         ],
-        sitemap: "https://roxy.my.id/sitemap.xml",
+        sitemap: [
+            "https://roxy.my.id/sitemap.xml",
+            "https://roxy.my.id/sitemap2.xml"
+        ],
         host: "https://roxy.my.id",
     };
 }
