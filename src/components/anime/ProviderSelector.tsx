@@ -15,10 +15,7 @@ interface ProviderOption {
 const PROVIDERS: ProviderOption[] = [
     { id: "otakudesu", name: "Otakudesu", icon: "🎌", description: "Sumber utama", contentType: "Anime" },
     { id: "samehadaku", name: "Samehadaku", icon: "🦈", description: "Alternatif populer", contentType: "Anime" },
-    { id: "donghua", name: "Donghua", icon: "🐉", description: "Chinese Animation", contentType: "Donghua" },
-
     { id: "oploverz", name: "Oploverz", icon: "💎", description: "Kualitas terbaik", contentType: "Anime" },
-    { id: "winbu", name: "Winbu", icon: "🌟", description: "Anime, Film, Series & Donghua", contentType: "Mixed" },
 ];
 
 const STORAGE_KEY = "roxynime_provider";

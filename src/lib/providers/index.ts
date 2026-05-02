@@ -3,20 +3,13 @@
 import { AnimeProvider, ProviderInfo } from "./types";
 import { otakudesuProvider } from "./otakudesu";
 import { samehadakuProvider } from "./samehadaku";
-import { donghuaProvider } from "./donghua";
-import { anoboyProvider } from "./anoboy";
 import { oploverzProvider } from "./oploverz";
-import { winbuProvider } from "./winbu";
-
 
 // Registry of all available providers
 const providers: Record<string, AnimeProvider> = {
     otakudesu: otakudesuProvider,
     samehadaku: samehadakuProvider,
-    donghua: donghuaProvider,
-    anoboy: anoboyProvider,
     oploverz: oploverzProvider,
-    winbu: winbuProvider,
 };
 
 const DEFAULT_PROVIDER = "otakudesu";

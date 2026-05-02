@@ -7,7 +7,7 @@ export interface ProviderAnime {
     poster: string;
     synopsis?: string;
     genres?: string[];
-    type?: string;       // TV, Movie, OVA, Donghua, etc.
+    type?: string;       // TV, Movie, OVA, etc.
     status?: string;     // Ongoing, Completed, Unknown
     totalEpisodes?: number;
     episode?: string | number; // Raw episode info from API (e.g. "Ep 12", "Episode 4")
@@ -63,7 +63,7 @@ export interface ProviderInfo {
     description: string;
     icon: string;         // emoji icon
     language: string;     // "id", "zh", "jp"
-    contentType: string;  // "Anime", "Donghua", "Mixed"
+    contentType: string;  // "Anime", "Mixed"
     features: {
         home: boolean;
         ongoing: boolean;

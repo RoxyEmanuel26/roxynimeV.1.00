@@ -58,9 +58,7 @@ export const PROVIDER_LIST = [
     { id: "all", label: "Semua", icon: "🌐", description: "Semua sumber" },
     { id: "otakudesu", label: "Otakudesu", icon: "🎌", description: "Sub Indo" },
     { id: "samehadaku", label: "Samehadaku", icon: "🦈", description: "Sub Indo" },
-    { id: "donghua", label: "Donghua", icon: "🐉", description: "Chinese Anime" },
-    { id: "anoboy", label: "Anoboy", icon: "📺", description: "Sub Indo" },
-    { id: "winbu", label: "Winbu", icon: "⚡", description: "Multi Source" },
+    { id: "oploverz", label: "Oploverz", icon: "💎", description: "Kualitas terbaik" },
 ];
 
 export function SearchFilter({

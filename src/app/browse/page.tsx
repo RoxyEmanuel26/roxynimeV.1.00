@@ -134,7 +134,7 @@ function BrowseContent() {
       return;
     }
 
-    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "winbu"];
+    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
 
     if (pageNum === 1) {
         providerHasNextRef.current = {};

@@ -117,7 +117,7 @@ function MoviesContent() {
       return;
     }
 
-    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "oploverz", "winbu"];
+    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
     
     if (pageNum === 1) {
         providerHasNextRef.current = {};

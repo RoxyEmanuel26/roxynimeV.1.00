@@ -11,7 +11,7 @@ import { getProvider } from "@/lib/providers";
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
     promise: Promise<T>,
-    timeoutMs = 5000
+    timeoutMs = 12000
 ): Promise<T> {
     const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), timeoutMs)
@@ -19,7 +19,7 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const ALL_PROVIDERS = ["otakudesu", "samehadaku", "donghua", "anoboy", "winbu"];
+const ALL_PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
 
 // Determine which providers actually support the requested feature
 function getActiveProviders(type?: string): string[] {
@@ -44,7 +44,7 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
     const results = await Promise.allSettled(
         activeProviders.map(async (provider) => {
             try {
-                const res = await fetchWithTimeout(fetcher(provider), 5000);
+                const res = await fetchWithTimeout(fetcher(provider), 12000);
                 return { provider, data: res.data || [], pagination: res.pagination };
             } catch {
                 return { provider, data: [], pagination: null };
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
         let pagination: any;
 
         if (source && source !== "all" && ALL_PROVIDERS.includes(source)) {
-            const res = await fetchWithTimeout(fetcher(source), 5000);
+            const res = await fetchWithTimeout(fetcher(source), 12000);
             let filteredData = res.data || [];
             
             if (type === "ongoing") {
