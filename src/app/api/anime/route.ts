@@ -35,20 +35,91 @@ function getActiveProviders(type?: string): string[] {
     });
 }
 
-async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: number, type?: string) {
-    const activeProviders = getActiveProviders(type);
-    if (activeProviders.length === 0) {
-        return { data: [], pagination: { currentPage: page, hasNextPage: false, hasPrevPage: page > 1, totalPages: 1, items: { count: 0, total: 0, per_page: 20 } } };
+// Fetch from a specific provider and normalize to exactly 30 items per page
+async function fetchProviderWithNormalization(
+    provider: string, 
+    requestedPage: number, 
+    fetcher: (provider: string, p: number) => Promise<any>, 
+    type?: string
+) {
+    const itemsPerPage = provider === "oploverz" ? 10 : (provider === "otakudesu" ? 25 : 30);
+    const startIndex = (requestedPage - 1) * 30;
+    const endIndex = requestedPage * 30;
+
+    const startProviderPage = Math.floor(startIndex / itemsPerPage) + 1;
+    const endProviderPage = Math.floor((endIndex - 1) / itemsPerPage) + 1;
+
+    let allData: any[] = [];
+    let anyHasNext = false;
+    let maxTotalPages = 1;
+    let totalItemsAcc = 0;
+
+    for (let p = startProviderPage; p <= endProviderPage; p++) {
+        try {
+            const res = await fetchWithTimeout(fetcher(provider, p), 12000);
+            if (res && res.data && res.data.length > 0) {
+                allData = allData.concat(res.data);
+                if (res.pagination) {
+                    if (res.pagination.hasNextPage) anyHasNext = true;
+                    if (res.pagination.totalPages > maxTotalPages) maxTotalPages = res.pagination.totalPages;
+                    if (res.pagination.items?.total) totalItemsAcc = res.pagination.items.total;
+                }
+            } else {
+                break;
+            }
+        } catch {
+            break;
+        }
     }
 
+    const startSlice = startIndex % itemsPerPage;
+    let slicedData = allData.slice(startSlice, startSlice + 30);
+
+    if (type === "ongoing") {
+        slicedData = slicedData.filter((anime: any) => {
+            const titleKey = String(anime.title || "").toLowerCase().trim();
+            const status = String(anime.status || "").toLowerCase();
+            if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return false;
+            if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return false;
+            if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return false;
+            const ep = String(anime.episode || "").toLowerCase();
+            if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return false;
+            return true;
+        });
+    }
+
+    const mappedData = slicedData.map((a: any) => ({ ...a, _source: provider }));
+    
+    // Safely determine hasNextPage
+    const hasMoreInArray = allData.length > startSlice + 30;
+    const safeHasNext = hasMoreInArray || anyHasNext;
+
+    return {
+        data: mappedData,
+        pagination: {
+            currentPage: requestedPage,
+            hasNextPage: safeHasNext && mappedData.length > 0,
+            hasPrevPage: requestedPage > 1,
+            totalPages: Math.ceil(totalItemsAcc / 30) || requestedPage + (safeHasNext ? 1 : 0),
+            items: { count: mappedData.length, total: totalItemsAcc, per_page: 30 }
+        }
+    };
+}
+
+async function fetchFromAll(fetcher: (provider: string, p: number) => Promise<any>, page: number, type?: string) {
+    const activeProviders = getActiveProviders(type);
+    if (activeProviders.length === 0) {
+        return { data: [], pagination: { currentPage: page, hasNextPage: false, hasPrevPage: page > 1, totalPages: 1, items: { count: 0, total: 0, per_page: 30 } } };
+    }
+
+    // To get 30 items total, we can just fetch the normalized page for each provider
+    // and take the first 30 items. But this skips items for next pages.
+    // However, properly paginating merged sets is very complex.
+    // For now, we fetch the normalized page from each, merge them, and slice 30.
+    // To minimize skipped items, we can try to fetch just page 1 from all if page=1, etc.
     const results = await Promise.allSettled(
         activeProviders.map(async (provider) => {
-            try {
-                const res = await fetchWithTimeout(fetcher(provider), 12000);
-                return { provider, data: res.data || [], pagination: res.pagination };
-            } catch {
-                return { provider, data: [], pagination: null };
-            }
+            return await fetchProviderWithNormalization(provider, page, fetcher, type);
         })
     );
 
@@ -60,45 +131,44 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
     let anyHasNext = false;
     let totalItems = 0;
 
-    results.forEach((result) => {
-        if (result.status === "fulfilled") {
-            const { provider, data, pagination } = result.value;
+    // Collect evenly from providers to make a good mix, up to 30 items
+    const validResults = results
+        .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+        .map(r => r.value);
+    
+    validResults.forEach(res => {
+        if (res.pagination) {
+            if (res.pagination.hasNextPage) anyHasNext = true;
+            if (res.pagination.totalPages > maxTotalPages) maxTotalPages = res.pagination.totalPages;
+            totalItems += res.pagination.items?.total || res.data.length;
+        }
+    });
 
-            // Calculate pagination
-            if (pagination) {
-                if (pagination.hasNextPage) anyHasNext = true;
-                const tp = pagination.totalPages || (pagination.items?.total ? Math.ceil(pagination.items.total / (pagination.items.per_page || 20)) : 1);
-                if (tp > maxTotalPages) maxTotalPages = tp;
-                totalItems += pagination.items?.total || data.length;
-            } else if (data.length > 0) {
-                totalItems += data.length;
-            }
+    let index = 0;
+    let added = 0;
+    const TARGET = 30;
+    let exhausted = false;
 
-            // Deduplicate + server-side filter
-            data.forEach((anime: any) => {
+    while (added < TARGET && !exhausted) {
+        exhausted = true;
+        for (const res of validResults) {
+            if (index < res.data.length) {
+                exhausted = false;
+                const anime = res.data[index];
                 const titleKey = anime.title?.toLowerCase().trim();
                 const slugKey = anime.slug || anime.id || "";
-
-                // Strip completed anime from ongoing requests
-                if (type === "ongoing" && titleKey) {
-                    const status = String(anime.status || "").toLowerCase();
-                    if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return;
-                    if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return;
-                    if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return;
-                    const ep = String(anime.episode || "").toLowerCase();
-                    if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return;
-                }
 
                 if (titleKey && !seenTitles.has(titleKey) && (!slugKey || !seenSlugs.has(slugKey))) {
                     seenTitles.add(titleKey);
                     if (slugKey) seenSlugs.add(slugKey);
-                    allAnimes.push({ ...anime, _source: provider });
+                    allAnimes.push(anime);
+                    added++;
+                    if (added >= TARGET) break;
                 }
-            });
+            }
         }
-    });
-
-    // No sorting needed anymore
+        index++;
+    }
 
     return {
         data: allAnimes,
@@ -107,7 +177,7 @@ async function fetchFromAll(fetcher: (provider: string) => Promise<any>, page: n
             hasNextPage: anyHasNext,
             hasPrevPage: page > 1,
             totalPages: maxTotalPages,
-            items: { count: allAnimes.length, total: totalItems, per_page: 20 }
+            items: { count: allAnimes.length, total: totalItems, per_page: 30 }
         }
     };
 }
@@ -120,21 +190,21 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get("source");
 
     try {
-        let fetcher: (provider: string) => Promise<any>;
+        let fetcher: (provider: string, p: number) => Promise<any>;
 
         if (genre) {
-            fetcher = (provider) => getAnimeByGenre(genre, page, provider);
+            fetcher = (provider, p) => getAnimeByGenre(genre, p, provider);
         } else {
             switch (type) {
                 case "completed":
-                    fetcher = (provider) => getCompletedAnimeList(page, provider);
+                    fetcher = (provider, p) => getCompletedAnimeList(p, provider);
                     break;
                 case "movie":
-                    fetcher = (provider) => getMoviesList(page, provider);
+                    fetcher = (provider, p) => getMoviesList(p, provider);
                     break;
                 case "ongoing":
                 default:
-                    fetcher = (provider) => getOngoingAnimeList(page, provider);
+                    fetcher = (provider, p) => getOngoingAnimeList(p, provider);
                     break;
             }
         }
@@ -143,28 +213,9 @@ export async function GET(request: NextRequest) {
         let pagination: any;
 
         if (source && source !== "all" && ALL_PROVIDERS.includes(source)) {
-            const res = await fetchWithTimeout(fetcher(source), 12000);
-            let filteredData = res.data || [];
-            
-            if (type === "ongoing") {
-                filteredData = filteredData.filter((anime: any) => {
-                    const titleKey = String(anime.title || "").toLowerCase().trim();
-                    const status = String(anime.status || "").toLowerCase();
-                    if (status.includes("completed") || status.includes("finished") || status.includes("tamat")) return false;
-                    if (titleKey.includes("batch") || titleKey.includes("[end]") || titleKey.includes("(end)")) return false;
-                    if (titleKey.includes("complete subtitle") || titleKey.includes("lengkap subtitle")) return false;
-                    const ep = String(anime.episode || "").toLowerCase();
-                    if (ep.includes("[end]") || ep.includes("batch") || ep === "end") return false;
-                    return true;
-                });
-            }
-
-            animeList = filteredData.map((a: any) => ({ ...a, _source: source }));
-            pagination = res.pagination || {
-                currentPage: page,
-                hasNextPage: false,
-                hasPrevPage: page > 1,
-            };
+            const result = await fetchProviderWithNormalization(source, page, fetcher, type);
+            animeList = result.data;
+            pagination = result.pagination;
         } else {
             const result = await fetchFromAll(fetcher, page, type);
             animeList = result.data;

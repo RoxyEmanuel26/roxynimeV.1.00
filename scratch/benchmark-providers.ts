@@ -1,5 +1,5 @@
 import { getProvider } from '../src/lib/providers/index';
-const providers = ['otakudesu', 'samehadaku', 'donghua', 'oploverz', 'winbu'];
+const providers = ['otakudesu', 'samehadaku', 'oploverz'];
 
 async function benchmark() {
   for (const name of providers) {

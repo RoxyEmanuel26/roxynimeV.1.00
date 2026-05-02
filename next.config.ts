@@ -60,36 +60,13 @@ const nextConfig: NextConfig = {
         hostname: "v2.samehadaku.how",
         pathname: "/wp-content/uploads/**",
       },
-      // Donghua (Anichin)
-      {
-        protocol: "https",
-        hostname: "anichin.cafe",
-        pathname: "/wp-content/uploads/**",
-      },
-      // Anoboy
-      {
-        protocol: "https",
-        hostname: "anoboy.be",
-        pathname: "/wp-content/uploads/**",
-      },
-      // Kuramanime
-      {
-        protocol: "https",
-        hostname: "kuramanime.dad",
-        pathname: "/**",
-      },
       // Oploverz
       {
         protocol: "https",
         hostname: "oploverz.top",
         pathname: "/wp-content/uploads/**",
       },
-      // Winbu
-      {
-        protocol: "https",
-        hostname: "winbu.net",
-        pathname: "/wp-content/uploads/**",
-      },
+
       // WordPress CDN (used by Oploverz, Samehadaku poster images)
       {
         protocol: "https",

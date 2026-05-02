@@ -25,11 +25,8 @@ async function checkProvider(name, url, extract) {
   }
 }
 
-await checkProvider("anoboy-home", `${BASE}/anime/anoboy/home`, d => d.anime_list);
+
 await checkProvider("samehadaku-home", `${BASE}/anime/samehadaku/home`, d => d.data?.recent?.animeList);
 await checkProvider("oploverz-home", `${BASE}/anime/oploverz/home`, d => d.anime_list);
-await checkProvider("donghua-latest", `${BASE}/anime/donghua/home`, d => d.latest_release);
-await checkProvider("donghua-completed", `${BASE}/anime/donghua/home`, d => d.completed_donghua);
 await checkProvider("otakudesu-ongoing", `${BASE}/anime/ongoing-anime?page=1`, d => d.data?.animeList);
 await checkProvider("otakudesu-completed", `${BASE}/anime/complete-anime?page=1`, d => d.data?.animeList);
-await checkProvider("kuramanime-home", `${BASE}/anime/kuramanime/home`, d => d.data?.animeList || d.data?.recent || d.data);

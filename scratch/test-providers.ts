@@ -1,5 +1,5 @@
 import { getProvider } from '../src/lib/providers/index';
-const providers = ['otakudesu', 'samehadaku', 'donghua', 'anoboy', 'oploverz', 'winbu'];
+const providers = ['otakudesu', 'samehadaku', 'oploverz'];
 
 async function testAll() {
   const results: any = {};
@@ -7,7 +7,7 @@ async function testAll() {
     console.log(`\nTesting ${name}...`);
     results[name] = { search: 'FAIL', detail: 'FAIL', stream: 'FAIL', completed: 'FAIL', ongoing: 'FAIL' };
     const p = getProvider(name);
-    
+
     // Test completed
     try {
       const comp = await p.getCompleted(1);
@@ -16,8 +16,8 @@ async function testAll() {
       } else {
         results[name].completed = 'EMPTY';
       }
-    } catch(e: any) { results[name].completed = `ERR: ${e.message}`; }
-    
+    } catch (e: any) { results[name].completed = `ERR: ${e.message}`; }
+
     // Test ongoing
     try {
       const ong = await p.getOngoing(1);
@@ -26,12 +26,12 @@ async function testAll() {
       } else {
         results[name].ongoing = 'EMPTY';
       }
-    } catch(e: any) { results[name].ongoing = `ERR: ${e.message}`; }
+    } catch (e: any) { results[name].ongoing = `ERR: ${e.message}`; }
 
     // Test search
     try {
       let q = 'naruto';
-      if(name==='donghua') q = 'martial';
+      if (name === 'donghua') q = 'martial';
       const searchRes = await p.search(q);
       if (searchRes?.data?.length > 0) {
         results[name].search = 'OK';
@@ -46,9 +46,9 @@ async function testAll() {
               if (streams && streams.length > 0) {
                 results[name].stream = 'OK';
               }
-            } catch(e: any) { console.error(`[${name}] Stream error:`, e.message); }
+            } catch (e: any) { console.error(`[${name}] Stream error:`, e.message); }
           }
-        } catch(e: any) { console.error(`[${name}] Detail error:`, e.message); }
+        } catch (e: any) { console.error(`[${name}] Detail error:`, e.message); }
       }
     } catch (e: any) {
       console.error(`[${name}] Search error:`, e.message);

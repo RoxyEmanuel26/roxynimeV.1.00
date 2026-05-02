@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Pagination untuk search hasil gabungan
-        const perPage = 20;
+        const perPage = 30;
         const start = (page - 1) * perPage;
         const paged = allAnimes.slice(start, start + perPage);
 
