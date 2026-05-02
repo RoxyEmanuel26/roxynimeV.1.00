@@ -86,7 +86,7 @@ export const oploverzProvider: AnimeProvider = {
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
         return getCachedData(`oploverz_ongoing_${page}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/home?page=${page}`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/ongoing?page=${page}`, { headers: headers() });
                 if (!res.ok) { console.error("[Oploverz] Ongoing HTTP:", res.status); return { data: [] }; }
                 const json = await res.json();
 
@@ -259,7 +259,15 @@ export const oploverzProvider: AnimeProvider = {
 
                 const servers: ProviderStreamServer[] = [];
 
-                if (data.server?.qualities) {
+                if (data.streams && Array.isArray(data.streams)) {
+                    data.streams.forEach((st: any) => {
+                        servers.push({
+                            name: st.name || "Server",
+                            quality: st.resolution || st.quality || "auto",
+                            streamUrl: st.url || "",
+                        });
+                    });
+                } else if (data.server?.qualities) {
                     data.server.qualities.forEach((qg: any) => {
                         const quality = qg.title || "default";
                         if (Array.isArray(qg.serverList)) {
