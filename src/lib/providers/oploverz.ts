@@ -22,8 +22,33 @@ function mapItem(item: any): ProviderAnime {
         }
     }
     
+    // Oploverz API puts status text ("Ongoing"/"Completed") in the `episode` field
+    // instead of actual episode numbers. We need to handle this properly.
     const rawEp = item.episode || item.episode_info ? String(item.episode || item.episode_info) : "";
-    const parsedNum = rawEp ? parseInt(rawEp.replace(/\D/g, "")) : undefined;
+    const rawEpLower = rawEp.toLowerCase().trim();
+    
+    // Check if the "episode" field is actually a status string
+    const isStatusText = rawEpLower === "ongoing" || rawEpLower === "completed" || 
+                         rawEpLower === "complete" || rawEpLower === "tamat";
+    
+    // Determine the real status: prefer explicit status, then infer from episode field
+    let status = item.status || "";
+    if (!status && isStatusText) {
+        // Use the episode field value as status since actual status is null
+        status = rawEpLower.includes("ongoing") ? "Ongoing" : "Completed";
+    }
+    if (!status) {
+        status = "Ongoing"; // Default fallback for Oploverz
+    }
+    
+    // Only parse episode number if it's NOT a status string
+    let parsedNum: number | undefined;
+    let displayEp: string | undefined;
+    if (!isStatusText && rawEp) {
+        const numMatch = rawEp.replace(/\D/g, "");
+        parsedNum = numMatch ? parseInt(numMatch) : undefined;
+        displayEp = rawEp;
+    }
     
     return {
         id: slug,
@@ -33,9 +58,9 @@ function mapItem(item: any): ProviderAnime {
         synopsis: "",
         genres: [],
         type: item.type || "TV",
-        status: item.status || "",
+        status,
         totalEpisodes: parsedNum && !isNaN(parsedNum) ? parsedNum : undefined,
-        episode: rawEp || undefined,
+        episode: displayEp || undefined,
         rating: undefined,
     };
 }
