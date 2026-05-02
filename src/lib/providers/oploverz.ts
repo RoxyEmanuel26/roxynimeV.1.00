@@ -12,11 +12,19 @@ const headers = () => ({
     Accept: "application/json",
 });
 
-// Oploverz home item fields: title, poster, slug, episode, status, type, oploverz_url
 function mapItem(item: any): ProviderAnime {
-    const slug = item.slug || "";
-    const rawEp = item.episode ? String(item.episode) : "";
+    let slug = item.slug || "";
+    // Jika slug "anime" atau "episode", ambil dari oploverz_url sebagai fallback
+    if (slug === "anime" || slug === "episode" || slug === "") {
+        if (item.oploverz_url) {
+            const parts = item.oploverz_url.split('/').filter(Boolean);
+            slug = parts[parts.length - 1];
+        }
+    }
+    
+    const rawEp = item.episode || item.episode_info ? String(item.episode || item.episode_info) : "";
     const parsedNum = rawEp ? parseInt(rawEp.replace(/\D/g, "")) : undefined;
+    
     return {
         id: slug,
         slug,
@@ -44,10 +52,10 @@ export const oploverzProvider: AnimeProvider = {
             home: true,
             ongoing: true,
             completed: true,
-            search: false,
+            search: true,
             detail: true,
             streaming: true,
-            schedule: false,
+            schedule: true,
             genres: false,
             movies: false,
         },
@@ -143,20 +151,27 @@ export const oploverzProvider: AnimeProvider = {
                 const res = await fetch(`${BASE}${PREFIX}/anime/${slug}`, { headers: headers() });
                 if (!res.ok) throw new Error(`Oploverz detail failed: ${res.status}`);
                 const response = await res.json();
-                const data = response.data || response;
+                const data = response.detail || response.data || response;
 
                 const genres = (data.genreList || data.genres || []).map((g: any) =>
                     typeof g === "string" ? g : g.title || g.name || g
                 );
 
-                const episodes: ProviderEpisode[] = (data.episodeList || data.episodes || [])
-                    .map((ep: any, idx: number) => ({
-                        id: ep.episodeId || ep.slug || `ep-${idx}`,
-                        number: ep.eps || ep.number || idx + 1,
-                        title: ep.title || `Episode ${ep.eps || idx + 1}`,
-                        urlSlug: ep.episodeId || ep.slug || "",
-                        date: ep.date,
-                    }))
+                const episodes: ProviderEpisode[] = (data.episode_list || data.episodeList || data.episodes || [])
+                    .map((ep: any, idx: number) => {
+                        let epSlug = ep.episodeId || ep.slug || `ep-${idx}`;
+                        if (epSlug === "episode" && ep.url) {
+                            const parts = ep.url.split('/').filter(Boolean);
+                            epSlug = parts[parts.length - 1];
+                        }
+                        return {
+                            id: epSlug,
+                            number: ep.eps || ep.number || idx + 1,
+                            title: ep.title || `Episode ${ep.eps || idx + 1}`,
+                            urlSlug: epSlug,
+                            date: ep.date,
+                        };
+                    })
                     .sort((a: ProviderEpisode, b: ProviderEpisode) => b.number - a.number);
 
                 return {
@@ -167,7 +182,7 @@ export const oploverzProvider: AnimeProvider = {
                     synopsis: data.synopsis?.paragraphs?.join("\n\n") || data.synopsis || "",
                     genres,
                     type: data.type || "TV",
-                    status: data.status || "Unknown",
+                    status: data.info?.status || data.status || "Unknown",
                     totalEpisodes: episodes.length,
                     rating: data.score ? parseFloat(String(data.score)) : undefined,
                     episodes,
@@ -180,8 +195,57 @@ export const oploverzProvider: AnimeProvider = {
     },
 
     async search(query: string): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Not supported
-        return { data: [] };
+        return getCachedData(`oploverz_search_${query}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/search/${encodeURIComponent(query)}`, { headers: headers() });
+                if (!res.ok) { console.error("[Oploverz] Search HTTP:", res.status); return { data: [] }; }
+                const json = await res.json();
+
+                const rawList = json?.anime_list;
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    return { data: [] };
+                }
+
+                const pagination = json?.pagination;
+                return {
+                    data: rawList.map(mapItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || 1,
+                        hasNextPage: !!pagination.hasNext,
+                        hasPrevPage: !!pagination.hasPrev,
+                        totalPages: pagination.totalPages || 1,
+                        lastVisiblePage: pagination.totalPages || 1,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
+                };
+            } catch (e) {
+                console.error("[Oploverz] Search Error:", e);
+                return { data: [] };
+            }
+        });
+    },
+
+    async getSchedule(): Promise<Record<string, ProviderAnime[]>> {
+        return getCachedData("oploverz_schedule", async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/schedule`, { headers: headers() });
+                if (!res.ok) { console.error("[Oploverz] Schedule HTTP:", res.status); return {}; }
+                const json = await res.json();
+                
+                const schedule = json.schedule;
+                if (!schedule) return {};
+                
+                const result: Record<string, ProviderAnime[]> = {};
+                for (const day in schedule) {
+                    result[day] = schedule[day].map(mapItem);
+                }
+                
+                return result;
+            } catch (e) {
+                console.error("[Oploverz] Schedule Error:", e);
+                return {};
+            }
+        });
     },
 
     async getStreams(episodeSlug: string): Promise<ProviderStreamServer[]> {
