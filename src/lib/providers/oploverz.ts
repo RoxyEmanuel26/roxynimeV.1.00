@@ -43,7 +43,7 @@ export const oploverzProvider: AnimeProvider = {
         features: {
             home: true,
             ongoing: true,
-            completed: false,
+            completed: true,
             search: false,
             detail: true,
             streaming: true,
@@ -107,8 +107,34 @@ export const oploverzProvider: AnimeProvider = {
     },
 
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
-        // Oploverz has no dedicated completed endpoint — only episode feeds.
-        return { data: [] };
+        return getCachedData(`oploverz_completed_${page}`, async () => {
+            try {
+                const res = await fetch(`${BASE}${PREFIX}/completed?page=${page}`, { headers: headers() });
+                if (!res.ok) { console.error("[Oploverz] Completed HTTP:", res.status); return { data: [] }; }
+                const json = await res.json();
+
+                const rawList = json?.anime_list;
+                if (!Array.isArray(rawList) || rawList.length === 0) {
+                    return { data: [] };
+                }
+
+                const pagination = json?.pagination;
+                return {
+                    data: rawList.map(mapItem),
+                    pagination: pagination ? {
+                        currentPage: pagination.currentPage || page,
+                        hasNextPage: !!pagination.hasNext,
+                        hasPrevPage: !!pagination.hasPrev || page > 1,
+                        totalPages: pagination.totalPages || (pagination.hasNext ? page + 1 : page),
+                        lastVisiblePage: pagination.totalPages || page,
+                        items: { count: rawList.length, total: rawList.length, per_page: rawList.length },
+                    } : undefined,
+                };
+            } catch (e) {
+                console.error("[Oploverz] Completed Error:", e);
+                return { data: [] };
+            }
+        });
     },
 
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
