@@ -3,7 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import * as animbus from "@/lib/animbus";
-import { sankaClient } from "@/lib/sankaClient";
 import { Play, Calendar, Star, Film, Clock, ChevronRight } from "lucide-react";
 import { BannerAd, InFeedAd, SidebarAd } from "@/components/ads";
 import { AdLink } from "@/components/ads/AdLink";
