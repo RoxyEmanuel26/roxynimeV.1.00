@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, type ReactNode, type MouseEvent } from "react";
 import { useAdClick } from "@/hooks/useAdClick";
 
@@ -19,23 +18,20 @@ interface AdLinkProps {
 }
 
 /**
- * AdLink — Drop-in replacement for <Link> with two-click ad redirect.
+ * AdLink — Drop-in replacement for <Link> with background ad opening.
  *
- * First click: opens random ad in new tab, stays on current page.
- * Second click: navigates to the actual destination.
+ * First click: opens random ad in a new tab (background) AND navigates
+ *              to the destination on the current tab simultaneously.
+ * Subsequent clicks: navigates normally without opening ads.
  */
 export function AdLink({ href, adKey, children, className, ...rest }: AdLinkProps) {
     const { interceptClick } = useAdClick(adKey);
-    const router = useRouter();
 
     const handleClick = useCallback(
         (e: MouseEvent<HTMLAnchorElement>) => {
-            const wasIntercepted = interceptClick();
-            if (wasIntercepted) {
-                e.preventDefault();
-                // Don't navigate, ad was opened instead
-            }
-            // If not intercepted, let the default Link navigation happen
+            // Open ad in background if not yet shown — does NOT block navigation
+            interceptClick();
+            // Let the default Link navigation happen regardless
         },
         [interceptClick]
     );

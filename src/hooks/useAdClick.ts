@@ -1,19 +1,20 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { getRandomAdLink } from "@/config/adLinks";
 
 /**
- * useAdClick — Two-Click Redirect Hook
+ * useAdClick — Background Ad Open Hook
  *
- * On FIRST click: opens a random ad link in a new tab, blocks navigation.
- * On SECOND click: allows normal navigation.
+ * On FIRST click: opens a random ad link in a new tab (background).
+ *                 Navigation is NOT blocked — user goes to destination immediately.
+ * On subsequent clicks: no ad is opened.
  *
  * Uses a per-element key stored in sessionStorage so each unique button
  * only shows the ad ONCE per session.
  *
  * @param elementKey — unique identifier for this clickable element
- * @returns { interceptClick } — wraps your onClick handler
+ * @returns { interceptClick } — call on click to open ad if not yet shown
  */
 export function useAdClick(elementKey: string) {
     const storageKey = `adclicked_${elementKey}`;
@@ -29,22 +30,22 @@ export function useAdClick(elementKey: string) {
     }, [storageKey]);
 
     /**
-     * interceptClick — call this BEFORE your real navigation.
-     * Returns `true` if the ad was shown (meaning: block navigation).
-     * Returns `false` if user already saw the ad (meaning: allow navigation).
+     * interceptClick — call this in your onClick handler.
+     * Opens an ad in a new tab if not yet shown for this element.
+     * Does NOT block navigation — the destination loads simultaneously.
      */
-    const interceptClick = useCallback((): boolean => {
+    const interceptClick = useCallback((): void => {
         if (hasClicked()) {
-            // Already showed ad for this element, allow normal action
-            return false;
+            // Already showed ad for this element, do nothing
+            return;
         }
 
-        // First click — open ad and block navigation
+        // Open ad in new tab (background) and mark as shown
         const adUrl = getRandomAdLink();
         window.open(adUrl, "_blank", "noopener,noreferrer");
         markClicked();
-        return true; // signal: ad was shown, block navigation
     }, [hasClicked, markClicked]);
 
     return { interceptClick, hasClicked };
 }
+
