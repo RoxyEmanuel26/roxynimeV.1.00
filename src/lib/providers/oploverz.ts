@@ -12,7 +12,15 @@ const headers = () => ({
     Accept: "application/json",
 });
 
-function mapItem(item: any): ProviderAnime {
+/**
+ * Map raw Oploverz API item to ProviderAnime.
+ * 
+ * @param item - Raw API item
+ * @param endpointContext - 'ongoing' | 'completed' | undefined — which endpoint this data came from.
+ *   Oploverz API status data is UNRELIABLE (returns "Ongoing" for completed anime),
+ *   so we use the endpoint context as the source of truth for list views.
+ */
+function mapItem(item: any, endpointContext?: 'ongoing' | 'completed'): ProviderAnime {
     let slug = item.slug || "";
     // Jika slug "anime" atau "episode", ambil dari oploverz_url sebagai fallback
     if (slug === "anime" || slug === "episode" || slug === "") {
@@ -31,14 +39,24 @@ function mapItem(item: any): ProviderAnime {
     const isStatusText = rawEpLower === "ongoing" || rawEpLower === "completed" || 
                          rawEpLower === "complete" || rawEpLower === "tamat";
     
-    // Determine the real status: prefer explicit status, then infer from episode field
-    let status = item.status || "";
-    if (!status && isStatusText) {
-        // Use the episode field value as status since actual status is null
-        status = rawEpLower.includes("ongoing") ? "Ongoing" : "Completed";
-    }
-    if (!status) {
-        status = "Ongoing"; // Default fallback for Oploverz
+    // STATUS DETERMINATION PRIORITY:
+    // 1. Endpoint context (most reliable — if from /completed endpoint, it's completed)
+    // 2. Explicit item.status field (from completed endpoint, usually "Completed")
+    // 3. Episode field text (fallback, unreliable for ongoing endpoint)
+    let status = "";
+    if (endpointContext === 'completed') {
+        status = "Completed";
+    } else if (endpointContext === 'ongoing') {
+        // Trust the endpoint: if it's from /ongoing, mark as Ongoing
+        // (Oploverz's ongoing list is imperfect but we trust the endpoint over the field)
+        status = "Ongoing";
+    } else if (item.status) {
+        status = item.status;
+    } else if (isStatusText) {
+        status = rawEpLower.includes("completed") || rawEpLower.includes("complete") || rawEpLower.includes("tamat") 
+            ? "Completed" : "Ongoing";
+    } else {
+        status = "Ongoing";
     }
     
     // Only parse episode number if it's NOT a status string
@@ -100,7 +118,7 @@ export const oploverzProvider: AnimeProvider = {
                     return [];
                 }
 
-                return rawList.map(mapItem);
+                return rawList.map(i => mapItem(i));
             } catch (e) {
                 console.error("[Oploverz] Home Error:", e);
                 return [];
@@ -122,7 +140,7 @@ export const oploverzProvider: AnimeProvider = {
 
                 const pagination = json?.pagination;
                 return {
-                    data: rawList.map(mapItem),
+                    data: rawList.map(i => mapItem(i, 'ongoing')),
                     pagination: pagination ? {
                         currentPage: pagination.currentPage || page,
                         hasNextPage: !!pagination.hasNext,
@@ -153,7 +171,7 @@ export const oploverzProvider: AnimeProvider = {
 
                 const pagination = json?.pagination;
                 return {
-                    data: rawList.map(mapItem),
+                    data: rawList.map(i => mapItem(i, 'completed')),
                     pagination: pagination ? {
                         currentPage: pagination.currentPage || page,
                         hasNextPage: !!pagination.hasNext,
@@ -199,6 +217,26 @@ export const oploverzProvider: AnimeProvider = {
                     })
                     .sort((a: ProviderEpisode, b: ProviderEpisode) => b.number - a.number);
 
+                // SMART STATUS DETECTION for detail page:
+                // Oploverz API frequently returns "Ongoing" for anime that finished
+                // months ago. Use heuristic: if last update was >90 days ago, it's completed.
+                let detailStatus = data.info?.status || data.status || "Unknown";
+                
+                if (detailStatus.toLowerCase() === "ongoing" && data.info?.updated_on) {
+                    try {
+                        const updatedDate = new Date(data.info.updated_on);
+                        const now = new Date();
+                        const daysSinceUpdate = Math.floor((now.getTime() - updatedDate.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        // If not updated in >90 days, almost certainly completed
+                        if (daysSinceUpdate > 90) {
+                            detailStatus = "Completed";
+                        }
+                    } catch {
+                        // Date parsing failed, keep original status
+                    }
+                }
+
                 return {
                     id: slug,
                     slug,
@@ -207,7 +245,7 @@ export const oploverzProvider: AnimeProvider = {
                     synopsis: data.synopsis?.paragraphs?.join("\n\n") || data.synopsis || "",
                     genres,
                     type: data.type || "TV",
-                    status: data.info?.status || data.status || "Unknown",
+                    status: detailStatus,
                     totalEpisodes: episodes.length,
                     rating: data.score ? parseFloat(String(data.score)) : undefined,
                     episodes,
@@ -233,7 +271,7 @@ export const oploverzProvider: AnimeProvider = {
 
                 const pagination = json?.pagination;
                 return {
-                    data: rawList.map(mapItem),
+                    data: rawList.map(i => mapItem(i)),
                     pagination: pagination ? {
                         currentPage: pagination.currentPage || 1,
                         hasNextPage: !!pagination.hasNext,
@@ -262,7 +300,7 @@ export const oploverzProvider: AnimeProvider = {
                 
                 const result: Record<string, ProviderAnime[]> = {};
                 for (const day in schedule) {
-                    result[day] = schedule[day].map(mapItem);
+                    result[day] = schedule[day].map((i: any) => mapItem(i));
                 }
                 
                 return result;
