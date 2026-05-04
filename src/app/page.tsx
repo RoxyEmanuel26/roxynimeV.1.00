@@ -1,6 +1,4 @@
-import Link from "next/link";
 import { Metadata } from "next";
-import { Play, TrendingUp, Calendar, Film } from "lucide-react";
 import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { HeroSection } from "@/components/home/HeroSection";
 import { TrendingSection } from "@/components/home/TrendingSection";
@@ -157,46 +155,7 @@ export default async function HomePage() {
       <NativeAd set="A" className="my-4" />
       <InFeedAd adKey="4c1772859ec58ab31d3e31f5a867698e" width={300} height={250} />
 
-      {/* Quick Links Section */}
-      <section className="py-8 sm:py-12 bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <h2 className="text-xl sm:text-2xl font-bold mb-6">Browse by Category</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <Link
-              href="/browse?type=ongoing"
-              className="glass-card p-6 hover:bg-muted/50 transition-colors text-center group"
-            >
-              <TrendingUp className="h-8 w-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold">Ongoing</h3>
-              <p className="text-xs text-muted-foreground mt-1">Currently Airing</p>
-            </Link>
-            <Link
-              href="/browse?type=completed"
-              className="glass-card p-6 hover:bg-muted/50 transition-colors text-center group"
-            >
-              <Film className="h-8 w-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold">Completed</h3>
-              <p className="text-xs text-muted-foreground mt-1">Finished Series</p>
-            </Link>
-            <Link
-              href="/browse?type=movie"
-              className="glass-card p-6 hover:bg-muted/50 transition-colors text-center group"
-            >
-              <Calendar className="h-8 w-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold">Movies</h3>
-              <p className="text-xs text-muted-foreground mt-1">Anime Films</p>
-            </Link>
-            <Link
-              href="/browse"
-              className="glass-card p-6 hover:bg-muted/50 transition-colors text-center group"
-            >
-              <Play className="h-8 w-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
-              <h3 className="font-semibold">All Anime</h3>
-              <p className="text-xs text-muted-foreground mt-1">Browse Everything</p>
-            </Link>
-          </div>
-        </div>
-      </section>
+
 
       {/* FIXED: Bottom ads — native + banners */}
       <NativeAd set="B" className="my-4" />
