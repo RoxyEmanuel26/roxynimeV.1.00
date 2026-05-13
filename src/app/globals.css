@@ -429,6 +429,65 @@
     background: oklch(0.72 0.15 230);
   }
 
+  /* ─────────────── Filter Tabs (Nanime) ─────────────── */
+  .filter-tab {
+    @apply px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200;
+    @apply border border-white/10 text-white/50;
+    background: oklch(0.18 0.02 255 / 0.60);
+  }
+  .filter-tab:hover {
+    @apply text-white/80 border-white/20;
+    background: oklch(0.22 0.02 255 / 0.80);
+  }
+  .filter-tab-active {
+    @apply px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200;
+    @apply text-white border-transparent;
+    background: oklch(0.55 0.22 25);
+    box-shadow: 0 4px 16px oklch(0.55 0.22 25 / 0.35);
+  }
+
+  /* ─────────────── Anime Hover Popover ─────────────── */
+  .anime-popover {
+    @apply absolute top-0 z-50 w-64 p-4 rounded-xl pointer-events-none;
+    background: oklch(0.14 0.02 255 / 0.96);
+    backdrop-filter: blur(20px);
+    border: 1px solid oklch(0.30 0.04 235 / 0.50);
+    box-shadow: 0 20px 60px oklch(0 0 0 / 0.50), 0 0 1px oklch(1 0 0 / 0.05);
+  }
+
+  /* ─────────────── Latest Episode Card ─────────────── */
+  .latest-ep-card {
+    @apply flex gap-4 p-3 rounded-xl transition-all duration-200 cursor-pointer;
+    background: oklch(0.17 0.02 255 / 0.50);
+    border: 1px solid oklch(0.25 0.03 235 / 0.40);
+  }
+  .latest-ep-card:hover {
+    background: oklch(0.20 0.03 255 / 0.60);
+    border-color: oklch(0.35 0.04 235 / 0.50);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.30);
+  }
+
+  /* ─────────────── Status Badges (Nanime) ─────────────── */
+  .badge-status-ongoing {
+    @apply px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white;
+    background: oklch(0.60 0.18 155 / 0.90);
+  }
+  .badge-status-complete {
+    @apply px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white;
+    background: oklch(0.55 0.18 260 / 0.90);
+  }
+  .badge-episode {
+    @apply px-2.5 py-1 rounded-md text-[11px] font-semibold text-white;
+    background: oklch(0.12 0.02 255 / 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid oklch(1 0 0 / 0.10);
+  }
+  .badge-rating {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white;
+    background: oklch(0.65 0.18 60 / 0.90);
+  }
+
   /* ─────────────── Dark Mode Toggle ─────────────── */
   .theme-toggle {
     @apply relative p-2 rounded-xl cursor-pointer;
