@@ -68,6 +68,12 @@ export function Header() {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Hide mobile keyboard by blurring the active input element
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+
         if (searchQuery.trim()) {
             router.push(`/browse?search=${encodeURIComponent(searchQuery.trim())}`);
             setSearchQuery("");
