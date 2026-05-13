@@ -30,7 +30,7 @@ export const otakudesuProvider: AnimeProvider = {
     async getHome(): Promise<ProviderAnime[]> {
         return getCachedData("otakudesu_home", async () => {
             try {
-                const res = await fetch(`${SANKA_API_BASE}/anime/home`);
+                const res = await fetch(`${SANKA_API_BASE}/anime/home`, { headers: defaultHeaders(), ...FETCH_OPTIONS });
                 if (!res.ok) return [];
                 const data = await res.json();
 
@@ -54,7 +54,7 @@ export const otakudesuProvider: AnimeProvider = {
         return getCachedData(`otakudesu_ongoing_${page}`, async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/ongoing-anime?page=${page}`, {
-                    headers: defaultHeaders(),
+                    headers: defaultHeaders(), ...FETCH_OPTIONS,
                 });
                 if (!res.ok) return { data: [] };
                 const data = await res.json();
@@ -83,7 +83,7 @@ export const otakudesuProvider: AnimeProvider = {
         return getCachedData(`otakudesu_completed_${page}`, async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/complete-anime?page=${page}`, {
-                    headers: defaultHeaders(),
+                    headers: defaultHeaders(), ...FETCH_OPTIONS,
                 });
                 if (!res.ok) return { data: [] };
                 const data = await res.json();
@@ -157,7 +157,7 @@ export const otakudesuProvider: AnimeProvider = {
         return getCachedData(`otakudesu_search_${query}`, async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/search/${encodeURIComponent(query)}`, {
-                    headers: defaultHeaders(),
+                    headers: defaultHeaders(), ...FETCH_OPTIONS,
                 });
                 if (!res.ok) return { data: [] };
                 const data = await res.json();
@@ -258,7 +258,7 @@ export const otakudesuProvider: AnimeProvider = {
         return getCachedData("otakudesu_schedule", async () => {
             try {
                 const res = await fetch(`${SANKA_API_BASE}/anime/schedule`, {
-                    headers: defaultHeaders(),
+                    headers: defaultHeaders(), ...FETCH_OPTIONS,
                 });
                 if (!res.ok) return {};
                 const response = await res.json();
@@ -293,6 +293,9 @@ function defaultHeaders() {
         Accept: "application/json",
     };
 }
+
+// Next.js fetch options for Vercel Data Cache (5 min revalidation)
+const FETCH_OPTIONS = { next: { revalidate: 300 } } as RequestInit;
 
 function mapItem(item: any, defaultStatus: string): ProviderAnime {
     const validId = item.animeId || item.slug || item.id || `anime-${(item.title || "").replace(/[^a-z0-9]/gi, "-").toLowerCase()}`;

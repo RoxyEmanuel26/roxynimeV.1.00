@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAnimes } from "@/lib/animbus";
 
+export const runtime = "nodejs";
+
 const ALL_PROVIDERS = ["otakudesu"];
 
 // Helper timeout wrapper
@@ -85,7 +87,9 @@ export async function GET(request: NextRequest) {
             totalPages: Math.max(1, Math.ceil(allAnimes.length / perPage)),
         }, {
             headers: {
-                "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400",
+                "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
+                "CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
+                "Vercel-CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
             },
         });
     } catch (error) {

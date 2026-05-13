@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Use Node.js runtime for DB access (Prisma)
+export const runtime = "nodejs";
+
+// Revalidate cache every 5 minutes on Vercel
+export const revalidate = 300;
 import {
     getOngoingAnimeList,
     getCompletedAnimeList,
@@ -11,7 +17,7 @@ import { getProvider } from "@/lib/providers";
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
     promise: Promise<T>,
-    timeoutMs = 12000
+    timeoutMs = 8000
 ): Promise<T> {
     const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), timeoutMs)
@@ -51,7 +57,7 @@ async function fetchProviderWithNormalization(
 
     for (let p = startProviderPage; p <= endProviderPage; p++) {
         try {
-            const res = await fetchWithTimeout(fetcher(provider, p), 12000);
+            const res = await fetchWithTimeout(fetcher(provider, p), 8000);
             if (res && res.data && res.data.length > 0) {
                 allData = allData.concat(res.data);
                 if (res.pagination) {
@@ -232,7 +238,11 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(data, {
             headers: {
-                "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400",
+                // Vercel CDN: fresh for 5 min, serve stale for 24h while revalidating
+                "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
+                // Vercel-specific: enable CDN caching
+                "CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
+                "Vercel-CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
             },
         });
     } catch (error) {

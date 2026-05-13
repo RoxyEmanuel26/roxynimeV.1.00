@@ -74,7 +74,7 @@ export const samehadakuProvider: AnimeProvider = {
     async getHome(): Promise<ProviderAnime[]> {
         return getCachedData("samehadaku_home", async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/home`, { headers: headers(), next: { revalidate: 300 } });
                 if (!res.ok) { console.error("[Samehadaku] Home HTTP:", res.status); return []; }
                 const json = await res.json();
 
@@ -96,7 +96,7 @@ export const samehadakuProvider: AnimeProvider = {
     async getOngoing(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
         return getCachedData(`samehadaku_ongoing_${page}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/ongoing?page=${page}`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/ongoing?page=${page}`, { headers: headers(), next: { revalidate: 300 } });
                 if (!res.ok) { console.error("[Samehadaku] Ongoing HTTP:", res.status); return { data: [] }; }
                 const json = await res.json();
 
@@ -125,7 +125,7 @@ export const samehadakuProvider: AnimeProvider = {
     async getCompleted(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
         return getCachedData(`samehadaku_completed_${page}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/completed?page=${page}&order=latest`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/completed?page=${page}&order=latest`, { headers: headers(), next: { revalidate: 300 } });
                 if (!res.ok) { console.error("[Samehadaku] Completed HTTP:", res.status); return { data: [] }; }
                 const json = await res.json();
 
@@ -154,7 +154,7 @@ export const samehadakuProvider: AnimeProvider = {
     async getDetail(slug: string): Promise<ProviderAnimeDetail> {
         return getCachedData(`samehadaku_detail_${slug}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/anime/${slug}`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/anime/${slug}`, { headers: headers(), next: { revalidate: 300 } });
                 if (!res.ok) throw new Error(`Samehadaku detail fetch failed: ${res.status}`);
                 const response = await res.json();
                 const data = response.data || response;
@@ -224,7 +224,7 @@ export const samehadakuProvider: AnimeProvider = {
     async getStreams(episodeSlug: string): Promise<ProviderStreamServer[]> {
         return getCachedData(`samehadaku_stream_${episodeSlug}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/episode/${episodeSlug}`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/episode/${episodeSlug}`, { headers: headers(), next: { revalidate: 300 } });
                 if (!res.ok) return [];
                 const response = await res.json();
                 const data = response.data || response;
@@ -260,7 +260,7 @@ export const samehadakuProvider: AnimeProvider = {
     async getMovies(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
         return getCachedData(`samehadaku_movies_${page}`, async () => {
             try {
-                const res = await fetch(`${BASE}${PREFIX}/movies?page=${page}&order=update`, { headers: headers() });
+                const res = await fetch(`${BASE}${PREFIX}/movies?page=${page}&order=update`, { headers: headers(), next: { revalidate: 300 } });
                 if (!res.ok) return { data: [] };
                 const json = await res.json();
 
