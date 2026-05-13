@@ -182,6 +182,8 @@ function OngoingContent() {
                 }));
 
                 // Tolerant status filter — detect completed anime from multiple signals
+                // NOTE: Otakudesu API sometimes returns completed anime as "Ongoing"
+                //       so we need extra heuristics beyond just the status field
                 list = list.filter((anime: any) => {
                     const status = String(anime.status || "").toLowerCase().trim();
                     const title = String(anime.title || "").toLowerCase();
@@ -191,11 +193,14 @@ function OngoingContent() {
                     if (title.includes("batch") || title.includes("[batch]")) return false;
                     if (title.includes("[end]") || title.includes("(end)")) return false;
                     if (title.includes("complete subtitle") || title.includes("lengkap subtitle")) return false;
-                    if (/\bbd\b/.test(title) && title.includes("subtitle")) return false; // BD/Blu-ray release
+                    if (/\bbd\b/.test(title) && title.includes("subtitle")) return false;
+                    // Movie/OVA/Special in title — not ongoing series
+                    if (/\b(movie|film|ova|ona|special)\b/i.test(title) && !title.includes("season")) return false;
 
                     // 2. Episode field detection
                     if (episode.includes("[end]") || episode.includes("(end)") || episode === "end") return false;
                     if (episode.includes("batch") || episode.includes("complete")) return false;
+                    if (episode.includes("tamat") || episode.includes("final")) return false;
 
                     // 3. Status field detection
                     if (!status) return true; // empty = assume ongoing
