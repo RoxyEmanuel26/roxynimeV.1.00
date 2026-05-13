@@ -80,13 +80,39 @@ export default async function AnimeDetailPage({ params, searchParams }: PageProp
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify({
                         "@context": "https://schema.org",
-                        "@type": "TVSeries",
-                        "name": title,
-                        "image": poster || "https://roxy.my.id/placeholder-anime.svg",
-                        "description": synopsis || `Nonton anime ${title} sub indo gratis di RoxyNime.`,
-                        "genre": genres || [],
-                        "startDate": releaseDate || undefined,
-                        "numberOfEpisodes": totalEpisodes || undefined,
+                        "@graph": [
+                            {
+                                "@type": "TVSeries",
+                                name: title,
+                                url: `https://roxy.my.id/anime/${anime.slug}`,
+                                image: poster || "https://roxy.my.id/placeholder-anime.svg",
+                                description: synopsis || `Nonton anime ${title} sub indo gratis di RoxyNime.`,
+                                genre: genres || [],
+                                startDate: releaseDate || undefined,
+                                numberOfEpisodes: totalEpisodes || undefined,
+                                ...(rating ? {
+                                    aggregateRating: {
+                                        "@type": "AggregateRating",
+                                        ratingValue: rating,
+                                        bestRating: 10,
+                                        worstRating: 1,
+                                        ratingCount: 1,
+                                    },
+                                } : {}),
+                                ...(studio ? { productionCompany: { "@type": "Organization", name: studio } } : {}),
+                                inLanguage: "ja",
+                                subtitleLanguage: "id",
+                                countryOfOrigin: { "@type": "Country", name: "Japan" },
+                            },
+                            {
+                                "@type": "BreadcrumbList",
+                                itemListElement: [
+                                    { "@type": "ListItem", position: 1, name: "Home", item: "https://roxy.my.id" },
+                                    { "@type": "ListItem", position: 2, name: "Browse", item: "https://roxy.my.id/browse" },
+                                    { "@type": "ListItem", position: 3, name: title, item: `https://roxy.my.id/anime/${anime.slug}` },
+                                ],
+                            },
+                        ],
                     })
                 }}
             />

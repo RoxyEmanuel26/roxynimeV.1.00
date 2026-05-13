@@ -4,8 +4,30 @@ import { Calendar } from "lucide-react";
 import { AnimeCard } from "@/components/anime/AnimeCard";
 
 export const metadata: Metadata = {
-    title: "Jadwal Rilis Anime - RoxyNime",
-    description: "Jadwal rilis anime terbaru setiap harinya. Pantau kapan anime favoritmu rilis.",
+    title: "Jadwal Rilis Anime Terbaru — Update Mingguan",
+    description: "Jadwal rilis anime terbaru setiap hari Senin-Minggu. Pantau kapan anime favoritmu rilis episode baru. Update otomatis dari Otakudesu setiap minggu di RoxyNime.",
+    alternates: { canonical: "https://roxy.my.id/schedule" },
+    keywords: [
+        "jadwal anime terbaru",
+        "jadwal rilis anime 2026",
+        "jadwal anime hari ini",
+        "jadwal anime mingguan",
+        "jadwal tayang anime sub indo",
+        "schedule anime spring 2026",
+    ],
+    openGraph: {
+        title: "Jadwal Rilis Anime Terbaru — Update Mingguan | RoxyNime",
+        description: "Jadwal rilis anime terbaru setiap hari. Pantau kapan anime favoritmu rilis episode baru.",
+        url: "https://roxy.my.id/schedule",
+        type: "website",
+        locale: "id_ID",
+        siteName: "RoxyNime",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Jadwal Rilis Anime Terbaru | RoxyNime",
+        description: "Jadwal rilis anime setiap hari Senin-Minggu. Update otomatis setiap minggu.",
+    },
 };
 
 const DAYS_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu", "Random"];

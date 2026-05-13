@@ -144,6 +144,40 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
             <PopunderAd />
             <StickyMobileAd />
 
+            {/* ── JSON-LD: VideoObject + BreadcrumbList ──────────────── */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@graph": [
+                            {
+                                "@type": "VideoObject",
+                                name: anime ? `${anime.title} Episode ${currentEpNumber || "?"}` : formattedTitle,
+                                description: anime?.synopsis
+                                    ? `Streaming ${anime.title} episode ${currentEpNumber || "?"} subtitle Indonesia gratis HD.`
+                                    : `Streaming ${formattedTitle} subtitle Indonesia gratis di RoxyNime.`,
+                                thumbnailUrl: anime?.image || "https://roxy.my.id/og-default.jpg",
+                                uploadDate: new Date().toISOString(),
+                                contentUrl: `https://roxy.my.id/watch/${slug.join("/")}`,
+                                embedUrl: servers?.[0]?.url || undefined,
+                                inLanguage: "ja",
+                                subtitleLanguage: "id",
+                                ...(anime ? { partOfSeries: { "@type": "TVSeries", name: anime.title } } : {}),
+                            },
+                            {
+                                "@type": "BreadcrumbList",
+                                itemListElement: [
+                                    { "@type": "ListItem", position: 1, name: "Home", item: "https://roxy.my.id" },
+                                    ...(anime ? [{ "@type": "ListItem", position: 2, name: anime.title, item: `https://roxy.my.id/anime/${anime.slug}` }] : []),
+                                    { "@type": "ListItem", position: anime ? 3 : 2, name: `Episode ${currentEpNumber || "?"}`, item: `https://roxy.my.id/watch/${slug.join("/")}` },
+                                ],
+                            },
+                        ],
+                    })
+                }}
+            />
+
             {/* Breadcrumb / Top Bar */}
             <div className="bg-card w-full border-b border-border sticky top-0 z-30 shadow-sm">
                 <div className="container mx-auto px-4 max-w-7xl h-14 flex items-center justify-between">

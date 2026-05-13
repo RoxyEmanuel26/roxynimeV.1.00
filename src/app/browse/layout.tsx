@@ -3,9 +3,30 @@ import { Metadata } from "next";
 import { AnimeCardSkeleton } from "@/components/common";
 
 export const metadata: Metadata = {
-  title: "Cari Anime Sub Indo Lengkap",
-  description: "Cari dan temukan ribuan judul anime subtitle Indonesia gratis. Filter berdasarkan genre, status, dan rating.",
+  title: "Cari Anime Sub Indo — Browse Lengkap Semua Genre",
+  description: "Cari dan temukan ribuan judul anime subtitle Indonesia gratis. Filter berdasarkan genre, status ongoing/completed, dan rating. Koleksi terlengkap di RoxyNime.",
   alternates: { canonical: "https://roxy.my.id/browse" },
+  keywords: [
+    "cari anime sub indo",
+    "daftar anime sub indo lengkap",
+    "anime genre action sub indo",
+    "anime genre romance sub indo",
+    "anime genre isekai sub indo",
+    "filter anime berdasarkan genre",
+  ],
+  openGraph: {
+    title: "Cari Anime Sub Indo — Browse Semua Genre | RoxyNime",
+    description: "Temukan ribuan judul anime subtitle Indonesia gratis. Filter berdasarkan genre, status, dan rating.",
+    url: "https://roxy.my.id/browse",
+    type: "website",
+    locale: "id_ID",
+    siteName: "RoxyNime",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cari Anime Sub Indo — Browse Semua Genre | RoxyNime",
+    description: "Temukan ribuan judul anime sub indo gratis. Filter genre, status & rating.",
+  },
 };
 
 export default function BrowseLayout({

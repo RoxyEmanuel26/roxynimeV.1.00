@@ -144,10 +144,12 @@ export default async function sitemap({ id }: { id: Promise<number | string> | n
     if (parsedId === 4) {
         let moviePages: MetadataRoute.Sitemap = [];
         try {
-            const [p1, p2] = await Promise.allSettled([getMoviesList(1), getMoviesList(2)]);
+            const [p1, p2] = await Promise.allSettled([getMoviesList(1, "samehadaku"), getMoviesList(2, "samehadaku")]);
             const a1 = p1.status === "fulfilled" ? (Array.isArray(p1.value) ? p1.value : p1.value?.data || []) : [];
             const a2 = p2.status === "fulfilled" ? (Array.isArray(p2.value) ? p2.value : p2.value?.data || []) : [];
-            moviePages = formatAnimeUrls([...a1, ...a2], "monthly", 0.6);
+            // Force _source to samehadaku for correct sitemap URLs
+            const moviesWithSource = [...a1, ...a2].map(a => ({ ...a, _source: "samehadaku" }));
+            moviePages = formatAnimeUrls(moviesWithSource, "monthly", 0.6);
         } catch (error) {
             console.error("[sitemap] Failed to fetch movies:", error);
         }

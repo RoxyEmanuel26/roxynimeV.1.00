@@ -1,5 +1,12 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { Home, Search } from "lucide-react";
+
+export const metadata: Metadata = {
+    title: "Halaman Tidak Ditemukan (404)",
+    description: "Halaman yang Anda cari tidak ditemukan. Kembali ke beranda atau cari anime lainnya di RoxyNime.",
+    robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
     return (

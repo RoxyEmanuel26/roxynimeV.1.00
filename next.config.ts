@@ -119,6 +119,29 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+
+  // ── Security Headers (improves Lighthouse + SEO) ──
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+      {
+        // Aggressive cache for static assets
+        source: "/(.*)\\.(jpg|jpeg|png|gif|ico|svg|webp|avif|woff|woff2|ttf|eot)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

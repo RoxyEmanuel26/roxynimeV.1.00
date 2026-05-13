@@ -6,14 +6,21 @@ import { getOngoingAnimeList, getCompletedAnimeList } from "@/lib/animbus";
 import type { Anime } from "@/components/home/HeroSection";
 
 export const metadata: Metadata = {
-  title: "RoxyNime - Nonton Anime Sub Indo Online",
-  description: "Nonton streaming dan download anime sub indo online secara gratis tanpa ribet. Tersedia ribuan judul anime terbaru dan terlengkap.",
+  title: "Nonton Anime Sub Indo Gratis — Streaming HD Terbaru | RoxyNime",
+  description: "Nonton streaming anime sub indo online gratis kualitas HD. Update episode terbaru setiap hari. Ribuan judul anime ongoing, completed, dan movie lengkap subtitle Indonesia.",
+  alternates: { canonical: "https://roxy.my.id" },
   openGraph: {
-    title: "RoxyNime - Nonton Anime Sub Indo Online",
-    description: "Nonton streaming dan download anime sub indo online secara gratis tanpa ribet. Tersedia ribuan judul anime terbaru dan terlengkap.",
+    title: "Nonton Anime Sub Indo Gratis — Streaming HD Terbaru | RoxyNime",
+    description: "Nonton streaming anime sub indo online gratis kualitas HD. Update episode terbaru setiap hari. Ribuan judul anime ongoing, completed, dan movie.",
     type: "website",
     locale: "id_ID",
     siteName: "RoxyNime",
+    url: "https://roxy.my.id",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nonton Anime Sub Indo Gratis — Streaming HD | RoxyNime",
+    description: "Streaming anime sub indo gratis kualitas HD. Update episode terbaru setiap hari.",
   },
 };
 
