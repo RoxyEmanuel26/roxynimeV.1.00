@@ -77,6 +77,10 @@ export function SearchFilter({
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        // Hide mobile keyboard by blurring the active input element
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
         onSearch(searchQuery);
     };
 
