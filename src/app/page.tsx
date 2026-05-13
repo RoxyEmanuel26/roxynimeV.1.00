@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { TrendingSection } from "@/components/home/TrendingSection";
 import { LatestEpisodesSection } from "@/components/home/LatestEpisodesSection";
-import { getOngoingAnimeList, getCompletedAnimeList } from "@/lib/animbus";
+import { getOngoingAnimeList, getCompletedAnimeList, getMoviesList } from "@/lib/animbus";
 import type { Anime } from "@/components/home/HeroSection";
 
 export const metadata: Metadata = {
@@ -70,29 +70,41 @@ function normalizeAnime(a: any, provider: string, overrideStatus?: string): Anim
 }
 
 export default async function HomePage() {
-  // ═══ Fetch Ongoing from otakudesu only ═══
-  const ongoingData = await fetchWithTimeout(getOngoingAnimeList(1, PROVIDER), 5000)
-    .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, PROVIDER, "Ongoing")))
-    .catch((err) => {
-      console.error(`[Home] Error fetching ongoing:`, err?.message || err);
-      return [] as Anime[];
-    });
+  // ═══ Fetch all data in parallel ═══
+  const [ongoingData, completedData, moviesData] = await Promise.all([
+    // Ongoing from otakudesu
+    fetchWithTimeout(getOngoingAnimeList(1, PROVIDER), 5000)
+      .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, PROVIDER, "Ongoing")))
+      .catch((err) => {
+        console.error(`[Home] Error fetching ongoing:`, err?.message || err);
+        return [] as Anime[];
+      }),
+    // Completed from otakudesu
+    fetchWithTimeout(getCompletedAnimeList(1, PROVIDER), 5000)
+      .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, PROVIDER, "Completed")))
+      .catch((err) => {
+        console.error(`[Home] Error fetching completed:`, err?.message || err);
+        return [] as Anime[];
+      }),
+    // Movies from samehadaku
+    fetchWithTimeout(getMoviesList(1, "samehadaku"), 5000)
+      .then((res) => (res.data || []).slice(0, 10).map((a: any) => ({
+        ...normalizeAnime(a, "samehadaku", "Movie"),
+        type: ["Movie"],
+      })))
+      .catch((err) => {
+        console.error(`[Home] Error fetching movies:`, err?.message || err);
+        return [] as Anime[];
+      }),
+  ]);
 
-  // ═══ Fetch Completed from otakudesu only ═══
-  const completedData = await fetchWithTimeout(getCompletedAnimeList(1, PROVIDER), 4000)
-    .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, PROVIDER, "Completed")))
-    .catch((err) => {
-      console.error(`[Home] Error fetching completed:`, err?.message || err);
-      return [] as Anime[];
-    });
+  const hasNetworkError = ongoingData.length === 0 && completedData.length === 0 && moviesData.length === 0;
 
-  const hasNetworkError = ongoingData.length === 0 && completedData.length === 0;
-
-  // Single provider — no deduplication needed
+  // Single provider — no deduplication needed for ongoing/completed
   const allOngoing = ongoingData;
   const allCompleted = completedData;
 
-  // Merge all for "Trending Now" (interleave ongoing + completed for variety)
+  // Merge all for "Trending Now" (interleave ongoing + completed + movies for variety)
   const allAnimes: Anime[] = [];
   const mergedSeen = new Set<string>();
   const maxLen = Math.max(allOngoing.length, allCompleted.length);
@@ -110,6 +122,14 @@ export default async function HomePage() {
         mergedSeen.add(key);
         allAnimes.push(allCompleted[i]);
       }
+    }
+  }
+  // Append movies at the end (they show when "Movie" filter is selected)
+  for (const movie of moviesData) {
+    const key = movie.title?.toLowerCase() || movie.slug || "";
+    if (key && !mergedSeen.has(key)) {
+      mergedSeen.add(key);
+      allAnimes.push(movie);
     }
   }
 

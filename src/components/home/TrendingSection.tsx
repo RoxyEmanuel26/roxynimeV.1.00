@@ -36,7 +36,7 @@ export function TrendingSection({ animes }: TrendingSectionProps) {
             case "complete":
                 return statusLower === "completed" || statusLower === "complete";
             case "movie":
-                return typeStr.includes("movie") || typeStr.includes("film");
+                return typeStr.includes("movie") || typeStr.includes("film") || statusLower === "movie";
             default:
                 return true;
         }
