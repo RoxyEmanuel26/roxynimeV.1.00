@@ -19,20 +19,15 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const ALL_PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
+// Provider mapping: otakudesu for everything, samehadaku for movies only
+const ALL_PROVIDERS = ["otakudesu", "samehadaku"];
 
 // Determine which providers actually support the requested feature
 function getActiveProviders(type?: string): string[] {
-    return ALL_PROVIDERS.filter((id) => {
-        const p = getProvider(id);
-        if (!p?.info?.features) return true; // include unknown by default
-        switch (type) {
-            case "completed": return !!p.info.features.completed;
-            case "movie":     return !!p.info.features.movies;
-            case "ongoing":
-            default:          return !!p.info.features.ongoing;
-        }
-    });
+    switch (type) {
+        case "movie": return ["samehadaku"]; // Movies only from samehadaku
+        default:      return ["otakudesu"];   // Everything else from otakudesu
+    }
 }
 
 // Fetch from a specific provider and normalize to exactly 30 items per page
@@ -42,7 +37,7 @@ async function fetchProviderWithNormalization(
     fetcher: (provider: string, p: number) => Promise<any>, 
     type?: string
 ) {
-    const itemsPerPage = provider === "oploverz" ? 10 : (provider === "otakudesu" ? 25 : 30);
+    const itemsPerPage = provider === "otakudesu" ? 25 : 30;
     const startIndex = (requestedPage - 1) * 30;
     const endIndex = requestedPage * 30;
 

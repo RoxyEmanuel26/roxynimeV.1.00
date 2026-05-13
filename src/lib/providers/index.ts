@@ -3,13 +3,13 @@
 import { AnimeProvider, ProviderInfo } from "./types";
 import { otakudesuProvider } from "./otakudesu";
 import { samehadakuProvider } from "./samehadaku";
-import { oploverzProvider } from "./oploverz";
 
 // Registry of all available providers
+// Otakudesu = default for all anime (ongoing, browse, schedule, completed)
+// Samehadaku = movies only
 const providers: Record<string, AnimeProvider> = {
     otakudesu: otakudesuProvider,
     samehadaku: samehadakuProvider,
-    oploverz: oploverzProvider,
 };
 
 const DEFAULT_PROVIDER = "otakudesu";

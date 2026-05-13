@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   },
 };
 
+// ISR: Revalidate home page setiap 5 menit
+export const revalidate = 300;
+
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
     promise: Promise<T>,
@@ -28,7 +31,7 @@ async function fetchWithTimeout<T>(
     return Promise.race([promise, timeout]);
 }
 
-const PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
+const PROVIDER = "otakudesu";
 
 // Helper: map raw API anime into standard Anime shape
 function normalizeAnime(a: any, provider: string, overrideStatus?: string): Anime {
@@ -59,82 +62,28 @@ function normalizeAnime(a: any, provider: string, overrideStatus?: string): Anim
     };
 }
 
-// Deduplicate anime by title and slug
-function deduplicateAnimes(providerAnimes: any[][]): Anime[] {
-    const allAnimes: Anime[] = [];
-    const seenTitles = new Set<string>();
-    const seenSlugs = new Set<string>();
-
-    let hasMore = true;
-    let idx = 0;
-    while (hasMore) {
-        hasMore = false;
-        for (let i = 0; i < providerAnimes.length; i++) {
-            if (idx < providerAnimes[i].length) {
-                hasMore = true;
-                const anime = providerAnimes[i][idx];
-
-                const titleKey = anime.title?.toLowerCase().trim() || "";
-                const slugKey = anime.slug || anime.id || "";
-
-                if (!titleKey && !slugKey) continue;
-
-                const isTitleDuplicate = titleKey && seenTitles.has(titleKey);
-                const isSlugDuplicate = slugKey && seenSlugs.has(slugKey);
-
-                if (!isTitleDuplicate && !isSlugDuplicate) {
-                    if (titleKey) seenTitles.add(titleKey);
-                    if (slugKey) seenSlugs.add(slugKey);
-                    allAnimes.push(anime as Anime);
-                }
-            }
-        }
-        idx++;
-    }
-    return allAnimes;
-}
-
 export default async function HomePage() {
-  // ═══ Fetch Ongoing from all providers ═══
-  const ongoingPromises = PROVIDERS.map((provider) =>
-    fetchWithTimeout(getOngoingAnimeList(1, provider), 8000)
-      .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, provider, "Ongoing")))
-      .catch((err) => {
-        console.error(`[Home] Error fetching ongoing from ${provider}:`, err);
-        return [];
-      })
-  );
+  // ═══ Fetch Ongoing from otakudesu only ═══
+  const ongoingData = await fetchWithTimeout(getOngoingAnimeList(1, PROVIDER), 5000)
+    .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, PROVIDER, "Ongoing")))
+    .catch((err) => {
+      console.error(`[Home] Error fetching ongoing:`, err?.message || err);
+      return [] as Anime[];
+    });
 
-  // ═══ Fetch Completed from all providers ═══
-  const completedPromises = PROVIDERS.map((provider) =>
-    fetchWithTimeout(getCompletedAnimeList(1, provider), 8000)
-      .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, provider, "Completed")))
-      .catch((err) => {
-        console.error(`[Home] Error fetching completed from ${provider}:`, err);
-        return [];
-      })
-  );
+  // ═══ Fetch Completed from otakudesu only ═══
+  const completedData = await fetchWithTimeout(getCompletedAnimeList(1, PROVIDER), 4000)
+    .then((res) => (res.data || []).map((a: any) => normalizeAnime(a, PROVIDER, "Completed")))
+    .catch((err) => {
+      console.error(`[Home] Error fetching completed:`, err?.message || err);
+      return [] as Anime[];
+    });
 
-  // Run all fetches in parallel
-  const [ongoingResults, completedResults] = await Promise.all([
-    Promise.allSettled(ongoingPromises),
-    Promise.allSettled(completedPromises),
-  ]);
+  const hasNetworkError = ongoingData.length === 0 && completedData.length === 0;
 
-  const ongoingSuccessCount = ongoingResults.filter((r) => r.status === "fulfilled").length;
-  const hasNetworkError = ongoingSuccessCount === 0;
-
-  // Extract data from results
-  const ongoingAnimes: any[][] = ongoingResults.map(r =>
-    r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []
-  );
-  const completedAnimes: any[][] = completedResults.map(r =>
-    r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []
-  );
-
-  // Deduplicate ongoing and completed separately
-  const allOngoing = deduplicateAnimes(ongoingAnimes);
-  const allCompleted = deduplicateAnimes(completedAnimes);
+  // Single provider — no deduplication needed
+  const allOngoing = ongoingData;
+  const allCompleted = completedData;
 
   // Merge all for "Trending Now" (interleave ongoing + completed for variety)
   const allAnimes: Anime[] = [];

@@ -63,8 +63,15 @@ export function truncateText(text: string, maxLength: number): string {
     return text.slice(0, maxLength).trim() + "...";
 }
 
-// Generates a solid color or simple SVG placeholder
+// Memoization cache for blur placeholders
+const blurCache = new Map<string, string>();
+
+// Generates a solid color or simple SVG placeholder (memoized)
 export function getBlurDataURL(width = 300, height = 420): string {
+    const cacheKey = `${width}x${height}`;
+    const cached = blurCache.get(cacheKey);
+    if (cached) return cached;
+
     const svg = `
 <svg width="${width}" height="${height}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <rect width="${width}" height="${height}" fill="#1e293b" />
@@ -84,5 +91,7 @@ export function getBlurDataURL(width = 300, height = 420): string {
             ? Buffer.from(str).toString('base64')
             : window.btoa(str);
 
-    return `data:image/svg+xml;base64,${toBase64(svg)}`;
+    const result = `data:image/svg+xml;base64,${toBase64(svg)}`;
+    blurCache.set(cacheKey, result);
+    return result;
 }

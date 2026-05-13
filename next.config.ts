@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // ── Security & Performance ──
+  poweredByHeader: false,    // Hide "X-Powered-By: Next.js" header
+  compress: true,            // Enable gzip compression
+
+  // ── Dev Logging ──
+  logging: {
+    fetches: {
+      fullUrl: true,         // Log full fetch URLs in dev mode
+    },
+  },
+
   images: {
     remotePatterns: [
       {

@@ -5,7 +5,6 @@ import { AdLink } from "@/components/ads/AdLink";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Star, Play, Clock } from "lucide-react";
 import { cn, getBlurDataURL } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import { useDataSaver } from "@/context/DataSaverContext";
 import Link from "next/link";
 
@@ -137,12 +136,9 @@ export function AnimeCard({
     const hasPopoverContent = description || (genres && genres.length > 0);
 
     return (
-        <motion.div
+        <div
             ref={cardRef}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className={cn("group relative", className)}
+            className={cn("group relative fade-in", className)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
@@ -208,62 +204,59 @@ export function AnimeCard({
                 )}
             </AdLink>
 
-            {/* ═══ Hover Info Popover — Desktop Only ═══ */}
-            <AnimatePresence>
-                {showPopover && hasPopoverContent && (
-                    <motion.div
-                        initial={{ opacity: 0, x: popoverSide === 'right' ? -10 : 10, scale: 0.96 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: popoverSide === 'right' ? -10 : 10, scale: 0.96 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className={cn(
-                            "anime-popover hidden lg:block",
-                            popoverSide === 'right' ? 'left-[calc(100%+12px)]' : 'right-[calc(100%+12px)]'
-                        )}
-                    >
-                        {/* Popover Title */}
-                        <h4 className="font-bold text-sm text-white mb-2 line-clamp-2" style={{ fontFamily: "var(--font-heading)" }}>
-                            {title}
-                        </h4>
+            {/* ═══ Hover Info Popover — Desktop Only (Pure CSS) ═══ */}
+            {hasPopoverContent && (
+                <div
+                    className={cn(
+                        "anime-popover hidden lg:block transition-all duration-200 ease-out",
+                        popoverSide === 'right' ? 'left-[calc(100%+12px)]' : 'right-[calc(100%+12px)]',
+                        showPopover ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-95 pointer-events-none',
+                        popoverSide === 'right' && !showPopover && '-translate-x-2',
+                        popoverSide === 'left' && !showPopover && 'translate-x-2',
+                    )}
+                >
+                    {/* Popover Title */}
+                    <h4 className="font-bold text-sm text-white mb-2 line-clamp-2 font-heading">
+                        {title}
+                    </h4>
 
-                        {/* Status + Rating row */}
-                        <div className="flex items-center gap-2 mb-3">
-                            {showStatusBadge && (
-                                <span className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${isCompleted ? 'badge-status-complete' : 'badge-status-ongoing'}`}>
-                                    {isCompleted ? "Complete" : "Ongoing"}
+                    {/* Status + Rating row */}
+                    <div className="flex items-center gap-2 mb-3">
+                        {showStatusBadge && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${isCompleted ? 'badge-status-complete' : 'badge-status-ongoing'}`}>
+                                {isCompleted ? "Complete" : "Ongoing"}
+                            </span>
+                        )}
+                        {hasValidRating && (
+                            <span className="text-[11px] text-amber-400 flex items-center gap-0.5">
+                                <Star className="h-3 w-3 fill-current" />
+                                {ratingNum!.toFixed(1)}
+                            </span>
+                        )}
+                        {episodeDisplay && (
+                            <span className="text-[11px] text-white/40">{episodeDisplay}</span>
+                        )}
+                    </div>
+
+                    {/* Description */}
+                    {description && (
+                        <p className="text-xs text-white/55 line-clamp-4 leading-relaxed mb-2">
+                            {description}
+                        </p>
+                    )}
+
+                    {/* Genre Tags */}
+                    {genres && genres.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
+                            {genres.slice(0, 4).map((g, i) => (
+                                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-white/45">
+                                    {g}
                                 </span>
-                            )}
-                            {hasValidRating && (
-                                <span className="text-[11px] text-amber-400 flex items-center gap-0.5">
-                                    <Star className="h-3 w-3 fill-current" />
-                                    {ratingNum!.toFixed(1)}
-                                </span>
-                            )}
-                            {episodeDisplay && (
-                                <span className="text-[11px] text-white/40">{episodeDisplay}</span>
-                            )}
+                            ))}
                         </div>
-
-                        {/* Description */}
-                        {description && (
-                            <p className="text-xs text-white/55 line-clamp-4 leading-relaxed mb-2">
-                                {description}
-                            </p>
-                        )}
-
-                        {/* Genre Tags */}
-                        {genres && genres.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
-                                {genres.slice(0, 4).map((g, i) => (
-                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-white/45">
-                                        {g}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

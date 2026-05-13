@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header, Footer } from "@/components/layout";
@@ -8,13 +9,28 @@ import { DisablePrefetch } from "@/components/common/DisablePrefetch";
 import { SAVER_CONFIG } from "@/config/dataSaver";
 import { VERIFICATION_META_TAGS } from "@/config/ads.config";
 
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+  weight: ["400", "500", "600"],
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-heading",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://roxy.my.id"),
   title: {
     default: "RoxyNime - Nonton Anime Sub Indo Gratis Streaming HD",
     template: "%s | RoxyNime",
   },
   description:
-    "Nonton anime sub indo gratis streaming HD di RoxyNime. Update episode terbaru setiap hari, anime ongoing, completed, dan film anime lengkap dengan subtitle Indonesia. Alternatif terbaik otakudesu, samehadaku, dan oploverz.",
+    "Nonton anime sub indo gratis streaming HD di RoxyNime. Update episode terbaru setiap hari, anime ongoing, completed, dan film anime lengkap dengan subtitle Indonesia. Alternatif terbaik otakudesu dan samehadaku.",
   keywords: [
     "nonton anime sub indo",
     "streaming anime gratis",
@@ -30,7 +46,7 @@ export const metadata: Metadata = {
     "roxynime",
     "samehadaku",
     "otakudesu",
-    "oploverz",
+    "nonton anime",
     "anime 2026",
     "anime spring 2026",
     "jadwal anime",
@@ -97,7 +113,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning className={`${inter.variable} ${outfit.variable}`}>
       <head>
         {VERIFICATION_META_TAGS.map((tag, idx) => (
           <meta key={idx} name={tag.name} content={tag.content} />
@@ -105,18 +121,9 @@ export default function RootLayout({
         <meta name="theme-color" content="#7c3aed" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        {!SAVER_CONFIG.MODE_HEMAT && (
-          <>
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-            <link
-              href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
-              rel="stylesheet"
-            />
-            {/* Inject CSS variables for tailwind if needed */}
-            <style dangerouslySetInnerHTML={{ __html: `:root { --font-sans: 'Inter', sans-serif; --font-heading: 'Outfit', sans-serif; }` }} />
-          </>
-        )}
+        {/* Preconnect to API server for faster data fetching */}
+        <link rel="preconnect" href="https://www.sankavollerei.com" />
+        <link rel="dns-prefetch" href="https://www.sankavollerei.com" />
       </head>
       <body
         className={`font-sans antialiased min-h-screen flex flex-col`}

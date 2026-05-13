@@ -57,8 +57,7 @@ const ORDERS = [
 export const PROVIDER_LIST = [
     { id: "all", label: "Semua", icon: "🌐", description: "Semua sumber" },
     { id: "otakudesu", label: "Otakudesu", icon: "🎌", description: "Sub Indo" },
-    { id: "samehadaku", label: "Samehadaku", icon: "🦈", description: "Sub Indo" },
-    { id: "oploverz", label: "Oploverz", icon: "💎", description: "Kualitas terbaik" },
+    { id: "samehadaku", label: "Samehadaku", icon: "🦈", description: "Movies" },
 ];
 
 export function SearchFilter({

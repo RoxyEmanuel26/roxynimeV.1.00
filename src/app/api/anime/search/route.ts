@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAnimes } from "@/lib/animbus";
 
-const ALL_PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
+const ALL_PROVIDERS = ["otakudesu"];
 
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(

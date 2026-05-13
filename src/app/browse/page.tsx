@@ -134,7 +134,7 @@ function BrowseContent() {
       return;
     }
 
-    const ALL_PROVIDERS = ["otakudesu", "samehadaku", "oploverz"];
+    const ALL_PROVIDERS = ["otakudesu"];
 
     if (pageNum === 1) {
         providerHasNextRef.current = {};
