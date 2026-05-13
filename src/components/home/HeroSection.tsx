@@ -17,6 +17,7 @@ export interface Anime {
     type?: string[];
     description?: string;
     _source?: string;
+    status?: string;
 }
 
 export function HeroSection({ featured }: { featured: Anime | undefined }) {

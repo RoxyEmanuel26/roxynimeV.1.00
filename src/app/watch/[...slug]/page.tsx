@@ -160,7 +160,7 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                                 thumbnailUrl: anime?.image || "https://roxy.my.id/og-default.jpg",
                                 uploadDate: new Date().toISOString(),
                                 contentUrl: `https://roxy.my.id/watch/${slug.join("/")}`,
-                                embedUrl: servers?.[0]?.url || undefined,
+                                embedUrl: servers?.[0]?.streamUrl || undefined,
                                 inLanguage: "ja",
                                 subtitleLanguage: "id",
                                 ...(anime ? { partOfSeries: { "@type": "TVSeries", name: anime.title } } : {}),
