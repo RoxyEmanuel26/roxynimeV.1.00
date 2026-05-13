@@ -42,8 +42,8 @@ export function TrendingSection({ animes }: TrendingSectionProps) {
         }
     });
 
-    // Show up to 10 items (2 rows of 5)
-    const displayAnimes = filteredAnimes.slice(0, 10);
+    // Show up to 50 items
+    const displayAnimes = filteredAnimes.slice(0, 50);
 
     return (
         <section className="pt-6 pb-8 sm:pt-8 sm:pb-12">

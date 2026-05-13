@@ -88,7 +88,7 @@ export default async function HomePage() {
       }),
     // Movies from samehadaku
     fetchWithTimeout(getMoviesList(1, "samehadaku"), 5000)
-      .then((res) => (res.data || []).slice(0, 10).map((a: any) => ({
+      .then((res) => (res.data || []).map((a: any) => ({
         ...normalizeAnime(a, "samehadaku", "Movie"),
         type: ["Movie"],
       })))
