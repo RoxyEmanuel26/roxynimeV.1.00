@@ -71,14 +71,8 @@ const nextConfig: NextConfig = {
         hostname: "v2.samehadaku.how",
         pathname: "/wp-content/uploads/**",
       },
-      // Oploverz
-      {
-        protocol: "https",
-        hostname: "oploverz.top",
-        pathname: "/wp-content/uploads/**",
-      },
 
-      // WordPress CDN (used by Oploverz, Samehadaku poster images)
+      // WordPress CDN (used by Samehadaku poster images)
       {
         protocol: "https",
         hostname: "i0.wp.com",
