@@ -3,7 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header, Footer } from "@/components/layout";
-import { PopunderAd, StickyMobileAd } from "@/components/ads";
+import { PopunderAd, StickyMobileAd, BannerAd } from "@/components/ads";
 import { DataSaverBanner } from "@/components/common/DataSaverBanner";
 import { DisablePrefetch } from "@/components/common/DisablePrefetch";
 import { SAVER_CONFIG } from "@/config/dataSaver";
@@ -249,6 +249,7 @@ export default function RootLayout({
           <DisablePrefetch />
           <DataSaverBanner />
           <PopunderAd />
+          <BannerAd adKey="898edf76869e94a70114cced9991b099" width={728} height={90} className="w-full pt-2 z-50 relative bg-black/60 backdrop-blur-sm hidden md:flex" />
           <Header />
           <main className="flex-1 pb-14 lg:pb-0">{children}</main>
           <StickyMobileAd />
