@@ -225,7 +225,7 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                     )}
                     <div className="mt-4">
                         <ShareButtons 
-                            url={`/watch/${slug.join('/')}${source ? `?source=${source}` : ''}`} 
+                            url={`/watch/${slug.join('/')}`} 
                             title={anime ? `Nonton ${anime.title} Episode ${currentEpNumber || "?"} Sub Indo` : formattedTitle}
                             image={anime?.image || "/og-default.jpg"}
                         />
@@ -245,7 +245,7 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                 <div className="flex items-center justify-between gap-4 mt-8 bg-card p-4 rounded-xl border border-border shadow-sm">
                     {prevEp ? (
                         <Link
-                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${prevEp.urlSlug}${source ? `?source=${source}` : ''}`}
+                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${prevEp.urlSlug}`}
                             className="flex-1 flex items-center justify-center sm:justify-start gap-2 sm:gap-4 px-4 py-3 bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded-lg transition-all font-medium group"
                         >
                             <ChevronLeft className="w-5 h-5 shrink-0" />
@@ -267,7 +267,7 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                     )}
 
                     <Link
-                        href={anime ? `/anime/${anime.slug}${source ? `?source=${source}` : ''}` : "/browse"}
+                        href={anime ? `/anime/${anime.slug}` : "/browse"}
                         className="shrink-0 w-12 h-12 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground rounded-full transition-all group"
                         title="Daftar Episode"
                     >
@@ -276,7 +276,7 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
 
                     {nextEp ? (
                         <Link
-                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${nextEp.urlSlug}${source ? `?source=${source}` : ''}`}
+                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${nextEp.urlSlug}`}
                             className="flex-1 flex items-center justify-center sm:justify-end gap-2 sm:gap-4 px-4 py-3 bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded-lg transition-all font-medium group text-right"
                         >
                             <div className="hidden sm:block text-right">

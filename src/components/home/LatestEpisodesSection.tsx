@@ -69,7 +69,7 @@ function LatestEpisodeCard({ anime, priority }: { anime: Anime; priority: boolea
                       slugLower.match(/episode-\d+/) ||
                       slugLower.match(/eps-\d+/);
     const baseUrl = isEpisode ? `/watch/${animeId}` : `/anime/${animeId}`;
-    const href = anime._source ? `${baseUrl}?source=${anime._source}` : baseUrl;
+    const href = baseUrl;
 
     const ratingNum = typeof anime.rating === 'string' ? parseFloat(anime.rating) : anime.rating;
     const hasValidRating = ratingNum && !isNaN(ratingNum as number) && (ratingNum as number) > 0;

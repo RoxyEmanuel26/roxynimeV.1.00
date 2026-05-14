@@ -50,7 +50,7 @@ export function AnimeCard({
                       slugLower.match(/eps-\d+/);
 
     const baseUrl = isEpisode ? `/watch/${animeId}` : `/anime/${animeId}`;
-    const href = source ? `${baseUrl}?source=${source}` : baseUrl;
+    const href = baseUrl;
 
     const [imgSrc, setImgSrc] = useState(image || '/placeholder-anime.svg');
     const { isHemat, addSavedBytes } = useDataSaver();
