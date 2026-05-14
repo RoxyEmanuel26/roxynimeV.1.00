@@ -52,6 +52,7 @@ export default function WatchPlayer({
             // If the URL is NOT a Sanka API endpoint, use it directly
             const isSankaEndpoint =
                 url.includes("/anime/server/") ||
+                url.includes("/api/streaming/") ||
                 url.includes("sankavollerei.com/anime/");
 
             if (!isSankaEndpoint) {

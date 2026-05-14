@@ -238,7 +238,7 @@ export const samehadakuProvider: AnimeProvider = {
                         if (Array.isArray(qg.serverList)) {
                             qg.serverList.forEach((srv: any) => {
                                 let streamUrl = srv.href || srv.url || "";
-                                if (srv.serverId) streamUrl = `${BASE}/anime/server/${srv.serverId}`;
+                                if (srv.serverId) streamUrl = `/api/streaming/samehadaku/${srv.serverId}`;
                                 if (streamUrl) servers.push({ name: srv.title || srv.name || "Server", quality, streamUrl });
                             });
                         }
