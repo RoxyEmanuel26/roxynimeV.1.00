@@ -102,7 +102,7 @@ function BrowseContent() {
     if (query) params.set("search", query);
     if (f.type) params.set("type", f.type);
     if (f.genre) params.set("genre", f.genre);
-    if (provider && provider !== "all") params.set("source", provider);
+    // Don't add source to URL — keep URL clean, provider is managed via internal state
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return `/browse${qs ? `?${qs}` : ""}`;
@@ -466,7 +466,7 @@ function BrowseContent() {
               {searchQuery
                 ? `Hasil untuk "${searchQuery}"`
                 : `Anime ${filters.type || "completed"}`}
-              {selectedProvider !== "all" && ` dari ${selectedProvider}`}
+              {selectedProvider !== "all" && ` dari ${selectedProvider === "otakudesu" ? "Server 1" : selectedProvider === "samehadaku" ? "Server 2" : selectedProvider}`}
               {animes.length > 0 &&
                 ` • Halaman ${currentPage}${effectiveTotalPages > 1 ? ` dari ${effectiveTotalPages}` : ""} • ${animes.length} judul`}
             </p>
