@@ -232,7 +232,7 @@ export default async function HomePage() {
     <div className="min-h-screen">
       {/* ═══ Top Ad Banner ═══ */}
       <div className="container mx-auto px-4 max-w-7xl">
-        <BannerAd adKey="1d4f1463e95b8d3fb84adadeb3a2f170" width={728} height={90}
+        <BannerAd adKey="898edf76869e94a70114cced9991b099" width={728} height={90}
           className="my-4 hidden md:flex" />
         <BannerAd adKey="2773304d8f72b4fe1e803cf5cf08230a" width={320} height={50}
           className="my-4 flex md:hidden" />
