@@ -158,15 +158,57 @@ export async function getAnimeByGenre(genre: string, page = 1, source?: string):
 }
 
 export async function getAnimeInfo(id: string, source?: string): Promise<AnimeDetail> {
-    const provider = getProvider(source);
+    if (source) {
+        const provider = getProvider(source);
+        const data = await provider.getDetail(id);
+        return toAnimeDetail(data);
+    }
+
+    // Default: Try Otakudesu
+    const provider = getProvider("otakudesu");
     const data = await provider.getDetail(id);
+    
+    // If Otakudesu returns no episodes (it means it failed and used Jikan fallback)
+    if (!data.episodes || data.episodes.length === 0) {
+        try {
+            const samehadakuProvider = getProvider("samehadaku");
+            const samehadakuData = await samehadakuProvider.getDetail(id);
+            if (samehadakuData.episodes && samehadakuData.episodes.length > 0) {
+                return toAnimeDetail(samehadakuData);
+            }
+        } catch (e) {
+            // Ignore Samehadaku error and fallback to original Otakudesu (Jikan) data
+        }
+    }
+
     return toAnimeDetail(data);
 }
 
 export async function getEpisodeStreams(episodeId: string, source?: string): Promise<StreamingData | null> {
     try {
-        const provider = getProvider(source);
-        const servers = await provider.getStreams(episodeId);
+        if (source) {
+            const provider = getProvider(source);
+            const servers = await provider.getStreams(episodeId);
+            if (!servers || !servers.length) return null;
+            return { url: servers[0].streamUrl, headers: {}, servers };
+        }
+
+        // Default: Try Otakudesu
+        const otakudesuProvider = getProvider("otakudesu");
+        let servers = await otakudesuProvider.getStreams(episodeId);
+
+        // Fallback to Samehadaku if Otakudesu returns no streams
+        if (!servers || servers.length === 0) {
+            try {
+                const samehadakuProvider = getProvider("samehadaku");
+                const samehadakuServers = await samehadakuProvider.getStreams(episodeId);
+                if (samehadakuServers && samehadakuServers.length > 0) {
+                    servers = samehadakuServers;
+                }
+            } catch (e) {
+                // Ignore Samehadaku error
+            }
+        }
 
         if (!servers || !servers.length) return null;
 
