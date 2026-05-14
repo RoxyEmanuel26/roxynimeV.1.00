@@ -93,45 +93,65 @@ export function AnimeCard({
     })();
 
     // Lazy-fetch synopsis when popover is shown and no description available
+    const hasFetchedRef = useRef(false);
+
     useEffect(() => {
         if (!showPopover) return;
-        // Already have description from props or fetched
+        if (isEpisode) return;
+        // Already have description from props
         if (description && description.trim()) return;
-        if (fetchedSynopsis !== null) return;
-        if (isFetchingSynopsis) return;
-        if (isEpisode) return; // Don't fetch for episode cards
+        // Already fetched (either from cache or API)
+        if (hasFetchedRef.current) return;
 
         const cacheKey = `${animeId}_${source || 'default'}`;
         const cached = synopsisCache.get(cacheKey);
         if (cached) {
+            hasFetchedRef.current = true;
             setFetchedSynopsis(cached.synopsis);
             setFetchedGenres(cached.genres);
             return;
         }
 
+        // Mark as fetched immediately to prevent duplicate calls
+        hasFetchedRef.current = true;
         setIsFetchingSynopsis(true);
+
         const controller = new AbortController();
         fetchAbortRef.current = controller;
 
         const url = `/api/anime/${encodeURIComponent(animeId)}${source ? `?source=${source}` : ''}`;
+
         fetch(url, { signal: controller.signal })
-            .then(res => res.ok ? res.json() : null)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(json => {
+                if (controller.signal.aborted) return;
                 if (!json?.data) return;
                 const syn = json.data.synopsis || json.data.description || "";
-                const gen = json.data.genres || [];
+                const gen: string[] = json.data.genres || [];
                 synopsisCache.set(cacheKey, { synopsis: syn, genres: gen });
                 setFetchedSynopsis(syn);
                 setFetchedGenres(gen);
             })
-            .catch(() => {
+            .catch((err) => {
+                if (err.name === 'AbortError') return;
                 // Silently fail — popover just won't show synopsis
                 setFetchedSynopsis("");
             })
-            .finally(() => setIsFetchingSynopsis(false));
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setIsFetchingSynopsis(false);
+                }
+            });
 
-        return () => controller.abort();
-    }, [showPopover, description, fetchedSynopsis, isFetchingSynopsis, animeId, source, isEpisode]);
+        return () => {
+            controller.abort();
+        };
+    // Only depend on showPopover — other values are stable or tracked by ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showPopover]);
 
     const handleMouseEnter = useCallback(() => {
         if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
