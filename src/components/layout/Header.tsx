@@ -111,9 +111,6 @@ export function Header() {
             {/* 2. MAIN HEADER */}
             <header className={`sticky top-0 z-50 w-full transition-all duration-500 ${scrolled ? "bg-black/80 backdrop-blur-2xl border-b border-white/10 shadow-2xl shadow-black/50" : "bg-gradient-to-b from-black/60 to-transparent backdrop-blur-sm"}`}>
 
-                {/* Top Ad Banner */}
-                <BannerAd adKey="c89ece9ff04cd88930d8cf0f5e62f70f" width={728} height={90} className="hidden lg:flex" />
-
                 <div className="container mx-auto px-4 max-w-7xl">
                     <div className={`flex items-center justify-between transition-all duration-500 gap-4 ${scrolled ? "h-14" : "h-16 md:h-20"}`}>
 
