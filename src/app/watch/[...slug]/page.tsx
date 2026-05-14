@@ -232,6 +232,63 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                     </div>
                 </div>
 
+                {/* Episode Navigation (above player) */}
+                <div className="flex items-center justify-between gap-3 mb-4 bg-card p-3 rounded-xl border border-border shadow-sm">
+                    {prevEp ? (
+                        <Link
+                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${prevEp.urlSlug}`}
+                            className="flex-1 flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-3 py-2.5 bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded-lg transition-all font-medium group"
+                        >
+                            <ChevronLeft className="w-5 h-5 shrink-0" />
+                            <div className="hidden sm:block text-left">
+                                <div className="text-xs opacity-70 mb-0.5">Sebelumnya</div>
+                                <div className="truncate text-sm">Episode {prevEp.number}</div>
+                            </div>
+                            <span className="sm:hidden text-sm">Prev Eps</span>
+                        </Link>
+                    ) : (
+                        <div className="flex-1 px-3 py-2.5 bg-muted/50 text-muted-foreground rounded-lg flex items-center justify-center sm:justify-start gap-2 sm:gap-3 cursor-not-allowed opacity-50">
+                            <ChevronLeft className="w-5 h-5" />
+                            <div className="hidden sm:block text-left">
+                                <div className="text-xs mb-0.5">Sebelumnya</div>
+                                <div className="text-sm">Tidak ada</div>
+                            </div>
+                            <span className="sm:hidden text-sm">Prev Eps</span>
+                        </div>
+                    )}
+
+                    <Link
+                        href={anime ? `/anime/${anime.slug}` : "/browse"}
+                        className="shrink-0 w-10 h-10 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground rounded-full transition-all group"
+                        title="Daftar Episode"
+                    >
+                        <Film className="w-4 h-4" />
+                    </Link>
+
+                    {nextEp ? (
+                        <Link
+                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${nextEp.urlSlug}`}
+                            className="flex-1 flex items-center justify-center sm:justify-end gap-2 sm:gap-3 px-3 py-2.5 bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded-lg transition-all font-medium group text-right"
+                        >
+                            <div className="hidden sm:block text-right">
+                                <div className="text-xs opacity-70 mb-0.5">Selanjutnya</div>
+                                <div className="truncate text-sm">Episode {nextEp.number}</div>
+                            </div>
+                            <span className="sm:hidden text-sm">Next Eps</span>
+                            <ChevronRight className="w-5 h-5 shrink-0" />
+                        </Link>
+                    ) : (
+                        <div className="flex-1 px-3 py-2.5 bg-muted/50 text-muted-foreground rounded-lg flex items-center justify-center sm:justify-end gap-2 sm:gap-3 cursor-not-allowed opacity-50 text-right">
+                            <div className="hidden sm:block text-right">
+                                <div className="text-xs mb-0.5">Selanjutnya</div>
+                                <div className="text-sm">Tidak ada</div>
+                            </div>
+                            <span className="sm:hidden text-sm">Next Eps</span>
+                            <ChevronRight className="w-5 h-5" />
+                        </div>
+                    )}
+                </div>
+
                 {/* Video Player Component (Client) */}
                 <WatchPlayer 
                     servers={servers} 
@@ -240,63 +297,6 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                     animeTitle={anime?.title || formattedTitle}
                     animeImage={anime?.image || ""}
                 />
-
-                {/* Navigation Buttons */}
-                <div className="flex items-center justify-between gap-4 mt-8 bg-card p-4 rounded-xl border border-border shadow-sm">
-                    {prevEp ? (
-                        <Link
-                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${prevEp.urlSlug}`}
-                            className="flex-1 flex items-center justify-center sm:justify-start gap-2 sm:gap-4 px-4 py-3 bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded-lg transition-all font-medium group"
-                        >
-                            <ChevronLeft className="w-5 h-5 shrink-0" />
-                            <div className="hidden sm:block text-left">
-                                <div className="text-xs opacity-70 mb-0.5">Sebelumnya</div>
-                                <div className="truncate">Episode {prevEp.number}</div>
-                            </div>
-                            <span className="sm:hidden">Prev Eps</span>
-                        </Link>
-                    ) : (
-                        <div className="flex-1 px-4 py-3 bg-muted/50 text-muted-foreground rounded-lg flex items-center justify-center sm:justify-start gap-2 sm:gap-4 cursor-not-allowed opacity-50">
-                            <ChevronLeft className="w-5 h-5" />
-                            <div className="hidden sm:block text-left">
-                                <div className="text-xs mb-0.5">Sebelumnya</div>
-                                <div>Tidak ada</div>
-                            </div>
-                            <span className="sm:hidden">Prev Eps</span>
-                        </div>
-                    )}
-
-                    <Link
-                        href={anime ? `/anime/${anime.slug}` : "/browse"}
-                        className="shrink-0 w-12 h-12 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground rounded-full transition-all group"
-                        title="Daftar Episode"
-                    >
-                        <Film className="w-5 h-5" />
-                    </Link>
-
-                    {nextEp ? (
-                        <Link
-                            href={`/watch${urlAnimeId ? `/${urlAnimeId}` : ''}/${nextEp.urlSlug}`}
-                            className="flex-1 flex items-center justify-center sm:justify-end gap-2 sm:gap-4 px-4 py-3 bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded-lg transition-all font-medium group text-right"
-                        >
-                            <div className="hidden sm:block text-right">
-                                <div className="text-xs opacity-70 mb-0.5">Selanjutnya</div>
-                                <div className="truncate">Episode {nextEp.number}</div>
-                            </div>
-                            <span className="sm:hidden">Next Eps</span>
-                            <ChevronRight className="w-5 h-5 shrink-0" />
-                        </Link>
-                    ) : (
-                        <div className="flex-1 px-4 py-3 bg-muted/50 text-muted-foreground rounded-lg flex items-center justify-center sm:justify-end gap-2 sm:gap-4 cursor-not-allowed opacity-50 text-right">
-                            <div className="hidden sm:block text-right">
-                                <div className="text-xs mb-0.5">Selanjutnya</div>
-                                <div>Tidak ada</div>
-                            </div>
-                            <span className="sm:hidden">Next Eps</span>
-                            <ChevronRight className="w-5 h-5" />
-                        </div>
-                    )}
-                </div>
 
                 <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60} className="mt-8 hidden sm:flex" />
             </div>
