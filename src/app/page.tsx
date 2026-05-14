@@ -70,19 +70,36 @@ function normalizeAnime(a: any, provider: string, overrideStatus?: string): Anim
 }
 
 /**
- * Server-side synopsis enrichment — runs during ISR build only.
- * Batch-fetches anime detail (synopsis + genres) for all items,
- * so client receives pre-populated data. Zero client-side API calls.
- * Concurrency-limited to avoid overwhelming the upstream API.
+ * Server-side synopsis enrichment — runs during ISR build only (every 5 min).
+ * 
+ * ⚠️ RATE LIMIT AWARENESS:
+ * Sanka API = 50 requests/minute. This page already uses 3 requests for
+ * list endpoints (ongoing, completed, movies). That leaves ~47 for detail.
+ * 
+ * Safety measures:
+ * - MAX_ENRICH = 20 items only (not all 50+)
+ * - MAX_CONCURRENT = 3 (not 5)
+ * - 2-second delay between batches → max ~21 requests/minute
+ * - getCachedData (L2 DB cache, 1h TTL) prevents actual API hits most of the time
+ * - Worst case (full cold start): 3 + 20 = 23 requests, well under 50/min
  */
 async function enrichWithSynopsis(animes: Anime[], provider: string): Promise<Anime[]> {
-    const MAX_CONCURRENT = 5;
+    const MAX_ENRICH = 20;     // Only enrich first 20 anime (rate limit safety)
+    const MAX_CONCURRENT = 3;  // Max parallel requests per batch
+    const BATCH_DELAY_MS = 2000; // 2-second pause between batches
     const TIMEOUT_MS = 3000;
     const results = [...animes];
 
-    // Process in batches of MAX_CONCURRENT
-    for (let i = 0; i < results.length; i += MAX_CONCURRENT) {
-        const batch = results.slice(i, i + MAX_CONCURRENT);
+    // Only enrich up to MAX_ENRICH items to stay under rate limit
+    const enrichCount = Math.min(results.length, MAX_ENRICH);
+
+    for (let i = 0; i < enrichCount; i += MAX_CONCURRENT) {
+        // Add delay between batches (except the first one)
+        if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+        }
+
+        const batch = results.slice(i, Math.min(i + MAX_CONCURRENT, enrichCount));
         const enriched = await Promise.allSettled(
             batch.map(async (anime) => {
                 // Skip if already has description or is an episode slug
