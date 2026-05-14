@@ -10,37 +10,67 @@ interface BannerAdProps {
 }
 
 /**
- * BannerAd — Reusable atOptions-based banner ad component.
- * Sets atOptions BEFORE loading invoke.js to satisfy Adsterra's requirement.
+ * BannerAd — Reusable Adsterra banner ad component.
+ * 
+ * How Adsterra works:
+ * 1. Set window.atOptions with the ad config
+ * 2. Load invoke.js which reads window.atOptions and creates the iframe
+ * 3. The iframe is inserted as a sibling/child near the script
+ * 
+ * Problem with multiple ads: window.atOptions is a global that gets overwritten.
+ * Solution: Use inline script to set atOptions immediately before invoke.js loads,
+ * ensuring each ad gets the correct config via sequential script execution.
  */
 export function BannerAd({ adKey, width, height, className }: BannerAdProps) {
-    const bannerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const loadedRef = useRef(false);
 
     useEffect(() => {
-        if (!bannerRef.current || bannerRef.current.firstChild) return;
+        if (loadedRef.current) return;
+        if (!containerRef.current) return;
 
-        const conf = document.createElement("script");
-        const script = document.createElement("script");
+        loadedRef.current = true;
 
-        conf.type = "text/javascript";
-        conf.innerHTML = `atOptions = {
-            'key' : '${adKey}',
-            'format' : 'iframe',
-            'height' : ${height},
-            'width' : ${width},
-            'params' : {}
-        };`;
+        const container = containerRef.current;
 
-        script.type = "text/javascript";
-        script.src = `https://glamournakedemployee.com/${adKey}/invoke.js`;
+        // Clear any stale content (React Strict Mode / re-mount)
+        container.innerHTML = "";
 
-        bannerRef.current.appendChild(conf);
-        bannerRef.current.appendChild(script);
+        // Inline config script — executes synchronously before invoke.js
+        const configScript = document.createElement("script");
+        configScript.textContent = `
+            atOptions = {
+                'key' : '${adKey}',
+                'format' : 'iframe',
+                'height' : ${height},
+                'width' : ${width},
+                'params' : {}
+            };
+        `;
+
+        // Invoke script — loads async but reads atOptions set above
+        const invokeScript = document.createElement("script");
+        invokeScript.type = "text/javascript";
+        invokeScript.src = `https://glamournakedemployee.com/${adKey}/invoke.js`;
+
+        // Append config FIRST, then invoke — browser guarantees sequential execution
+        container.appendChild(configScript);
+        container.appendChild(invokeScript);
+
+        return () => {
+            // Cleanup
+            container.innerHTML = "";
+            loadedRef.current = false;
+        };
     }, [adKey, width, height]);
 
     return (
         <div className={`flex justify-center items-center w-full overflow-hidden ${className || ""}`}>
-            <div ref={bannerRef} className="w-full flex justify-center items-center min-h-[90px]"></div>
+            <div
+                ref={containerRef}
+                className="flex justify-center items-center"
+                style={{ minHeight: `${height}px`, minWidth: `${Math.min(width, 320)}px` }}
+            />
         </div>
     );
 }
