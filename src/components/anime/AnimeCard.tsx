@@ -3,13 +3,11 @@
 import Image from "next/image";
 import { AdLink } from "@/components/ads/AdLink";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Star, Play, Clock, Loader2 } from "lucide-react";
+import { Star, Play, Clock } from "lucide-react";
 import { cn, getBlurDataURL } from "@/lib/utils";
 import { useDataSaver } from "@/context/DataSaverContext";
+import { getCachedSynopsis, fetchAndCache } from "@/lib/synopsisCache";
 import Link from "next/link";
-
-// Module-level cache for fetched anime details (persists across re-renders)
-const synopsisCache = new Map<string, { synopsis: string; genres: string[] }>();
 
 interface AnimeCardProps {
     id: string;
@@ -61,11 +59,9 @@ export function AnimeCard({
     const cardRef = useRef<HTMLDivElement>(null);
     const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Lazy-fetch synopsis state
-    const [fetchedSynopsis, setFetchedSynopsis] = useState<string | null>(null);
-    const [fetchedGenres, setFetchedGenres] = useState<string[] | null>(null);
-    const [isFetchingSynopsis, setIsFetchingSynopsis] = useState(false);
-    const fetchAbortRef = useRef<AbortController | null>(null);
+    // Synced state from cache (updated when popover shows)
+    const [cachedSynopsis, setCachedSynopsis] = useState<string>("");
+    const [cachedGenres, setCachedGenres] = useState<string[]>([]);
 
     // Catat penghematan saat mode hemat (tiap card ~50KB gambar)
     useEffect(() => {
@@ -92,66 +88,25 @@ export function AnimeCard({
         return epStr;
     })();
 
-    // Lazy-fetch synopsis when popover is shown and no description available
-    const hasFetchedRef = useRef(false);
-
-    useEffect(() => {
-        if (!showPopover) return;
+    // ═══ Read from cache on hover (instant) or fetch if somehow missed ═══
+    const syncFromCache = useCallback(() => {
         if (isEpisode) return;
-        // Already have description from props
         if (description && description.trim()) return;
-        // Already fetched (either from cache or API)
-        if (hasFetchedRef.current) return;
 
-        const cacheKey = `${animeId}_${source || 'default'}`;
-        const cached = synopsisCache.get(cacheKey);
+        const cached = getCachedSynopsis(animeId, source);
         if (cached) {
-            hasFetchedRef.current = true;
-            setFetchedSynopsis(cached.synopsis);
-            setFetchedGenres(cached.genres);
-            return;
-        }
-
-        // Mark as fetched immediately to prevent duplicate calls
-        hasFetchedRef.current = true;
-        setIsFetchingSynopsis(true);
-
-        const controller = new AbortController();
-        fetchAbortRef.current = controller;
-
-        const url = `/api/anime/${encodeURIComponent(animeId)}${source ? `?source=${source}` : ''}`;
-
-        fetch(url, { signal: controller.signal })
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
-            })
-            .then(json => {
-                if (controller.signal.aborted) return;
-                if (!json?.data) return;
-                const syn = json.data.synopsis || json.data.description || "";
-                const gen: string[] = json.data.genres || [];
-                synopsisCache.set(cacheKey, { synopsis: syn, genres: gen });
-                setFetchedSynopsis(syn);
-                setFetchedGenres(gen);
-            })
-            .catch((err) => {
-                if (err.name === 'AbortError') return;
-                // Silently fail — popover just won't show synopsis
-                setFetchedSynopsis("");
-            })
-            .finally(() => {
-                if (!controller.signal.aborted) {
-                    setIsFetchingSynopsis(false);
+            setCachedSynopsis(cached.synopsis);
+            setCachedGenres(cached.genres);
+        } else {
+            // Fallback: fetch on-demand (shouldn't happen if prefetch worked)
+            fetchAndCache(animeId, source).then(result => {
+                if (result) {
+                    setCachedSynopsis(result.synopsis);
+                    setCachedGenres(result.genres);
                 }
             });
-
-        return () => {
-            controller.abort();
-        };
-    // Only depend on showPopover — other values are stable or tracked by ref
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showPopover]);
+        }
+    }, [animeId, source, description, isEpisode]);
 
     const handleMouseEnter = useCallback(() => {
         if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
@@ -159,8 +114,10 @@ export function AnimeCard({
             const rect = cardRef.current.getBoundingClientRect();
             setPopoverSide(rect.right > window.innerWidth * 0.65 ? 'left' : 'right');
         }
-        hoverTimeoutRef.current = setTimeout(() => setShowPopover(true), 500);
-    }, []);
+        // Sync cache data immediately (before popover appears)
+        syncFromCache();
+        hoverTimeoutRef.current = setTimeout(() => setShowPopover(true), 400);
+    }, [syncFromCache]);
 
     const handleMouseLeave = useCallback(() => {
         if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -170,7 +127,6 @@ export function AnimeCard({
     useEffect(() => {
         return () => {
             if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-            if (fetchAbortRef.current) fetchAbortRef.current.abort();
         };
     }, []);
 
@@ -205,9 +161,9 @@ export function AnimeCard({
     }
 
     // Resolve which synopsis/genres to display
-    // Always prefer fetched data from API (real genres) over props (which may just be type like "TV")
-    const displaySynopsis = (description && description.trim()) ? description : (fetchedSynopsis || "");
-    const displayGenres = (fetchedGenres && fetchedGenres.length > 0) ? fetchedGenres : (genres || []);
+    // Always prefer fetched data from API (real genres) over props
+    const displaySynopsis = (description && description.trim()) ? description : cachedSynopsis;
+    const displayGenres = cachedGenres.length > 0 ? cachedGenres : (genres || []);
 
     return (
         <div
@@ -313,12 +269,7 @@ export function AnimeCard({
                     </div>
 
                     {/* Synopsis / Description */}
-                    {isFetchingSynopsis ? (
-                        <div className="flex items-center gap-2 text-xs text-white/40 mb-2">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Memuat sinopsis...</span>
-                        </div>
-                    ) : displaySynopsis ? (
+                    {displaySynopsis ? (
                         <p className="text-xs text-white/55 line-clamp-4 leading-relaxed mb-2">
                             {displaySynopsis}
                         </p>
