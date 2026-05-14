@@ -271,10 +271,10 @@ export function Header() {
                                 </Link>
                             )}
 
-                            {/* Mobile Sidebar Toggle Button */}
+                            {/* Mobile/Tablet Sidebar Toggle Button */}
                             <button
                                 onClick={() => setMobileMenuOpen(true)}
-                                className="md:hidden relative w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-200"
+                                className="lg:hidden relative w-9 h-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-200"
                                 aria-label="Open menu"
                             >
                                 <Menu className="h-4 w-4 text-white/80" />
@@ -290,12 +290,12 @@ export function Header() {
             {/* 8. MOBILE MENU (Slide-in sidebar) */}
             {mobileMenuOpen && (
                 <div
-                    className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-300"
+                    className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-300"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             )}
 
-            <div className={`fixed top-0 left-0 bottom-0 z-[70] w-72 max-w-[80vw] bg-gray-950/95 backdrop-blur-2xl border-r border-white/10 flex flex-col transition-transform duration-300 ease-out md:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+            <div className={`fixed top-0 left-0 bottom-0 z-[70] w-72 max-w-[80vw] bg-gray-950/95 backdrop-blur-2xl border-r border-white/10 flex flex-col transition-transform duration-300 ease-out lg:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
 
                 {/* Sidebar header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
