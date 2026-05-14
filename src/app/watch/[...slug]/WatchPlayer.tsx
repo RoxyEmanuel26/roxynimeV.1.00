@@ -5,6 +5,16 @@ import { useSession } from "next-auth/react";
 import { SankaStreamServer } from "@/lib/sankaClient";
 import { Play, Loader2, RefreshCw, Server, CheckCircle2, Info } from "lucide-react";
 
+/**
+ * Detect if a URL points to a direct video file (not embeddable in iframe).
+ * These need to be played with a <video> tag instead.
+ */
+function isDirectVideoUrl(url: string): boolean {
+    const videoExtensions = [".mp4", ".webm", ".ogg", ".m3u8", ".mkv", ".avi"];
+    const urlLower = url.toLowerCase().split("?")[0].split("#")[0];
+    return videoExtensions.some(ext => urlLower.endsWith(ext));
+}
+
 interface WatchPlayerProps {
     servers: SankaStreamServer[];
     animeId?: string;
@@ -188,12 +198,24 @@ export default function WatchPlayer({
                         </p>
                     </div>
                 ) : resolvedUrl ? (
-                    <iframe
-                        src={resolvedUrl}
-                        className="w-full h-full border-0 absolute top-0 left-0"
-                        allowFullScreen
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
+                    isDirectVideoUrl(resolvedUrl) ? (
+                        <video
+                            src={resolvedUrl}
+                            className="w-full h-full absolute top-0 left-0 bg-black"
+                            controls
+                            autoPlay
+                            playsInline
+                            crossOrigin="anonymous"
+                        />
+                    ) : (
+                        <iframe
+                            src={resolvedUrl}
+                            className="w-full h-full border-0 absolute top-0 left-0"
+                            allowFullScreen
+                            referrerPolicy="no-referrer-when-downgrade"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        />
+                    )
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                         Pilih server untuk mulai menonton

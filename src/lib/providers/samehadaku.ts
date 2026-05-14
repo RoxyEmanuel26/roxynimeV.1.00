@@ -232,6 +232,12 @@ export const samehadakuProvider: AnimeProvider = {
 
                 const servers: ProviderStreamServer[] = [];
 
+                // Always include defaultStreamingUrl first (most reliable embed)
+                if (data.defaultStreamingUrl) {
+                    servers.push({ name: "Default Player", quality: "auto", streamUrl: data.defaultStreamingUrl });
+                }
+
+                // Add quality-specific servers from the API
                 if (data.server?.qualities) {
                     data.server.qualities.forEach((qg: any) => {
                         const quality = qg.title || "default";
@@ -243,10 +249,6 @@ export const samehadakuProvider: AnimeProvider = {
                             });
                         }
                     });
-                }
-
-                if (servers.length === 0 && data.defaultStreamingUrl) {
-                    servers.push({ name: "Default", quality: "auto", streamUrl: data.defaultStreamingUrl });
                 }
 
                 return servers;
