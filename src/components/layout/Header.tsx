@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
     Search,
@@ -12,10 +11,6 @@ import {
     X,
     Sun,
     Moon,
-    User,
-    LogOut,
-    Heart,
-    History,
     Compass,
     Play,
     Film,
@@ -34,17 +29,14 @@ const NAV_LINKS = [
 ];
 
 export function Header() {
-    const { data: session } = useSession();
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [scrolled, setScrolled] = useState(false);
     const [announcementVisible, setAnnouncementVisible] = useState(true);
     const router = useRouter();
     const pathname = usePathname();
-    const userMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => setMounted(true), []);
 
@@ -55,16 +47,7 @@ export function Header() {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
-    // Close user menu on outside click
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-                setUserMenuOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
+
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -203,73 +186,7 @@ export function Header() {
                                     </div>
                                 </button>
                             )}
-                            {/* 7. SIGN IN / USER DROPDOWN */}
-                            {session ? (
-                                <div className="relative" ref={userMenuRef}>
-                                    <button
-                                        onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                        className="relative w-9 h-9 rounded-full ring-2 ring-white/10 hover:ring-cyan-500/50 transition-all duration-300 overflow-hidden flex items-center justify-center bg-white/5"
-                                    >
-                                        {session.user.image ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={session.user.image}
-                                                alt={session.user.name || "User"}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center text-xs text-white font-bold">
-                                                {session.user.name?.[0] || <User className="h-4 w-4" />}
-                                            </div>
-                                        )}
-                                    </button>
 
-                                    {userMenuOpen && (
-                                        <div className="absolute right-0 mt-3 w-56 bg-gray-950/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                                            <div className="px-4 py-3 border-b border-white/10 bg-white/5">
-                                                <p className="font-semibold text-sm truncate text-white">{session.user.name}</p>
-                                                <p className="text-xs text-white/50 truncate mt-0.5">{session.user.email}</p>
-                                            </div>
-                                            <div className="p-1">
-                                                {[
-                                                    { href: "/profile", icon: User, label: "Profile" },
-                                                    { href: "/profile?tab=history", icon: History, label: "Watch History" },
-                                                    { href: "/profile?tab=favorites", icon: Heart, label: "Favorites" },
-                                                ].map((item) => (
-                                                    <Link
-                                                        key={item.href}
-                                                        href={item.href}
-                                                        className="flex items-center gap-3 px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors m-1"
-                                                        onClick={() => setUserMenuOpen(false)}
-                                                    >
-                                                        <item.icon className="h-4 w-4 text-white/50" />
-                                                        {item.label}
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                            <div className="border-t border-white/10 p-1 mt-1">
-                                                <button
-                                                    onClick={() => signOut()}
-                                                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors m-1"
-                                                >
-                                                    <LogOut className="h-4 w-4" />
-                                                    Sign Out
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <Link
-                                    href="/auth/signin"
-                                    className="hidden sm:inline-flex relative items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white overflow-hidden group transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/25"
-                                >
-                                    <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 group-hover:from-cyan-400 group-hover:to-violet-500 transition-colors duration-300" />
-                                    <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-700 ease-out" />
-                                    <User className="relative h-4 w-4" />
-                                    <span className="relative">Sign In</span>
-                                </Link>
-                            )}
 
                             {/* Mobile/Tablet Sidebar Toggle Button */}
                             <button
@@ -355,46 +272,7 @@ export function Header() {
                     })}
                 </nav>
 
-                {/* Mobile bottom actions */}
-                <div className="p-4 border-t border-white/10 space-y-3 bg-white/[0.02]">
-                    {session ? (
-                        <>
-                            <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/5">
-                                {session.user.image ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={session.user.image} alt="" className="w-8 h-8 rounded-full border border-white/10 object-cover" />
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center text-xs text-white font-bold shadow-inner">
-                                        {session.user.name?.[0] || <User className="h-3 w-3" />}
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-white font-semibold truncate">{session.user.name}</p>
-                                    <p className="text-xs text-white/40 truncate">{session.user.email}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setMobileMenuOpen(false);
-                                    signOut();
-                                }}
-                                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors"
-                            >
-                                <LogOut className="h-4 w-4" />
-                                Sign Out
-                            </button>
-                        </>
-                    ) : (
-                        <Link
-                            href="/auth/signin"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 to-violet-600 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-shadow duration-300"
-                        >
-                            <User className="h-4 w-4" />
-                            Sign In
-                        </Link>
-                    )}
-                </div>
+
             </div>
         </>
     );
