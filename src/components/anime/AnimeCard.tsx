@@ -3,10 +3,13 @@
 import Image from "next/image";
 import { AdLink } from "@/components/ads/AdLink";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Star, Play, Clock } from "lucide-react";
+import { Star, Play, Clock, Loader2 } from "lucide-react";
 import { cn, getBlurDataURL } from "@/lib/utils";
 import { useDataSaver } from "@/context/DataSaverContext";
 import Link from "next/link";
+
+// Module-level cache for fetched anime details (persists across re-renders)
+const synopsisCache = new Map<string, { synopsis: string; genres: string[] }>();
 
 interface AnimeCardProps {
     id: string;
@@ -58,6 +61,12 @@ export function AnimeCard({
     const cardRef = useRef<HTMLDivElement>(null);
     const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Lazy-fetch synopsis state
+    const [fetchedSynopsis, setFetchedSynopsis] = useState<string | null>(null);
+    const [fetchedGenres, setFetchedGenres] = useState<string[] | null>(null);
+    const [isFetchingSynopsis, setIsFetchingSynopsis] = useState(false);
+    const fetchAbortRef = useRef<AbortController | null>(null);
+
     // Catat penghematan saat mode hemat (tiap card ~50KB gambar)
     useEffect(() => {
         if (isHemat) {
@@ -83,6 +92,47 @@ export function AnimeCard({
         return epStr;
     })();
 
+    // Lazy-fetch synopsis when popover is shown and no description available
+    useEffect(() => {
+        if (!showPopover) return;
+        // Already have description from props or fetched
+        if (description && description.trim()) return;
+        if (fetchedSynopsis !== null) return;
+        if (isFetchingSynopsis) return;
+        if (isEpisode) return; // Don't fetch for episode cards
+
+        const cacheKey = `${animeId}_${source || 'default'}`;
+        const cached = synopsisCache.get(cacheKey);
+        if (cached) {
+            setFetchedSynopsis(cached.synopsis);
+            setFetchedGenres(cached.genres);
+            return;
+        }
+
+        setIsFetchingSynopsis(true);
+        const controller = new AbortController();
+        fetchAbortRef.current = controller;
+
+        const url = `/api/anime/${encodeURIComponent(animeId)}${source ? `?source=${source}` : ''}`;
+        fetch(url, { signal: controller.signal })
+            .then(res => res.ok ? res.json() : null)
+            .then(json => {
+                if (!json?.data) return;
+                const syn = json.data.synopsis || json.data.description || "";
+                const gen = json.data.genres || [];
+                synopsisCache.set(cacheKey, { synopsis: syn, genres: gen });
+                setFetchedSynopsis(syn);
+                setFetchedGenres(gen);
+            })
+            .catch(() => {
+                // Silently fail — popover just won't show synopsis
+                setFetchedSynopsis("");
+            })
+            .finally(() => setIsFetchingSynopsis(false));
+
+        return () => controller.abort();
+    }, [showPopover, description, fetchedSynopsis, isFetchingSynopsis, animeId, source, isEpisode]);
+
     const handleMouseEnter = useCallback(() => {
         if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
         if (cardRef.current) {
@@ -100,6 +150,7 @@ export function AnimeCard({
     useEffect(() => {
         return () => {
             if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+            if (fetchAbortRef.current) fetchAbortRef.current.abort();
         };
     }, []);
 
@@ -133,12 +184,14 @@ export function AnimeCard({
         );
     }
 
-    const hasPopoverContent = description || (genres && genres.length > 0);
+    // Resolve which synopsis/genres to display
+    const displaySynopsis = (description && description.trim()) ? description : (fetchedSynopsis || "");
+    const displayGenres = (genres && genres.length > 0) ? genres : (fetchedGenres || []);
 
     return (
         <div
             ref={cardRef}
-            className={cn("group relative fade-in", className)}
+            className={cn("group relative fade-in hover:z-[100]", showPopover ? "z-[100]" : "z-0", className)}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
@@ -204,8 +257,8 @@ export function AnimeCard({
                 )}
             </AdLink>
 
-            {/* ═══ Hover Info Popover — Desktop Only (Pure CSS) ═══ */}
-            {hasPopoverContent && (
+            {/* ═══ Hover Info Popover — Desktop Only ═══ */}
+            {!isEpisode && (
                 <div
                     className={cn(
                         "anime-popover hidden lg:block transition-all duration-200 ease-out",
@@ -238,17 +291,22 @@ export function AnimeCard({
                         )}
                     </div>
 
-                    {/* Description */}
-                    {description && (
+                    {/* Synopsis / Description */}
+                    {isFetchingSynopsis ? (
+                        <div className="flex items-center gap-2 text-xs text-white/40 mb-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Memuat sinopsis...</span>
+                        </div>
+                    ) : displaySynopsis ? (
                         <p className="text-xs text-white/55 line-clamp-4 leading-relaxed mb-2">
-                            {description}
+                            {displaySynopsis}
                         </p>
-                    )}
+                    ) : null}
 
                     {/* Genre Tags */}
-                    {genres && genres.length > 0 && (
+                    {displayGenres.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
-                            {genres.slice(0, 4).map((g, i) => (
+                            {displayGenres.slice(0, 6).map((g, i) => (
                                 <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-white/45">
                                     {g}
                                 </span>
