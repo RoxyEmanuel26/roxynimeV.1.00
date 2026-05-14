@@ -52,7 +52,13 @@ export async function GET(
             streams,
         };
 
-        return NextResponse.json({ data });
+        return NextResponse.json({ data }, {
+            headers: {
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600",
+                "CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600",
+                "Vercel-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600",
+            },
+        });
     } catch (error) {
         console.error("💥 [API /streaming] Error:", error);
         return NextResponse.json(

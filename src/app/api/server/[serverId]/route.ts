@@ -50,6 +50,12 @@ export async function GET(
         return NextResponse.json({
             success: true,
             url: videoUrl
+        }, {
+            headers: {
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600",
+                "CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600",
+                "Vercel-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600",
+            },
         });
     } catch (error) {
         console.error("💥 [API /server] Error:", error);

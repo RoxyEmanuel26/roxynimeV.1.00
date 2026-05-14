@@ -16,6 +16,7 @@ export interface Anime {
     rating?: string;
     type?: string[];
     description?: string;
+    genres?: string[];
     _source?: string;
     status?: string;
 }

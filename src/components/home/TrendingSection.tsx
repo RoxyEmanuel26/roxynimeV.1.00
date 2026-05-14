@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { AnimeCard } from "@/components/anime";
 import type { Anime } from "./HeroSection";
 import { ChevronRight } from "lucide-react";
-import { prefetchBatch } from "@/lib/synopsisCache";
 
 const FILTER_TABS = [
     { id: "all", label: "All", icon: "📺" },
@@ -20,29 +19,6 @@ interface TrendingSectionProps {
 
 export function TrendingSection({ animes }: TrendingSectionProps) {
     const [activeTab, setActiveTab] = useState<string>("all");
-    const prefetchedRef = useRef(false);
-
-    // ═══ Background prefetch — all anime synopsis loaded before first hover ═══
-    useEffect(() => {
-        if (prefetchedRef.current || !animes || animes.length === 0) return;
-        prefetchedRef.current = true;
-
-        // Only prefetch on desktop (lg+) where popover is visible
-        if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
-
-        const abortController = new AbortController();
-
-        prefetchBatch(
-            animes.map(a => ({
-                id: a.id || a.slug || "",
-                source: a._source,
-                description: a.description,
-            })),
-            { signal: abortController.signal }
-        );
-
-        return () => abortController.abort();
-    }, [animes]);
 
     if (!animes || animes.length === 0) return null;
 
@@ -116,6 +92,7 @@ export function TrendingSection({ animes }: TrendingSectionProps) {
                                 priority={index < 5}
                                 status={anime.status}
                                 description={anime.description}
+                                genres={anime.genres}
                             />
                         ))}
                     </div>

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { TrendingSection } from "@/components/home/TrendingSection";
 import { LatestEpisodesSection } from "@/components/home/LatestEpisodesSection";
-import { getOngoingAnimeList, getCompletedAnimeList, getMoviesList } from "@/lib/animbus";
+import { getOngoingAnimeList, getCompletedAnimeList, getMoviesList, getAnimeInfo } from "@/lib/animbus";
 import type { Anime } from "@/components/home/HeroSection";
 
 export const metadata: Metadata = {
@@ -69,6 +69,56 @@ function normalizeAnime(a: any, provider: string, overrideStatus?: string): Anim
     };
 }
 
+/**
+ * Server-side synopsis enrichment — runs during ISR build only.
+ * Batch-fetches anime detail (synopsis + genres) for all items,
+ * so client receives pre-populated data. Zero client-side API calls.
+ * Concurrency-limited to avoid overwhelming the upstream API.
+ */
+async function enrichWithSynopsis(animes: Anime[], provider: string): Promise<Anime[]> {
+    const MAX_CONCURRENT = 5;
+    const TIMEOUT_MS = 3000;
+    const results = [...animes];
+
+    // Process in batches of MAX_CONCURRENT
+    for (let i = 0; i < results.length; i += MAX_CONCURRENT) {
+        const batch = results.slice(i, i + MAX_CONCURRENT);
+        const enriched = await Promise.allSettled(
+            batch.map(async (anime) => {
+                // Skip if already has description or is an episode slug
+                if (anime.description && anime.description.trim()) return anime;
+                const slug = anime.id || anime.slug;
+                if (!slug) return anime;
+                const lower = slug.toLowerCase();
+                if (/-episode-\d+/.test(lower) || /-eps-\d+/.test(lower)) return anime;
+
+                try {
+                    const detail = await fetchWithTimeout(
+                        getAnimeInfo(slug, provider),
+                        TIMEOUT_MS
+                    );
+                    return {
+                        ...anime,
+                        description: detail.synopsis || detail.description || anime.description || "",
+                        genres: detail.genres || anime.genres,
+                    } as Anime;
+                } catch {
+                    return anime; // Keep original on failure
+                }
+            })
+        );
+
+        // Write back enriched results
+        enriched.forEach((result, idx) => {
+            if (result.status === 'fulfilled') {
+                results[i + idx] = result.value;
+            }
+        });
+    }
+
+    return results;
+}
+
 export default async function HomePage() {
   // ═══ Fetch all data in parallel ═══
   const [ongoingData, completedData, moviesData] = await Promise.all([
@@ -133,7 +183,10 @@ export default async function HomePage() {
     }
   }
 
-  if (allAnimes.length === 0) {
+  // ═══ Server-side synopsis enrichment (ISR only, not per-user) ═══
+  const enrichedAnimes = await enrichWithSynopsis(allAnimes, PROVIDER);
+
+  if (enrichedAnimes.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center py-20 px-4 text-center">
         <div className="max-w-md w-full space-y-6">
@@ -169,7 +222,7 @@ export default async function HomePage() {
       </div>
 
       {/* ═══ TRENDING NOW — Grid with Filter Tabs ═══ */}
-      <TrendingSection animes={allAnimes} />
+      <TrendingSection animes={enrichedAnimes} />
 
       {/* ═══ Ads Between Sections ═══ */}
       <NativeAd set="A" className="my-4" />
