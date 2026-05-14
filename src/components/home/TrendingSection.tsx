@@ -92,7 +92,6 @@ export function TrendingSection({ animes }: TrendingSectionProps) {
                                 priority={index < 5}
                                 status={anime.status}
                                 description={anime.description}
-                                genres={Array.isArray(anime.type) ? anime.type : anime.type ? [anime.type] : undefined}
                             />
                         ))}
                     </div>

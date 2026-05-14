@@ -185,8 +185,9 @@ export function AnimeCard({
     }
 
     // Resolve which synopsis/genres to display
+    // Always prefer fetched data from API (real genres) over props (which may just be type like "TV")
     const displaySynopsis = (description && description.trim()) ? description : (fetchedSynopsis || "");
-    const displayGenres = (genres && genres.length > 0) ? genres : (fetchedGenres || []);
+    const displayGenres = (fetchedGenres && fetchedGenres.length > 0) ? fetchedGenres : (genres || []);
 
     return (
         <div
