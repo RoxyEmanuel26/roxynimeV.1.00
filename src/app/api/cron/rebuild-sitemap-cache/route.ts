@@ -2,8 +2,14 @@
  * route.ts - /api/cron/rebuild-sitemap-cache
  * Cron endpoint untuk rebuild sitemap cache.
  * Dipanggil oleh Vercel Cron 1x/hari (jam 01:00 WIB).
- * Menggunakan phase-based execution untuk mengakali Vercel Free 10s limit.
+ * Menggunakan phase-based execution untuk mengakali Vercel Free 60s limit.
  * Dibuat: 20 Mei 2026
+ *
+ * ── Flow ──
+ * Phase 0 (trigger)  : fire-and-forget Phase 1, 2, 3 via selfInvoke()
+ * Phase 1 (anime)    : fetchAllAnime() → public/cache/anime-list.json
+ * Phase 2 (movies)   : fetchAllMovies() → public/cache/movies-list.json
+ * Phase 3 (episodes) : fetchAllEpisodes() → public/cache/watch-list.json + Ping Google
  */
 
 import { type NextRequest } from "next/server";
@@ -20,16 +26,32 @@ import type { AnimeCache } from "@/lib/sitemap-utils";
 /** Security header name untuk proteksi cron endpoint */
 const AUTH_HEADER = "Authorization";
 
+/** Header khusus Vercel Cron — hanya ada di request dari Vercel Cron internal */
+const VERCEL_CRON_HEADER = "x-vercel-cron";
+
 // ── Helpers ───────────────────────────────────────────────────────────
 
 /**
  * Validasi cron secret dari request.
- * Return true jika authorized.
+ * Menerima 2 jenis request:
+ *   1. Vercel Cron internal — header "x-vercel-cron": "1" (trusted, tanpa auth)
+ *   2. Manual call — Authorization: Bearer <CRON_SECRET>
+ *
+ * @param request - Incoming NextRequest
+ * @returns true jika authorized
  */
 function isAuthorized(request: NextRequest): boolean {
+  // 1) Vercel Cron internal — header khusus yang hanya bisa di-set oleh Vercel
+  const isVercelCron = request.headers.get(VERCEL_CRON_HEADER) === "1";
+  if (isVercelCron) {
+    console.log("[cron] Authorized via Vercel Cron header (x-vercel-cron=1)");
+    return true;
+  }
+
+  // 2) Manual call — harus ada Authorization header
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
-    // Jika CRON_SECRET tidak diset (dev mode), izinkan akses
+    // Dev mode: jika CRON_SECRET tidak diset, izinkan semua request
     console.warn("[cron] CRON_SECRET not set — allowing all requests (dev mode)");
     return true;
   }
@@ -39,7 +61,11 @@ function isAuthorized(request: NextRequest): boolean {
   const isValid = authHeader === expected;
 
   if (!isValid) {
-    console.error("[cron] Unauthorized request — wrong or missing Authorization header");
+    console.error(
+      "[cron] Unauthorized — expected x-vercel-cron=1 or valid Authorization header"
+    );
+  } else {
+    console.log("[cron] Authorized via Authorization header (manual call)");
   }
 
   return isValid;
@@ -67,6 +93,7 @@ async function saveCache(
 
 /**
  * Self-invoke: panggil endpoint sendiri dengan phase tertentu.
+ * Fire-and-forget — tidak di-await oleh caller.
  */
 async function selfInvoke(phase: number): Promise<void> {
   try {
@@ -112,27 +139,31 @@ export async function GET(request: NextRequest): Promise<Response> {
   const now = getLastmodWIB();
 
   try {
-    // ── Phase 0: Trigger all phases sequentially via self-invoke ──
+    // ── Phase 0: HANYA trigger — tidak await apa pun ──
     if (phase === 0) {
-      console.log("[cron] Phase 0: Initiating cascade...");
+      console.log("[cron] Phase 0: Triggering all phases via self-invoke...");
 
-      // Phase 1 langsung dijalankan di request ini
-      await executePhase1(now);
-
-      // Phase 2 dan 3 di-trigger async (jangan await agar tidak ngeblok 10s limit)
-      // Gunakan waitUntil jika tersedia (Vercel), atau langsung fire-and-forget
-      selfInvoke(2).catch((err) =>
-        console.error("[cron] Self-invoke phase 2 failed:", err)
+      // Jangan await — fire-and-forget semua phase dengan jeda 100ms
+      // agar tidak overwhelm server dan tidak kena 60s timeout
+      selfInvoke(1).catch((err) =>
+        console.error("[cron] Self-invoke phase 1 failed:", err)
       );
-      selfInvoke(3).catch((err) =>
-        console.error("[cron] Self-invoke phase 3 failed:", err)
-      );
+      setTimeout(() => {
+        selfInvoke(2).catch((err) =>
+          console.error("[cron] Self-invoke phase 2 failed:", err)
+        );
+      }, 100);
+      setTimeout(() => {
+        selfInvoke(3).catch((err) =>
+          console.error("[cron] Self-invoke phase 3 failed:", err)
+        );
+      }, 200);
 
       return Response.json({
         success: true,
         phase: 0,
         message:
-          "Phase 1 complete. Phase 2 & 3 triggered async (self-invoke).",
+          "All phases triggered via self-invoke. Check logs for individual phase results.",
       });
     }
 
@@ -220,8 +251,10 @@ async function executePhase3(now: string): Promise<void> {
 }
 
 /**
- * Vercel Free hanya bisa 10 detik. 
- * Phase 1, 2, 3 masing-masing dijalankan di INVOKASI TERPISAH.
- * Phase 0 hanya trigger, bukan menjalankan semua phase dalam 1 request.
+ * Vercel Free plan:
+ *   - Cron function: max 10 detik (hanya Phase 0 yang dipanggil cron)
+ *   - Non-cron function: max 60 detik (Phase 1, 2, 3 dipanggil via self-invoke HTTP)
+ *   - Kita set maxDuration = 60 untuk semua, karena Phase 0 sendiri selesai < 1 detik
+ *     dan sisanya butuh ~90 detik (Phase 1) / ~35 detik (Phase 3).
  */
-export const maxDuration = 10;
+export const maxDuration = 60;

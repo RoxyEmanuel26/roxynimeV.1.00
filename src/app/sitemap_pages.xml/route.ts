@@ -3,10 +3,16 @@
  * Sitemap untuk halaman statis: /, /browse, /ongoing, /movies, /schedule, /contact, /privacy, /terms, /dmca.
  * Cache-Control: max-age=86400, ISR revalidate=86400.
  * Dibuat: 20 Mei 2026
+ *
+ * ── lastmod strategy ──
+ * Halaman DINAMIS (berubah tiap hari): /, /browse, /ongoing, /movies, /schedule → pakai getLastmodWIB()
+ * Halaman STATIS (jarang berubah): /contact, /privacy, /terms, /dmca → pakai SITE_LAUNCH_DATE hardcode
+ * Ini mencegah Google membuang crawl budget pada halaman yang tidak pernah berubah.
  */
 
 import {
   BASE_URL,
+  SITE_LAUNCH_DATE,
   getLastmodWIB,
   generateUrlsetXML,
   xmlResponse,
@@ -20,6 +26,7 @@ export function GET(): Response {
   const now = getLastmodWIB();
 
   const urls: SitemapURL[] = [
+    // ── DINAMIS — berubah tiap hari, pakai lastmod = sekarang ──
     { loc: `${BASE_URL}/`, lastmod: now, changefreq: "daily", priority: 1.0 },
     {
       loc: `${BASE_URL}/browse`,
@@ -45,27 +52,29 @@ export function GET(): Response {
       changefreq: "weekly",
       priority: 0.8,
     },
+
+    // ── STATIS — jarang berubah, pakai SITE_LAUNCH_DATE hardcode ──
     {
       loc: `${BASE_URL}/contact`,
-      lastmod: now,
+      lastmod: SITE_LAUNCH_DATE,
       changefreq: "yearly",
       priority: 0.3,
     },
     {
       loc: `${BASE_URL}/privacy`,
-      lastmod: now,
+      lastmod: SITE_LAUNCH_DATE,
       changefreq: "yearly",
       priority: 0.3,
     },
     {
       loc: `${BASE_URL}/terms`,
-      lastmod: now,
+      lastmod: SITE_LAUNCH_DATE,
       changefreq: "yearly",
       priority: 0.3,
     },
     {
       loc: `${BASE_URL}/dmca`,
-      lastmod: now,
+      lastmod: SITE_LAUNCH_DATE,
       changefreq: "yearly",
       priority: 0.3,
     },

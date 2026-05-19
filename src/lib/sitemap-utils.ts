@@ -44,6 +44,12 @@ export const CHUNK_SIZE = 1000;
 export const BASE_URL: string =
   process.env.NEXT_PUBLIC_BASE_URL ?? "https://www.roxy.my.id";
 
+/**
+ * Tanggal rilis/last-update halaman statis.
+ * Update konstanta ini jika halaman /contact, /privacy, /terms, /dmca diubah kontennya.
+ */
+export const SITE_LAUNCH_DATE = "2026-05-20T00:00:00+07:00";
+
 // ── Functions ─────────────────────────────────────────────────────────
 
 /**
@@ -79,27 +85,34 @@ export function getLastmodWIB(date?: Date): string {
 }
 
 /**
- * Escape karakter yang tidak valid dalam XML:
- * & → &, < → <, > → >, " → ", ' → '
+ * Escape karakter yang tidak valid dalam XML.
+ * URUTAN WAJIB: & diprocess PERTAMA (sebelum <, >, ", ')
+ * karena & adalah bagian dari representasi entity itu sendiri (&, <, dll).
+ * Jika & tidak diprocess pertama, karakter "<" bisa menjadi "&lt;" (double-encode).
+ *
+ * @param str - String yang akan di-escape
+ * @returns String yang sudah di-escape untuk XML
+ *
+ * @example
+ * escapeXml('Tom & Jerry <3')        // "Tom & Jerry <3"
+ * escapeXml('Say "hello" & bye')     // "Say "hello" & bye"
+ * escapeXml("It's fine & fun")       // "It's fine & fun"
  */
 export function escapeXml(str: string): string {
-  // Gunakan dictionary mapping agar entity HTML tidak dikonversi oleh formatter
-  const ENTITY_MAP: Record<string, string> = {
-    "&": "&" + "amp;",
-    "<": "&" + "lt;",
-    ">": "&" + "gt;",
-    '"': "&" + "quot;",
-    "'": "&" + "apos;",
-  };
+  // Use concatenation to prevent formatter from double-encoding the entities
+  const amp  = "&" + "amp;";
+  const lt   = "&" + "lt;";
+  const gt   = "&" + "gt;";
+  const quot = "&" + "quot;";
+  const apos = "&" + "apos;";
 
-  // Escape & dulu, baru karakter lainnya
-  let result = str;
-  for (const [char, entity] of Object.entries(ENTITY_MAP)) {
-    result = result.replace(new RegExp(char === "&" ? "&" : char, "g"), entity);
-  }
-  return result;
+  return str
+    .replaceAll("&", amp)
+    .replaceAll("<", lt)
+    .replaceAll(">", gt)
+    .replaceAll('"', quot)
+    .replaceAll("'", apos);
 }
-
 /**
  * Generate XML <urlset> lengkap dari array SitemapURL.
  *
