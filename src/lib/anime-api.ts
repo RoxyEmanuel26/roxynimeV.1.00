@@ -19,8 +19,8 @@ const SANKA_API_BASE: string =
 /** Delay antar request (ms) agar tidak kena rate limit 50 req/menit */
 const API_DELAY_MS = 1500;
 
-/** Max pages per fetch — safety untuk Vercel Free 10s execution limit */
-const MAX_PAGES = 17;
+/** Max pages per fetch — diubah sangat besar agar loop berjalan sampai data benar-benar habis di API lokal */
+const MAX_PAGES = 9999;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -246,11 +246,11 @@ export async function fetchAllEpisodes(): Promise<AnimeCacheItem[]> {
   const allItems: AnimeCacheItem[] = [];
   const seen = new Set<string>();
 
-  // Ambil anime slug dari ongoing endpoint (max 3 halaman ≈ 45 anime)
+  // Ambil anime slug dari ongoing endpoint
   const animeSlugs: string[] = [];
   let page = 1;
 
-  while (page <= 3) {
+  while (page <= MAX_PAGES) {
     console.log(
       `[anime-api] Fetching ongoing page ${page} for episode slugs...`
     );
@@ -272,15 +272,15 @@ export async function fetchAllEpisodes(): Promise<AnimeCacheItem[]> {
     }
 
     page++;
-    if (page <= 3) await delay(API_DELAY_MS);
+    if (page <= MAX_PAGES) await delay(API_DELAY_MS);
   }
 
   console.log(
     `[anime-api] Found ${animeSlugs.length} anime slugs for episode fetching`
   );
 
-  // Fetch detail setiap anime (max 20) menggunakan sankaClient.getDetail()
-  const MAX_DETAIL_FETCH = 20;
+  // Fetch detail SELURUH anime menggunakan sankaClient.getDetail()
+  const MAX_DETAIL_FETCH = animeSlugs.length;
   const slugsToFetch = animeSlugs.slice(0, MAX_DETAIL_FETCH);
 
   for (let i = 0; i < slugsToFetch.length; i++) {
