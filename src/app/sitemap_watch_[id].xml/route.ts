@@ -21,7 +21,7 @@ export const revalidate = 86400;
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<any> }
 ): Promise<Response> {
   const { id } = await params;
   const chunkNum = parseInt(id, 10);

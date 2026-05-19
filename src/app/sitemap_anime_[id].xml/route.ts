@@ -19,13 +19,11 @@ import type { AnimeCache, SitemapURL } from "@/lib/sitemap-utils";
 /** ISR: revalidate setiap 24 jam */
 export const revalidate = 86400;
 
-type RouteParams = { params: Promise<{ id: string }> };
-
 export async function GET(
   _request: Request,
-  context: RouteParams
+  { params }: { params: Promise<any> }
 ): Promise<Response> {
-  const { id } = await context.params;
+  const { id } = await params;
   const chunkNum = parseInt(id, 10);
 
   if (isNaN(chunkNum) || chunkNum < 1) {
