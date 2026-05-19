@@ -196,11 +196,11 @@ echo ============================================
 echo   SELESAI — Sitemap cache updated!
 echo ============================================
 echo.
-echo   Test lokal   : http://localhost:3000/sitemap-index
-echo   Test live    : https://www.roxy.my.id/sitemap-index
+echo   Test lokal   : http://localhost:3000/sitemap-index.xml
+echo   Test live    : https://www.roxy.my.id/sitemap-index.xml
 echo.
 echo   Google Search Console — Daftarkan DUA:
-echo     [1] sitemap-index
+echo     [1] sitemap-index.xml
 echo     [2] sitemap_pages.xml
 echo.
 pause
