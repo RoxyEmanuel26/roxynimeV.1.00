@@ -130,9 +130,9 @@ export async function fetchAllAnime(): Promise<AnimeCacheItem[]> {
       const response = await fetchSankaPage(endpoint, page);
 
       if (!response) {
-        // Halaman gagal → lanjut ke halaman berikutnya (atau endpoint berikutnya)
-        page++;
-        continue;
+        // Halaman gagal (biasanya karena sudah mentok di halaman terakhir)
+        console.log(`[anime-api] Mentok di halaman ${page}, pindah ke tahap selanjutnya.`);
+        break;
       }
 
       const animeList = extractAnimeList(response);
@@ -257,8 +257,8 @@ export async function fetchAllEpisodes(): Promise<AnimeCacheItem[]> {
     const response = await fetchSankaPage("/anime/ongoing-anime", page);
 
     if (!response) {
-      page++;
-      continue;
+      console.log(`[anime-api] Mentok di halaman ${page}, lanjut ke proses fetch episodes.`);
+      break;
     }
 
     const animeList = extractAnimeList(response);
