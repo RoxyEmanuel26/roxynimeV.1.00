@@ -59,8 +59,8 @@ del "%TEMP%\sitemap_check.txt" 2>nul
 
 echo     HTTP Status: %HTTP_STATUS%
 
-echo %HTTP_STATUS% | findstr /r "^2[0-9][0-9]$" >nul && goto :server_ok
-echo %HTTP_STATUS% | findstr /r "^3[0-9][0-9]$" >nul && goto :server_ok
+echo %HTTP_STATUS%| findstr /r "2[0-9][0-9]" >nul && goto :server_ok
+echo %HTTP_STATUS%| findstr /r "3[0-9][0-9]" >nul && goto :server_ok
 
 echo [!] Dev server TIDAK BERJALAN (status: %HTTP_STATUS%).
 echo     Tolong jalankan dulu: npm run dev
