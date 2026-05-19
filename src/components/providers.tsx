@@ -4,6 +4,7 @@
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { SessionProvider } from "next-auth/react";
 import { DataSaverProvider } from "@/context/DataSaverContext";
 
 interface ProvidersProps {
@@ -25,16 +26,18 @@ export function Providers({ children }: ProvidersProps) {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider
-                attribute="class"
-                defaultTheme="dark"
-                enableSystem
-                disableTransitionOnChange={false}
-            >
-                <DataSaverProvider>
-                    {children}
-                </DataSaverProvider>
-            </ThemeProvider>
+            <SessionProvider>
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="dark"
+                    enableSystem
+                    disableTransitionOnChange={false}
+                >
+                    <DataSaverProvider>
+                        {children}
+                    </DataSaverProvider>
+                </ThemeProvider>
+            </SessionProvider>
         </QueryClientProvider>
     );
 }

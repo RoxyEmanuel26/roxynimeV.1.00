@@ -22,8 +22,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<any> }
 ): Promise<Response> {
-  const { id } = await params;
-  const chunkNum = parseInt(id, 10);
+  const resolvedParams = await params;
+  const id = resolvedParams?.id;
+  const chunkNum = parseInt(id || "", 10);
 
   if (isNaN(chunkNum) || chunkNum < 1) {
     return xmlResponse(generateUrlsetXML([]), true);
