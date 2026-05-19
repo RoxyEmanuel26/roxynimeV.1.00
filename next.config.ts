@@ -120,6 +120,23 @@ const nextConfig: NextConfig = {
     },
   },
 
+  async rewrites() {
+    return [
+      {
+        source: "/sitemap_anime_:id.xml",
+        destination: "/api/sitemap/anime/:id",
+      },
+      {
+        source: "/sitemap_movies_:id.xml",
+        destination: "/api/sitemap/movies/:id",
+      },
+      {
+        source: "/sitemap_watch_:id.xml",
+        destination: "/api/sitemap/watch/:id",
+      },
+    ];
+  },
+
   // ── Security Headers (improves Lighthouse + SEO) ──
   async headers() {
     return [
