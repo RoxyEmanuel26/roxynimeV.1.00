@@ -4,7 +4,6 @@
  * Dibuat: 20 Mei 2026
  */
 
-import { type NextResponse } from "next/server";
 
 // ── Interfaces ────────────────────────────────────────────────────────
 
@@ -230,6 +229,7 @@ export async function writeCacheFile(
     const json = JSON.stringify(data, null, 2);
     await writeFile(filePath, json, "utf-8");
   } catch (err) {
-    console.error(`[sitemap-utils] Gagal menulis cache file ${filename}:`, err);
-  }
+  console.error(`[sitemap-utils] Gagal menulis cache file ${filename}:`, err);
+  throw err; // ← re-throw agar caller tahu dan bisa handle
+}
 }

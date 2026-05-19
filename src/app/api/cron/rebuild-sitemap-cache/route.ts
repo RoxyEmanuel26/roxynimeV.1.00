@@ -145,26 +145,12 @@ export async function GET(request: NextRequest): Promise<Response> {
 
       // Jangan await — fire-and-forget semua phase dengan jeda 100ms
       // agar tidak overwhelm server dan tidak kena 60s timeout
-      selfInvoke(1).catch((err) =>
-        console.error("[cron] Self-invoke phase 1 failed:", err)
-      );
-      setTimeout(() => {
-        selfInvoke(2).catch((err) =>
-          console.error("[cron] Self-invoke phase 2 failed:", err)
-        );
-      }, 100);
-      setTimeout(() => {
-        selfInvoke(3).catch((err) =>
-          console.error("[cron] Self-invoke phase 3 failed:", err)
-        );
-      }, 200);
+      // Panggil semua sebelum return, tanpa setTimeout
+selfInvoke(1).catch((err) => console.error("[cron] phase 1 failed:", err));
+selfInvoke(2).catch((err) => console.error("[cron] phase 2 failed:", err));
+selfInvoke(3).catch((err) => console.error("[cron] phase 3 failed:", err));
 
-      return Response.json({
-        success: true,
-        phase: 0,
-        message:
-          "All phases triggered via self-invoke. Check logs for individual phase results.",
-      });
+return Response.json({ success: true, phase: 0, message: "All phases triggered." });
     }
 
     // ── Phase 1: Fetch anime (ongoing + completed) ──

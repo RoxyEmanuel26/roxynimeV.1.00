@@ -20,7 +20,7 @@ const SANKA_API_BASE: string =
 const API_DELAY_MS = 1500;
 
 /** Max pages per fetch — safety untuk Vercel Free 10s execution limit */
-const MAX_PAGES = 30;
+const MAX_PAGES = 17;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
