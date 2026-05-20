@@ -56,7 +56,9 @@ export async function GET(
             },
         });
     } catch (error) {
-        console.error("[API /streaming/samehadaku] Error:", error);
+        // [SECURITY FIX] Jangan log raw error object
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error("[API /streaming/samehadaku] Error:", errMsg);
         return NextResponse.json(
             { error: "Failed to resolve server URL" },
             { status: 500 }

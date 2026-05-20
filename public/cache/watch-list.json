@@ -1,7 +1,271 @@
 {
-  "updatedAt": "2026-05-20T06:34:09+07:00",
-  "total": 2912,
+  "updatedAt": "2026-05-21T06:10:21+07:00",
+  "total": 2920,
   "data": [
+    {
+      "slug": "nsot-episode-8-sub-indo",
+      "updatedAt": "21 Mei,2026"
+    },
+    {
+      "slug": "nsot-episode-7-sub-indo",
+      "updatedAt": "14 Mei,2026"
+    },
+    {
+      "slug": "nsot-episode-6-sub-indo",
+      "updatedAt": "7 Mei,2026"
+    },
+    {
+      "slug": "nsot-episode-5-sub-indo",
+      "updatedAt": "30 April,2026"
+    },
+    {
+      "slug": "nsot-episode-4-sub-indo",
+      "updatedAt": "23 April,2026"
+    },
+    {
+      "slug": "nsot-episode-3-sub-indo",
+      "updatedAt": "16 April,2026"
+    },
+    {
+      "slug": "nsot-episode-2-sub-indo",
+      "updatedAt": "9 April,2026"
+    },
+    {
+      "slug": "nsot-episode-1-sub-indo",
+      "updatedAt": "2 April,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-8-sub-indo",
+      "updatedAt": "21 Mei,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-7-sub-indo",
+      "updatedAt": "14 Mei,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-6-sub-indo",
+      "updatedAt": "7 Mei,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-5-sub-indo",
+      "updatedAt": "30 April,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-4-sub-indo",
+      "updatedAt": "23 April,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-3-sub-indo",
+      "updatedAt": "16 April,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-2-sub-indo",
+      "updatedAt": "9 April,2026"
+    },
+    {
+      "slug": "tbat-s2-episode-1-sub-indo",
+      "updatedAt": "2 April,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-8-sub-indo",
+      "updatedAt": "20 Mei,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-7-sub-indo",
+      "updatedAt": "13 Mei,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-6-sub-indo",
+      "updatedAt": "7 Mei,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-5-sub-indo",
+      "updatedAt": "29 April,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-4-sub-indo",
+      "updatedAt": "22 April,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-3-sub-indo",
+      "updatedAt": "15 April,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-2-sub-indo",
+      "updatedAt": "8 April,2026"
+    },
+    {
+      "slug": "jhnuowmws-s3-episode-1-sub-indo",
+      "updatedAt": "2 April,2026"
+    },
+    {
+      "slug": "onygwi-episode-7-sub-indo",
+      "updatedAt": "20 Mei,2026"
+    },
+    {
+      "slug": "onygwi-episode-6-sub-indo",
+      "updatedAt": "14 Mei,2026"
+    },
+    {
+      "slug": "onygwi-episode-5-sub-indo",
+      "updatedAt": "7 Mei,2026"
+    },
+    {
+      "slug": "onygwi-episode-4-sub-indo",
+      "updatedAt": "30 April,2026"
+    },
+    {
+      "slug": "onygwi-episode-3-sub-indo",
+      "updatedAt": "23 April,2026"
+    },
+    {
+      "slug": "onygwi-episode-2-sub-indo",
+      "updatedAt": "16 April,2026"
+    },
+    {
+      "slug": "onygwi-episode-1-sub-indo",
+      "updatedAt": "9 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-10-sub-indo",
+      "updatedAt": "20 Mei,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-9-sub-indo",
+      "updatedAt": "13 Mei,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-8-sub-indo",
+      "updatedAt": "6 Mei,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-7-sub-indo",
+      "updatedAt": "29 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-6-sub-indo",
+      "updatedAt": "22 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-5-sub-indo",
+      "updatedAt": "15 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-4-sub-indo",
+      "updatedAt": "8 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-3-sub-indo",
+      "updatedAt": "3 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-2-sub-indo",
+      "updatedAt": "2 April,2026"
+    },
+    {
+      "slug": "drhd-s2-episode-1-sub-indo",
+      "updatedAt": "2 April,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-7-sub-indo",
+      "updatedAt": "20 Mei,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-6-sub-indo",
+      "updatedAt": "13 Mei,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-5-sub-indo",
+      "updatedAt": "6 Mei,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-4-sub-indo",
+      "updatedAt": "29 April,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-3-sub-indo",
+      "updatedAt": "22 April,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-2-sub-indo",
+      "updatedAt": "15 April,2026"
+    },
+    {
+      "slug": "rezr-isktsu-s4-episode-1-sub-indo",
+      "updatedAt": "8 April,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-7-sub-indo",
+      "updatedAt": "20 Mei,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-6-sub-indo",
+      "updatedAt": "13 Mei,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-5-sub-indo",
+      "updatedAt": "6 Mei,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-4-sub-indo",
+      "updatedAt": "29 April,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-3-sub-indo",
+      "updatedAt": "22 April,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-2-sub-indo",
+      "updatedAt": "15 April,2026"
+    },
+    {
+      "slug": "knjormsu-s5-episode-1-sub-indo",
+      "updatedAt": "8 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-11-sub-indo",
+      "updatedAt": "20 Mei,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-10-sub-indo",
+      "updatedAt": "13 Mei,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-9-sub-indo",
+      "updatedAt": "6 Mei,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-8-sub-indo",
+      "updatedAt": "29 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-7-sub-indo",
+      "updatedAt": "22 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-6-sub-indo",
+      "updatedAt": "15 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-5-sub-indo",
+      "updatedAt": "8 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-4-sub-indo",
+      "updatedAt": "1 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-3-sub-indo",
+      "updatedAt": "1 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-2-sub-indo",
+      "updatedAt": "1 April,2026"
+    },
+    {
+      "slug": "claselit-s4-episode-1-sub-indo",
+      "updatedAt": "1 April,2026"
+    },
     {
       "slug": "hdne-episode-7-sub-indo",
       "updatedAt": "20 Mei,2026"
@@ -3137,238 +3401,6 @@
     {
       "slug": "drstn-s4-p3-episode-1-sub-indo",
       "updatedAt": "2 April,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-7-sub-indo",
-      "updatedAt": "14 Mei,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-6-sub-indo",
-      "updatedAt": "7 Mei,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-5-sub-indo",
-      "updatedAt": "30 April,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-4-sub-indo",
-      "updatedAt": "23 April,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-3-sub-indo",
-      "updatedAt": "16 April,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-2-sub-indo",
-      "updatedAt": "9 April,2026"
-    },
-    {
-      "slug": "tbat-s2-episode-1-sub-indo",
-      "updatedAt": "2 April,2026"
-    },
-    {
-      "slug": "nsot-episode-7-sub-indo",
-      "updatedAt": "14 Mei,2026"
-    },
-    {
-      "slug": "nsot-episode-6-sub-indo",
-      "updatedAt": "7 Mei,2026"
-    },
-    {
-      "slug": "nsot-episode-5-sub-indo",
-      "updatedAt": "30 April,2026"
-    },
-    {
-      "slug": "nsot-episode-4-sub-indo",
-      "updatedAt": "23 April,2026"
-    },
-    {
-      "slug": "nsot-episode-3-sub-indo",
-      "updatedAt": "16 April,2026"
-    },
-    {
-      "slug": "nsot-episode-2-sub-indo",
-      "updatedAt": "9 April,2026"
-    },
-    {
-      "slug": "nsot-episode-1-sub-indo",
-      "updatedAt": "2 April,2026"
-    },
-    {
-      "slug": "onygwi-episode-6-sub-indo",
-      "updatedAt": "14 Mei,2026"
-    },
-    {
-      "slug": "onygwi-episode-5-sub-indo",
-      "updatedAt": "7 Mei,2026"
-    },
-    {
-      "slug": "onygwi-episode-4-sub-indo",
-      "updatedAt": "30 April,2026"
-    },
-    {
-      "slug": "onygwi-episode-3-sub-indo",
-      "updatedAt": "23 April,2026"
-    },
-    {
-      "slug": "onygwi-episode-2-sub-indo",
-      "updatedAt": "16 April,2026"
-    },
-    {
-      "slug": "onygwi-episode-1-sub-indo",
-      "updatedAt": "9 April,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-7-sub-indo",
-      "updatedAt": "13 Mei,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-6-sub-indo",
-      "updatedAt": "7 Mei,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-5-sub-indo",
-      "updatedAt": "29 April,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-4-sub-indo",
-      "updatedAt": "22 April,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-3-sub-indo",
-      "updatedAt": "15 April,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-2-sub-indo",
-      "updatedAt": "8 April,2026"
-    },
-    {
-      "slug": "jhnuowmws-s3-episode-1-sub-indo",
-      "updatedAt": "2 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-9-sub-indo",
-      "updatedAt": "13 Mei,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-8-sub-indo",
-      "updatedAt": "6 Mei,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-7-sub-indo",
-      "updatedAt": "29 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-6-sub-indo",
-      "updatedAt": "22 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-5-sub-indo",
-      "updatedAt": "15 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-4-sub-indo",
-      "updatedAt": "8 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-3-sub-indo",
-      "updatedAt": "3 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-2-sub-indo",
-      "updatedAt": "2 April,2026"
-    },
-    {
-      "slug": "drhd-s2-episode-1-sub-indo",
-      "updatedAt": "2 April,2026"
-    },
-    {
-      "slug": "rezr-isktsu-s4-episode-6-sub-indo",
-      "updatedAt": "13 Mei,2026"
-    },
-    {
-      "slug": "rezr-isktsu-s4-episode-5-sub-indo",
-      "updatedAt": "6 Mei,2026"
-    },
-    {
-      "slug": "rezr-isktsu-s4-episode-4-sub-indo",
-      "updatedAt": "29 April,2026"
-    },
-    {
-      "slug": "rezr-isktsu-s4-episode-3-sub-indo",
-      "updatedAt": "22 April,2026"
-    },
-    {
-      "slug": "rezr-isktsu-s4-episode-2-sub-indo",
-      "updatedAt": "15 April,2026"
-    },
-    {
-      "slug": "rezr-isktsu-s4-episode-1-sub-indo",
-      "updatedAt": "8 April,2026"
-    },
-    {
-      "slug": "knjormsu-s5-episode-6-sub-indo",
-      "updatedAt": "13 Mei,2026"
-    },
-    {
-      "slug": "knjormsu-s5-episode-5-sub-indo",
-      "updatedAt": "6 Mei,2026"
-    },
-    {
-      "slug": "knjormsu-s5-episode-4-sub-indo",
-      "updatedAt": "29 April,2026"
-    },
-    {
-      "slug": "knjormsu-s5-episode-3-sub-indo",
-      "updatedAt": "22 April,2026"
-    },
-    {
-      "slug": "knjormsu-s5-episode-2-sub-indo",
-      "updatedAt": "15 April,2026"
-    },
-    {
-      "slug": "knjormsu-s5-episode-1-sub-indo",
-      "updatedAt": "8 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-10-sub-indo",
-      "updatedAt": "13 Mei,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-9-sub-indo",
-      "updatedAt": "6 Mei,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-8-sub-indo",
-      "updatedAt": "29 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-7-sub-indo",
-      "updatedAt": "22 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-6-sub-indo",
-      "updatedAt": "15 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-5-sub-indo",
-      "updatedAt": "8 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-4-sub-indo",
-      "updatedAt": "1 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-3-sub-indo",
-      "updatedAt": "1 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-2-sub-indo",
-      "updatedAt": "1 April,2026"
-    },
-    {
-      "slug": "claselit-s4-episode-1-sub-indo",
-      "updatedAt": "1 April,2026"
     },
     {
       "slug": "mitnyr-episode-6-sub-indo",

@@ -246,7 +246,9 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error) {
-        console.error("Error fetching anime:", error);
+        // [SECURITY FIX] Jangan log raw error object
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error("Error fetching anime:", errMsg);
         return NextResponse.json(
             { error: "Failed to fetch anime" },
             { status: 500 }

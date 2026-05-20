@@ -104,10 +104,25 @@ const nextConfig: NextConfig = {
         hostname: "objects.nyomo.my.id",
         pathname: "/**",
       },
-      // Google (user avatars)
+      // [SECURITY FIX] Google avatars — wildcard dipersempit ke subdomain spesifik
       {
         protocol: "https",
-        hostname: "*.googleusercontent.com",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lh4.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lh5.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lh6.googleusercontent.com",
         pathname: "/**",
       },
     ],
@@ -138,6 +153,7 @@ const nextConfig: NextConfig = {
   },
 
   // ── Security Headers (improves Lighthouse + SEO) ──
+  // [SECURITY FIX] 21 Mei 2026 — Tambah CSP, X-Robots-Tag, perkuat Permissions-Policy
   async headers() {
     return [
       {
@@ -146,8 +162,28 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // [SECURITY FIX] Permissions-Policy diperluas
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+          },
           { key: "X-DNS-Prefetch-Control", value: "on" },
+          // [SECURITY FIX] Content-Security-Policy ditambahkan
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://glamournakedemployee.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src * data: blob:",
+              "connect-src 'self' https://api.jikan.moe https://www.sankavollerei.com https://www.google.com",
+              "frame-src 'none'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
       {
@@ -155,6 +191,14 @@ const nextConfig: NextConfig = {
         source: "/(.*)\\.(jpg|jpeg|png|gif|ico|svg|webp|avif|woff|woff2|ttf|eot)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      // [SECURITY FIX] Blokir search engine dari indexing API routes
+      {
+        source: "/api/(.*)",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Cache-Control", value: "no-store, no-cache" },
         ],
       },
     ];

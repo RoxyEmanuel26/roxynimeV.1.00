@@ -93,7 +93,9 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error) {
-        console.error("Error searching anime:", error);
+        // [SECURITY FIX] Jangan log raw error object
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error("Error searching anime:", errMsg);
         return NextResponse.json(
             { error: "Failed to search anime" },
             { status: 500 }

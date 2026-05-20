@@ -4,7 +4,7 @@
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { SessionProvider } from "next-auth/react";
+// [SECURITY FIX] SessionProvider dihapus — fitur auth sudah di-decommission
 import { DataSaverProvider } from "@/context/DataSaverContext";
 
 interface ProvidersProps {
@@ -26,19 +26,17 @@ export function Providers({ children }: ProvidersProps) {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <SessionProvider>
-                <ThemeProvider
-                    attribute="class"
-                    defaultTheme="dark"
-                    enableSystem
-                    disableTransitionOnChange={false}
-                >
-                    <DataSaverProvider>
-                        {children}
-                    </DataSaverProvider>
-                </ThemeProvider>
-            </SessionProvider>
+            {/* [SECURITY FIX] SessionProvider wrapper dihapus */}
+            <ThemeProvider
+                attribute="class"
+                defaultTheme="dark"
+                enableSystem
+                disableTransitionOnChange={false}
+            >
+                <DataSaverProvider>
+                    {children}
+                </DataSaverProvider>
+            </ThemeProvider>
         </QueryClientProvider>
     );
 }
-

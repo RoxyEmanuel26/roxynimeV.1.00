@@ -1,2 +1,2 @@
 export * from "./anime";
-export * from "./auth";
+// [SECURITY FIX] auth types dihapus — fitur auth sudah di-decommission
