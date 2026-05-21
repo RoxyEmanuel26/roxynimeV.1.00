@@ -178,7 +178,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src * data: blob:",
               "connect-src 'self' https://api.jikan.moe https://www.sankavollerei.com https://www.google.com",
-              "frame-src 'none'",
+              "frame-src 'self' https:",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
