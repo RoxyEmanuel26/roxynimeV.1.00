@@ -1,7 +1,7 @@
 "use client";
 
 import { useDataSaver } from "@/context/DataSaverContext";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function DataSaverBanner() {
     const { isHemat, toggleHemat, savedBytes } = useDataSaver();

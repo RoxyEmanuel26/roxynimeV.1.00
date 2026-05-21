@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     AnimeProvider, ProviderAnime, ProviderAnimeDetail, ProviderEpisode,
-    ProviderStreamServer, ProviderInfo, PaginatedResponse
+    ProviderStreamServer, PaginatedResponse
 } from "./types";
 import { getCachedData } from "../cache";
 
@@ -144,7 +145,7 @@ export const otakudesuProvider: AnimeProvider = {
                         episodes,
                     };
                 }
-            } catch (e) {
+            } catch {
                 console.log(`[Otakudesu] Detail failed for ${slug}, trying Jikan...`);
             }
 
@@ -196,7 +197,7 @@ export const otakudesuProvider: AnimeProvider = {
         });
     },
 
-    async getMovies(page = 1): Promise<PaginatedResponse<ProviderAnime[]>> {
+    async getMovies(): Promise<PaginatedResponse<ProviderAnime[]>> {
         const response = await this.search("movie");
         const filtered = response.data.filter((a) => {
             const t = a.type?.toLowerCase() || "";

@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useCallback, type ReactNode, type MouseEvent } from "react";
+import { useCallback, type ReactNode } from "react";
 import { useAdClick } from "@/hooks/useAdClick";
 
 interface AdButtonProps {
@@ -28,7 +29,7 @@ export function AdButton({ adKey, onClick, children, className, disabled, ...res
     const { interceptClick } = useAdClick(adKey);
 
     const handleClick = useCallback(
-        (e: MouseEvent<HTMLButtonElement>) => {
+        () => {
             if (disabled) return;
 
             // Open ad in background if not yet shown

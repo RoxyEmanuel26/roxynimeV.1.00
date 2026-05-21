@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Clock, Star, Eye, ChevronRight } from "lucide-react";
+import { Clock, Star, ChevronRight } from "lucide-react";
 import { AdLink } from "@/components/ads/AdLink";
 import type { Anime } from "./HeroSection";
 import { getBlurDataURL } from "@/lib/utils";

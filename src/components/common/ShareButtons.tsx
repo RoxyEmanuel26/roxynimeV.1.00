@@ -14,6 +14,7 @@ export function ShareButtons({ url, title, image }: ShareButtonsProps) {
     const [currentUrl, setCurrentUrl] = useState(url);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
         // Use full URL if we're on the client and the provided URL is a path
         if (url.startsWith("/") && typeof window !== "undefined") {

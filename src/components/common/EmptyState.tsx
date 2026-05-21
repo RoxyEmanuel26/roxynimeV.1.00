@@ -1,4 +1,4 @@
-import { Search, AlertCircle } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface EmptyStateProps {
     title?: string;

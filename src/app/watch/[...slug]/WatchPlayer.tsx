@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SankaStreamServer } from "@/lib/sankaClient";
-import { Play, Loader2, RefreshCw, Server, CheckCircle2, Info } from "lucide-react";
+import { Play, Loader2, RefreshCw, Server, CheckCircle2 } from "lucide-react";
 
 /**
  * Detect if a URL points to a direct video file (not embeddable in iframe).
@@ -16,18 +16,10 @@ function isDirectVideoUrl(url: string): boolean {
 
 interface WatchPlayerProps {
     servers: SankaStreamServer[];
-    animeId?: string;
-    currentEpisode?: number;
-    animeTitle?: string;
-    animeImage?: string;
 }
 
 export default function WatchPlayer({ 
     servers,
-    animeId,
-    currentEpisode = 1,
-    animeTitle,
-    animeImage
 }: WatchPlayerProps) {
     const [activeServer, setActiveServer] = useState<SankaStreamServer | null>(
         servers.length > 0 ? servers[0] : null

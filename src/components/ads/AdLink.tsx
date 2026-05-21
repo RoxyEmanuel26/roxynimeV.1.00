@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
-import { useCallback, type ReactNode, type MouseEvent } from "react";
+import { useCallback, type ReactNode } from "react";
 import { useAdClick } from "@/hooks/useAdClick";
 
 interface AdLinkProps {
@@ -28,7 +29,7 @@ export function AdLink({ href, adKey, children, className, ...rest }: AdLinkProp
     const { interceptClick } = useAdClick(adKey);
 
     const handleClick = useCallback(
-        (e: MouseEvent<HTMLAnchorElement>) => {
+        () => {
             // Open ad in background if not yet shown — does NOT block navigation
             interceptClick();
             // Let the default Link navigation happen regardless

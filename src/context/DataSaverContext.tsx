@@ -25,25 +25,26 @@ const DataSaverContext = createContext<DataSaverContextType>({
 
 export function DataSaverProvider({ children }: { children: ReactNode }) {
     const serverDefault = isModeHemat();
-    const [isHemat, setIsHemat] = useState(serverDefault);
+    const [isHemat, setIsHemat] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("roxynime_mode_hemat");
+            if (saved !== null) return saved === "true";
+        }
+        return serverDefault;
+    });
     const [savedBytes, setSavedBytes] = useState(0);
     const [connectionType, setConnectionType] = useState("unknown");
 
     useEffect(() => {
-        // Baca preferensi user dari localStorage
-        const saved = localStorage.getItem("roxynime_mode_hemat");
-        if (saved !== null) {
-            setIsHemat(saved === "true");
-        } else {
-            setIsHemat(serverDefault);
-        }
-
         // ── Network Information API ──────────────────
         // Deteksi koneksi otomatis:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const nav = navigator as any;
         if (nav.connection) {
             const conn = nav.connection;
-            setConnectionType(conn.effectiveType || "unknown");
+            Promise.resolve().then(() => {
+                setConnectionType(conn.effectiveType || "unknown");
+            });
 
             // Auto-aktifkan mode hemat kalau koneksi 2G/slow-2g
             if (
@@ -51,7 +52,9 @@ export function DataSaverProvider({ children }: { children: ReactNode }) {
                 conn.effectiveType === "slow-2g" ||
                 conn.saveData === true // ← user aktifkan Data Saver di Android!
             ) {
-                setIsHemat(true);
+                Promise.resolve().then(() => {
+                    setIsHemat(true);
+                });
                 localStorage.setItem("roxynime_mode_hemat", "true");
             }
 

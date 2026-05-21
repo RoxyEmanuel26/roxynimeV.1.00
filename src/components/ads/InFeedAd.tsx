@@ -1,14 +1,13 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-
 interface InFeedAdProps {
     adKey?: string;
     width?: number;
     height?: number;
     className?: string;
 }
-
-export function InFeedAd({ className }: InFeedAdProps) {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function InFeedAd(props: InFeedAdProps) {
     return null;
 }

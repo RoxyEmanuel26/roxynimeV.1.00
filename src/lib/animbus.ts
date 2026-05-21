@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getProvider } from "./providers";
 import type {
-    ProviderAnime, ProviderAnimeDetail, ProviderStreamServer,
-    PaginatedResponse, PaginationInfo,
+    ProviderAnime, ProviderAnimeDetail,
+    PaginationInfo,
 } from "./providers";
 
 // Re-export types for backward compatibility
@@ -176,7 +177,7 @@ export async function getAnimeInfo(id: string, source?: string): Promise<AnimeDe
             if (samehadakuData.episodes && samehadakuData.episodes.length > 0) {
                 return toAnimeDetail(samehadakuData);
             }
-        } catch (e) {
+        } catch {
             // Ignore Samehadaku error and fallback to original Otakudesu (Jikan) data
         }
     }
@@ -205,7 +206,7 @@ export async function getEpisodeStreams(episodeId: string, source?: string): Pro
                 if (samehadakuServers && samehadakuServers.length > 0) {
                     servers = samehadakuServers;
                 }
-            } catch (e) {
+            } catch {
                 // Ignore Samehadaku error
             }
         }

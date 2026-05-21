@@ -1,0 +1,205 @@
+Total: 37 errors, 50 warnings
+
+File: src\app\anime\[slug]\page.tsx
+  Summary: 0 errors, 3 warnings
+  [WARNING] Line 10:10 - 'ShareButtons' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 54:14 - 'error' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 69:14 - 'error' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\api\anime\route.ts
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 16:10 - 'getProvider' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\browse\page.tsx
+  Summary: 9 errors, 2 warnings
+  [WARNING] Line 99:5 - 'provider' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [ERROR] Line 150:9 - 'activeProvidersCount' is never reassigned. Use 'const' instead. (prefer-const)
+  [ERROR] Line 158:9 - 'anyHasPrev' is never reassigned. Use 'const' instead. (prefer-const)
+  [ERROR] Line 183:26 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 195:60 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 262:38 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 262:46 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 268:38 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 268:46 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 293:19 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [WARNING] Line 389:9 - 'pages' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\layout.tsx
+  Summary: 0 errors, 2 warnings
+  [WARNING] Line 6:38 - 'BannerAd' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 9:10 - 'SAVER_CONFIG' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\movies\page.tsx
+  Summary: 9 errors, 7 warnings
+  [WARNING] Line 7:10 - 'ChevronLeft' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 7:23 - 'ChevronRight' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 7:37 - 'ChevronsLeft' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 7:51 - 'ChevronsRight' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [ERROR] Line 130:9 - 'activeProviders' is never reassigned. Use 'const' instead. (prefer-const)
+  [ERROR] Line 138:9 - 'anyHasNext' is never reassigned. Use 'const' instead. (prefer-const)
+  [WARNING] Line 138:9 - 'anyHasNext' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [ERROR] Line 139:9 - 'anyHasPrev' is never reassigned. Use 'const' instead. (prefer-const)
+  [ERROR] Line 164:26 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 177:58 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 186:48 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 221:38 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 221:46 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 243:19 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [WARNING] Line 247:6 - React Hook useCallback has missing dependencies: 'addSavedBytes' and 'isHemat'. Either include them or remove the dependency array. (react-hooks/exhaustive-deps)
+  [WARNING] Line 303:9 - 'pages' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\ongoing\page.tsx
+  Summary: 8 errors, 1 warnings
+  [ERROR] Line 131:9 - 'activeProviders' is never reassigned. Use 'const' instead. (prefer-const)
+  [ERROR] Line 139:9 - 'anyHasPrev' is never reassigned. Use 'const' instead. (prefer-const)
+  [ERROR] Line 164:26 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 177:58 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 187:44 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 250:38 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 250:46 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 272:19 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [WARNING] Line 331:9 - 'pages' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\page.tsx
+  Summary: 5 errors, 0 warnings
+  [ERROR] Line 44:28 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 144:47 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 151:47 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 158:47 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [ERROR] Line 222:13 - Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages (@next/next/no-html-link-for-pages)
+
+File: src\app\watch\[...slug]\WatchPlayer.tsx
+  Summary: 0 errors, 6 warnings
+  [WARNING] Line 3:44 - 'useRef' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 5:58 - 'Info' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 27:5 - 'animeId' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 28:5 - 'currentEpisode' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 29:5 - 'animeTitle' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 30:5 - 'animeImage' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\app\watch\[...slug]\page.tsx
+  Summary: 0 errors, 2 warnings
+  [WARNING] Line 3:10 - 'notFound' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 45:14 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\ads\AdButton.tsx
+  Summary: 1 errors, 1 warnings
+  [ERROR] Line 18:20 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [WARNING] Line 31:10 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\ads\AdLink.tsx
+  Summary: 1 errors, 1 warnings
+  [ERROR] Line 17:20 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+  [WARNING] Line 31:10 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\ads\InFeedAd.tsx
+  Summary: 0 errors, 2 warnings
+  [WARNING] Line 3:10 - 'cn' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 12:28 - 'className' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\ads\InterstitialAd.tsx
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 9:32 - 'props' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\anime\SearchFilter.tsx
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 21:7 - 'TYPES' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\common\DataSaverBanner.tsx
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 4:10 - 'useEffect' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\common\EmptyState.tsx
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 1:18 - 'AlertCircle' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\home\LatestEpisodesSection.tsx
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 6:23 - 'Eye' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\layout\Header.tsx
+  Summary: 0 errors, 1 warnings
+  [WARNING] Line 21:10 - 'BannerAd' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\components\player\VideoPlayer.tsx
+  Summary: 2 errors, 7 warnings
+  [WARNING] Line 69:11 - The 'handleServerClick' function makes the dependencies of useEffect Hook (at line 131) change on every render. To fix this, wrap the definition of 'handleServerClick' in its own useCallback() Hook. (react-hooks/exhaustive-deps)
+  [ERROR] Line 129:13 - Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\00 projek rumah\antigravity\roxynime\src\components\player\VideoPlayer.tsx:129:13
+  127 |
+  128 |             // Auto-select this server (will trigger handleServerClick logic via manual call)
+> 129 |             handleServerClick(firstServer);
+      |             ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  130 |         }
+  131 |     }, [availableServers, selectedServer, handleServerClick]);
+  132 | (react-hooks/set-state-in-effect)
+  [ERROR] Line 192:13 - Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\00 projek rumah\antigravity\roxynime\src\components\player\VideoPlayer.tsx:192:13
+  190 |     useEffect(() => {
+  191 |         if (selectedStreamUrl) {
+> 192 |             setIsLoading(true);
+      |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  193 |         }
+  194 |     }, [selectedStreamUrl]);
+  195 | (react-hooks/set-state-in-effect)
+  [WARNING] Line 280:11 - 'togglePlay' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 290:11 - 'toggleMute' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 297:11 - 'toggleFullscreen' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 307:11 - 'handleSeek' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 315:11 - 'handleVolumeChange' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 324:11 - 'skip' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\config\dataSaver.ts
+  Summary: 1 errors, 0 warnings
+  [ERROR] Line 80:30 - Unexpected any. Specify a different type. (@typescript-eslint/no-explicit-any)
+
+File: src\context\DataSaverContext.tsx
+  Summary: 1 errors, 0 warnings
+  [ERROR] Line 45:13 - Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\00 projek rumah\antigravity\roxynime\src\context\DataSaverContext.tsx:45:13
+  43 |         if (nav.connection) {
+  44 |             const conn = nav.connection;
+> 45 |             setConnectionType(conn.effectiveType || "unknown");
+     |             ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  46 |
+  47 |             // Auto-aktifkan mode hemat kalau koneksi 2G/slow-2g
+  48 |             if ( (react-hooks/set-state-in-effect)
+
+File: src\lib\animbus.ts
+  Summary: 0 errors, 4 warnings
+  [WARNING] Line 4:41 - 'ProviderStreamServer' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 5:5 - 'PaginatedResponse' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 180:18 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 209:22 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\lib\providers\otakudesu.ts
+  Summary: 0 errors, 3 warnings
+  [WARNING] Line 4:27 - 'ProviderInfo' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 148:22 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 200:21 - 'page' is assigned a value but never used. (@typescript-eslint/no-unused-vars)
+
+File: src\lib\sankaClient.ts
+  Summary: 0 errors, 2 warnings
+  [WARNING] Line 375:22 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)
+  [WARNING] Line 449:30 - 'e' is defined but never used. (@typescript-eslint/no-unused-vars)

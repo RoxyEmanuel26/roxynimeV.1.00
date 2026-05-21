@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import * as animbus from "@/lib/animbus";
 import { ChevronLeft, ChevronRight, Home, Info, Film } from "lucide-react";
 import WatchPlayer from "./WatchPlayer";
@@ -42,7 +41,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
                 if (anime.image) image = anime.image;
             }
         }
-    } catch (e) {
+    } catch {
         // Fallback on error
     }
 
@@ -292,10 +291,6 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
                 {/* Video Player Component (Client) */}
                 <WatchPlayer 
                     servers={servers} 
-                    animeId={anime?.slug || urlAnimeId} 
-                    currentEpisode={currentEpNumber ? parseInt(currentEpNumber) : 1}
-                    animeTitle={anime?.title || formattedTitle}
-                    animeImage={anime?.image || ""}
                 />
 
                 <BannerAd adKey="dd5f08b2cef41d33b6c75282914cefd4" width={468} height={60} className="mt-8 hidden sm:flex" />

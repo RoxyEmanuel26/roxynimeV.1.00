@@ -1,4 +1,5 @@
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getCachedData } from "./cache";
 
 const SANKA_API_BASE = process.env.SANKA_API_BASE || "https://www.sankavollerei.com";
@@ -371,7 +372,7 @@ export const sankaClient = {
                     if (isDev) console.log(`✅ [Sanka] Found anime: ${anime.title}`);
                     return { ...anime, episodes };
                 }
-            } catch (e) {
+            } catch {
                 if (isDev) console.log(`⚠️ [Sanka] Failed for ${slug}, trying Jikan fallback...`);
             }
 
@@ -445,7 +446,7 @@ export const sankaClient = {
                     try {
                         const errorBody = await res.text();
                         console.error('Error Body:', errorBody);
-                    } catch (e) { /* ignore */ }
+                    } catch { /* ignore */ }
                     throw new Error(`Episode not found: ${res.status}`);
                 }
 

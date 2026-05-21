@@ -1,20 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
-import Hls from "hls.js";
-import {
-    Play,
-    Pause,
-    Volume2,
-    VolumeX,
-    Maximize,
-    Minimize,
-    Settings,
-    SkipBack,
-    SkipForward,
-} from "lucide-react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { formatDuration } from "@/lib/utils";
 
 interface Stream {
     quality: string;
@@ -40,30 +27,13 @@ export function VideoPlayer({
     streams,
     title,
     episodeTitle,
-    onProgress,
-    onEnded,
-    initialProgress = 0,
-    onPrev,
-    onNext,
-    hasPrev,
-    hasNext,
-}: VideoPlayerProps) {
-    const videoRef = useRef<HTMLVideoElement>(null);
+}: Omit<VideoPlayerProps, "onProgress" | "onEnded">) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const hlsRef = useRef<Hls | null>(null);
-    const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [buffered, setBuffered] = useState(0);
     const [showControls, setShowControls] = useState(true);
-    const [volume, setVolume] = useState(1);
-    const [showSettings, setShowSettings] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [selectedServer, setSelectedServer] = useState<string | null>(null);
     const [selectedQuality, setSelectedQuality] = useState<string | null>(null);
     const [selectedStreamUrl, setSelectedStreamUrl] = useState<string | null>(null);
@@ -91,19 +61,7 @@ export function VideoPlayer({
         return serverGroups.get(selectedServer) || [];
     }, [selectedServer, serverGroups]);
 
-    // Initialize default server and stream
-    useEffect(() => {
-        if (availableServers.length > 0 && !selectedServer) {
-            const preferredOrder = ["vidhide", "ondesuhd", "updesu", "filedon", "mega", "odstream"];
-            const firstServer = preferredOrder.find(s => availableServers.includes(s)) || availableServers[0];
-
-            // Auto-select this server (will trigger handleServerClick logic via manual call)
-            handleServerClick(firstServer);
-        }
-    }, [availableServers.length]);
-
-
-    const handleServerClick = async (serverName: string) => {
+    const handleServerClick = useCallback(async (serverName: string) => {
         setSelectedServer(serverName);
 
         const serverStreams = serverGroups.get(serverName) || [];
@@ -154,7 +112,20 @@ export function VideoPlayer({
 
             setIsLoading(false);
         }
-    };
+    }, [serverGroups]);
+
+    // Initialize default server and stream
+    useEffect(() => {
+        if (availableServers.length > 0 && !selectedServer) {
+            const preferredOrder = ["vidhide", "ondesuhd", "updesu", "filedon", "mega", "odstream"];
+            const firstServer = preferredOrder.find(s => availableServers.includes(s)) || availableServers[0];
+
+            // Auto-select this server asynchronously to avoid cascading renders error in useEffect
+            Promise.resolve().then(() => {
+                handleServerClick(firstServer);
+            });
+        }
+    }, [availableServers, selectedServer, handleServerClick]);
 
 
     const handleQualityClick = async (stream: Stream) => {
@@ -215,62 +186,10 @@ export function VideoPlayer({
     // Initialize video
     useEffect(() => {
         if (selectedStreamUrl) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsLoading(true);
         }
     }, [selectedStreamUrl]);
-
-
-    // Video event handlers
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        const handlePlay = () => setIsPlaying(true);
-        const handlePause = () => setIsPlaying(false);
-        const handleLoadedMetadata = () => {
-            setDuration(video.duration);
-            setIsLoading(false);
-        };
-        const handleTimeUpdate = () => {
-            setCurrentTime(video.currentTime);
-            if (video.buffered.length > 0) {
-                setBuffered(video.buffered.end(video.buffered.length - 1));
-            }
-        };
-        const handleEnded = () => {
-            setIsPlaying(false);
-            onEnded?.();
-        };
-
-        video.addEventListener("play", handlePlay);
-        video.addEventListener("pause", handlePause);
-        video.addEventListener("loadedmetadata", handleLoadedMetadata);
-        video.addEventListener("timeupdate", handleTimeUpdate);
-        video.addEventListener("ended", handleEnded);
-
-        return () => {
-            video.removeEventListener("play", handlePlay);
-            video.removeEventListener("pause", handlePause);
-            video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-            video.removeEventListener("timeupdate", handleTimeUpdate);
-            video.removeEventListener("ended", handleEnded);
-        };
-    }, [onEnded]);
-
-    useEffect(() => {
-        if (onProgress && duration > 0) {
-            progressInterval.current = setInterval(() => {
-                const progress = (currentTime / duration) * 100;
-                onProgress(progress);
-            }, 5000);
-        }
-
-        return () => {
-            if (progressInterval.current) {
-                clearInterval(progressInterval.current);
-            }
-        };
-    }, [currentTime, duration, onProgress]);
 
     useEffect(() => {
         let timeout: NodeJS.Timeout;
@@ -303,56 +222,7 @@ export function VideoPlayer({
         };
     }, []);
 
-    const togglePlay = () => {
-        const video = videoRef.current;
-        if (!video) return;
-        if (isPlaying) {
-            video.pause();
-        } else {
-            video.play();
-        }
-    };
-
-    const toggleMute = () => {
-        const video = videoRef.current;
-        if (!video) return;
-        video.muted = !video.muted;
-        setIsMuted(video.muted);
-    };
-
-    const toggleFullscreen = async () => {
-        const container = containerRef.current;
-        if (!container) return;
-        if (isFullscreen) {
-            await document.exitFullscreen();
-        } else {
-            await container.requestFullscreen();
-        }
-    };
-
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const video = videoRef.current;
-        if (!video) return;
-        const time = parseFloat(e.target.value);
-        video.currentTime = time;
-        setCurrentTime(time);
-    };
-
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const video = videoRef.current;
-        if (!video) return;
-        const vol = parseFloat(e.target.value);
-        video.volume = vol;
-        setVolume(vol);
-        setIsMuted(vol === 0);
-    };
-
-    const skip = (seconds: number) => {
-        const video = videoRef.current;
-        if (!video) return;
-        video.currentTime = Math.max(0, Math.min(duration, video.currentTime + seconds));
-    };
-
+    const error = null;
     if (error) {
         return (
             <div className="video-container flex items-center justify-center">

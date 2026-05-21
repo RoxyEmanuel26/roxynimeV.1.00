@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
@@ -95,8 +96,7 @@ function BrowseContent() {
   const buildBrowseUrl = (
     page: number,
     query: string,
-    f: FilterState,
-    provider: string = "all"
+    f: FilterState
   ): string => {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
@@ -147,7 +147,7 @@ function BrowseContent() {
             pageNum === 1 || providerHasNextRef.current[p] !== false
           );
     
-    let activeProvidersCount = providersToFetch.length;
+    const activeProvidersCount = providersToFetch.length;
 
     if (activeProvidersCount === 0) {
         setLoading(false);
@@ -155,7 +155,7 @@ function BrowseContent() {
         return;
     }
 
-    let anyHasPrev = pageNum > 1;
+    const anyHasPrev = pageNum > 1;
     let maxTotalPages = pageNum;
     let totalItemsAcc = 0;
 
@@ -324,7 +324,7 @@ function BrowseContent() {
     (page: number) => {
       if (loading) return;
       const clamped = Math.max(1, page);
-      router.replace(buildBrowseUrl(clamped, searchQuery, filters, selectedProvider), {
+      router.replace(buildBrowseUrl(clamped, searchQuery, filters), {
         scroll: false,
       });
       fetchAnime(clamped, searchQuery, filters, selectedProvider);
@@ -335,7 +335,7 @@ function BrowseContent() {
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      router.replace(buildBrowseUrl(1, query, filters, selectedProvider), { scroll: false });
+      router.replace(buildBrowseUrl(1, query, filters), { scroll: false });
       fetchAnime(1, query, filters, selectedProvider);
     },
     [filters, selectedProvider, router, fetchAnime]
@@ -344,7 +344,7 @@ function BrowseContent() {
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
       setFilters(newFilters);
-      router.replace(buildBrowseUrl(1, searchQuery, newFilters, selectedProvider), {
+      router.replace(buildBrowseUrl(1, searchQuery, newFilters), {
         scroll: false,
       });
       fetchAnime(1, searchQuery, newFilters, selectedProvider);
@@ -355,7 +355,7 @@ function BrowseContent() {
   const handleProviderChange = useCallback(
     (newProvider: string) => {
       setSelectedProvider(newProvider);
-      router.replace(buildBrowseUrl(1, searchQuery, filters, newProvider), {
+      router.replace(buildBrowseUrl(1, searchQuery, filters), {
         scroll: false,
       });
       fetchAnime(1, searchQuery, filters, newProvider);
@@ -368,25 +368,6 @@ function BrowseContent() {
   // If API says no more pages but we still got a full page, trust the data
   const effectiveTotalPages =
     hasMore && totalPages <= currentPage ? currentPage + 1 : Math.max(totalPages, 1);
-
-  const paginationNumbers = (): (number | "...")[] => {
-    if (effectiveTotalPages <= 7) {
-      return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
-    }
-
-    const pages: (number | "...")[] = [1];
-    const left = Math.max(2, currentPage - 1);
-    const right = Math.min(effectiveTotalPages - 1, currentPage + 1);
-
-    if (left > 2) pages.push("...");
-    for (let i = left; i <= right; i++) pages.push(i);
-    if (right < effectiveTotalPages - 1) pages.push("...");
-    pages.push(effectiveTotalPages);
-
-    return pages;
-  };
-
-  const pages = paginationNumbers();
 
   // ── Render ─────────────────────────────────────────────────────────────────
   // MODE HEMAT: show dedicated UI

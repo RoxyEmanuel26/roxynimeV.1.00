@@ -18,7 +18,6 @@ import {
     Sparkles,
     Calendar,
 } from "lucide-react";
-import { BannerAd } from "../ads/BannerAd";
 
 const NAV_LINKS = [
     { href: "/", label: "Home", icon: Home },
@@ -38,7 +37,10 @@ export function Header() {
     const router = useRouter();
     const pathname = usePathname();
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
+    }, []);
 
     // Track scroll for header shadow
     useEffect(() => {

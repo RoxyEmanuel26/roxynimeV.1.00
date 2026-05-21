@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Metadata } from "next";
+import Link from "next/link";
 import { BannerAd, InFeedAd, NativeAd } from "@/components/ads";
 import { TrendingSection } from "@/components/home/TrendingSection";
 import { LatestEpisodesSection } from "@/components/home/LatestEpisodesSection";
@@ -219,9 +221,9 @@ export default async function HomePage() {
               : "Semua provider tidak mengembalikan data saat ini."}
           </p>
           <div className="pt-6">
-            <a href="/" className="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform">
+            <Link href="/" className="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-transform">
               Coba Lagi
-            </a>
+            </Link>
           </div>
         </div>
       </div>

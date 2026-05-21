@@ -3,10 +3,9 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header, Footer } from "@/components/layout";
-import { PopunderAd, StickyMobileAd, BannerAd } from "@/components/ads";
+import { PopunderAd, StickyMobileAd } from "@/components/ads";
 import { DataSaverBanner } from "@/components/common/DataSaverBanner";
 import { DisablePrefetch } from "@/components/common/DisablePrefetch";
-import { SAVER_CONFIG } from "@/config/dataSaver";
 import { VERIFICATION_META_TAGS } from "@/config/ads.config";
 
 const inter = Inter({

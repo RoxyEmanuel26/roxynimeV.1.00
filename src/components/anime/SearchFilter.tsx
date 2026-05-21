@@ -18,12 +18,6 @@ export interface FilterState {
     order: string;
 }
 
-const TYPES = [
-    { value: "", label: "All Types" },
-    { value: "ongoing", label: "Ongoing" },
-    { value: "completed", label: "Completed" },
-    { value: "movie", label: "Movie" },
-];
 
 const GENRES = [
     { value: "", label: "All Genres" },

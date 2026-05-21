@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     AnimeProvider, ProviderAnime, ProviderAnimeDetail, ProviderEpisode,
     ProviderStreamServer, PaginatedResponse

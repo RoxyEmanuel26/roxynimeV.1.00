@@ -7,7 +7,6 @@ import { Play, Calendar, Star, Film, Clock, ChevronRight } from "lucide-react";
 import { BannerAd, InFeedAd, SidebarAd } from "@/components/ads";
 import { AdLink } from "@/components/ads/AdLink";
 import { getBlurDataURL } from "@/lib/utils";
-import { ShareButtons } from "@/components/common/ShareButtons";
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -51,7 +50,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
                 images: [anime.poster || "/placeholder-anime.svg"],
             }
         };
-    } catch (error) {
+    } catch {
         return {
             title: "Anime Not Found — RoxyNime",
         };
@@ -66,7 +65,7 @@ export default async function AnimeDetailPage({ params, searchParams }: PageProp
     let anime;
     try {
         anime = await animbus.getAnimeInfo(slug, source);
-    } catch (error) {
+    } catch {
         notFound();
     }
 

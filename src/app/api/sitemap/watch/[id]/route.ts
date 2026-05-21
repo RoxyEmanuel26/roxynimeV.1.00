@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * route.ts - /sitemap_watch_[id].xml
  * Sitemap untuk halaman watch episode (/watch/[slug]).

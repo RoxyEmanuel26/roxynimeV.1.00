@@ -25,18 +25,22 @@ interface ProviderSelectorProps {
 }
 
 export function ProviderSelector({ onProviderChange, className }: ProviderSelectorProps) {
-    const [selectedId, setSelectedId] = useState("otakudesu");
+    const [selectedId, setSelectedId] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved && PROVIDERS.find((p) => p.id === saved)) {
+                return saved;
+            }
+        }
+        return "otakudesu";
+    });
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Load from localStorage on mount
+    // Notify parent on mount/initial value
     useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved && PROVIDERS.find((p) => p.id === saved)) {
-            setSelectedId(saved);
-            onProviderChange(saved);
-        }
-    }, [onProviderChange]);
+        onProviderChange(selectedId);
+    }, [onProviderChange, selectedId]);
 
     // Close dropdown when clicking outside
     useEffect(() => {

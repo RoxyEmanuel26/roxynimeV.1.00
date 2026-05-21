@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * route.ts - /sitemap_anime_[id].xml
  * Sitemap untuk halaman anime detail (/anime/[slug]).

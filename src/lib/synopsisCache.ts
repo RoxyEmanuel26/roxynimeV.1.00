@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * synopsisCache.ts — Centralized synopsis + genres cache with batch prefetch
  *

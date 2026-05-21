@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimeGrid, SearchFilter, type FilterState } from "@/components/anime";
 import { BannerAd, SidebarAd, InFeedAd, NativeAd } from "@/components/ads";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Zap } from "lucide-react";
+import { RefreshCw, Zap } from "lucide-react";
 import { PaginationControl } from "@/components/common/PaginationControl";
 import { useDataSaver } from "@/context/DataSaverContext";
 import { DataSaverToggle } from "@/components/common/DataSaverToggle";
@@ -127,7 +128,7 @@ function MoviesContent() {
         pageNum === 1 || providerHasNextRef.current[provider] !== false
     );
     
-    let activeProviders = providersToFetch.length;
+    const activeProviders = providersToFetch.length;
 
     if (activeProviders === 0) {
         setLoading(false);
@@ -135,8 +136,7 @@ function MoviesContent() {
         return;
     }
 
-    let anyHasNext = false;
-    let anyHasPrev = pageNum > 1;
+    const anyHasPrev = pageNum > 1;
     let maxTotalPages = pageNum;
     let totalItemsAcc = 0;
 
@@ -244,7 +244,7 @@ function MoviesContent() {
         if (err?.name === "AbortError") return;
         console.error(`[Movies] Promise.allSettled error:`, err);
     }
-  }, []);
+  }, [isHemat, addSavedBytes]);
 
   // FIXED: HAPUS effect #2 yang konflik, sisakan effect mount ini saja
   useEffect(() => {
@@ -285,22 +285,6 @@ function MoviesContent() {
 
   const effectiveTotalPages =
     hasMore && totalPages <= currentPage ? currentPage + 1 : Math.max(totalPages, 1);
-
-  const paginationNumbers = (): (number | "...")[] => {
-    if (effectiveTotalPages <= 7) {
-      return Array.from({ length: effectiveTotalPages }, (_, i) => i + 1);
-    }
-    const pages: (number | "...")[] = [1];
-    const left = Math.max(2, currentPage - 1);
-    const right = Math.min(effectiveTotalPages - 1, currentPage + 1);
-    if (left > 2) pages.push("...");
-    for (let i = left; i <= right; i++) pages.push(i);
-    if (right < effectiveTotalPages - 1) pages.push("...");
-    pages.push(effectiveTotalPages);
-    return pages;
-  };
-
-  const pages = paginationNumbers();
 
   // MODE HEMAT: show dedicated UI
   if (isHemat) {

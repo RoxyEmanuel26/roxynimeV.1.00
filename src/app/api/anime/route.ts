@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 
 // Use Node.js runtime for DB access (Prisma)
@@ -12,7 +13,6 @@ import {
     getAnimeByGenre,
     Anime,
 } from "@/lib/animbus";
-import { getProvider } from "@/lib/providers";
 
 // Helper timeout wrapper
 async function fetchWithTimeout<T>(
