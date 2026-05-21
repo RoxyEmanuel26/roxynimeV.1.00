@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getProvider } from "./providers";
+import { getCachedData } from "./cache";
 import type {
     ProviderAnime, ProviderAnimeDetail,
     PaginationInfo,
@@ -74,248 +75,276 @@ function toAnimeDetail(p: ProviderAnimeDetail): AnimeDetail {
 // --- Public API (backward-compatible) ---
 
 export async function getTrendingAnime(source?: string): Promise<Anime[]> {
-    const provider = getProvider(source);
-    const data = await provider.getHome();
-    return data.map(toAnime);
+    const key = `trending:${source || "default"}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
+        const data = await provider.getHome();
+        return data.map(toAnime);
+    }, 15 * 60 * 1000); // 15 minutes cache
 }
 
 export async function getOngoingAnimeList(page = 1, source?: string): Promise<AnimeListResponse> {
-    const provider = getProvider(source);
-    const response = await provider.getOngoing(page);
-    return {
-        data: response.data.map(toAnime),
-        pagination: response.pagination,
-    };
+    const key = `ongoing:${source || "default"}:page:${page}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
+        const response = await provider.getOngoing(page);
+        return {
+            data: response.data.map(toAnime),
+            pagination: response.pagination,
+        };
+    }, 15 * 60 * 1000);
 }
 
 export async function getCompletedAnimeList(page = 1, source?: string): Promise<AnimeListResponse> {
-    const provider = getProvider(source);
-    const response = await provider.getCompleted(page);
-    return {
-        data: response.data.map(toAnime),
-        pagination: response.pagination,
-    };
+    const key = `completed:${source || "default"}:page:${page}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
+        const response = await provider.getCompleted(page);
+        return {
+            data: response.data.map(toAnime),
+            pagination: response.pagination,
+        };
+    }, 30 * 60 * 1000); // 30 minutes cache
 }
 
 export async function getMoviesList(page = 1, source?: string): Promise<AnimeListResponse> {
-    const provider = getProvider(source);
+    const key = `movies:${source || "default"}:page:${page}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
 
-    if (provider.getMovies) {
-        const response = await provider.getMovies(page);
-        return {
-            data: response.data.map(toAnime),
-            pagination: response.pagination,
-        };
-    }
-
-    // Fallback: search for "movie"
-    const response = await provider.search("movie");
-    const filtered = response.data
-        .map(toAnime)
-        .filter((a) => {
-            const t = a.type?.toLowerCase() || "";
-            return t.includes("movie") || t.includes("film") || t === "unknown";
-        });
-
-    // FIXED: kalau fallback ke search, inject pagination manual
-    return {
-        data: filtered,
-        pagination: response.pagination || {
-            currentPage: page,
-            hasNextPage: false,
-            hasPrevPage: page > 1,
-            totalPages: page,
-            lastVisiblePage: page,
-            items: { count: response.data.length, total: response.data.length, per_page: 20 }
+        if (provider.getMovies) {
+            const response = await provider.getMovies(page);
+            return {
+                data: response.data.map(toAnime),
+                pagination: response.pagination,
+            };
         }
-    };
+
+        // Fallback: search for "movie"
+        const response = await provider.search("movie");
+        const filtered = response.data
+            .map(toAnime)
+            .filter((a) => {
+                const t = a.type?.toLowerCase() || "";
+                return t.includes("movie") || t.includes("film") || t === "unknown";
+            });
+
+        // FIXED: kalau fallback ke search, inject pagination manual
+        return {
+            data: filtered,
+            pagination: response.pagination || {
+                currentPage: page,
+                hasNextPage: false,
+                hasPrevPage: page > 1,
+                totalPages: page,
+                lastVisiblePage: page,
+                items: { count: response.data.length, total: response.data.length, per_page: 20 }
+            }
+        };
+    }, 60 * 60 * 1000); // 1 hour cache
 }
 
 export async function getAnimeByGenre(genre: string, page = 1, source?: string): Promise<AnimeListResponse> {
-    const provider = getProvider(source);
+    const key = `genre:${genre.toLowerCase()}:${source || "default"}:page:${page}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
 
-    if (provider.getByGenre) {
-        const response = await provider.getByGenre(genre, page);
+        if (provider.getByGenre) {
+            const response = await provider.getByGenre(genre, page);
+            return {
+                data: response.data.map(toAnime),
+                pagination: response.pagination,
+            };
+        }
+
+        // Fallback: search with genre name
+        const response = await provider.search(genre);
+        const mappedData = response.data.map(toAnime);
+        return {
+            data: mappedData,
+            pagination: response.pagination || {
+                currentPage: page,
+                hasNextPage: false,
+                hasPrevPage: page > 1,
+                totalPages: page,
+                lastVisiblePage: page,
+                items: { count: mappedData.length, total: mappedData.length, per_page: 20 }
+            },
+        };
+    }, 60 * 60 * 1000); // 1 hour cache
+}
+
+export async function getAnimeInfo(id: string, source?: string): Promise<AnimeDetail> {
+    const key = `detail:${id}:${source || "default"}`;
+    return getCachedData(key, async () => {
+        if (source) {
+            const provider = getProvider(source);
+            const data = await provider.getDetail(id);
+            return toAnimeDetail(data);
+        }
+
+        // Default: Try Otakudesu
+        const provider = getProvider("otakudesu");
+        const data = await provider.getDetail(id);
+        
+        // If Otakudesu returns no episodes (it means it failed and used Jikan fallback)
+        if (!data.episodes || data.episodes.length === 0) {
+            try {
+                const samehadakuProvider = getProvider("samehadaku");
+                const samehadakuData = await samehadakuProvider.getDetail(id);
+                if (samehadakuData.episodes && samehadakuData.episodes.length > 0) {
+                    return toAnimeDetail(samehadakuData);
+                }
+            } catch {
+                // Ignore Samehadaku error and fallback to original Otakudesu (Jikan) data
+            }
+        }
+
+        return toAnimeDetail(data);
+    }, 15 * 60 * 1000); // 15 minutes cache
+}
+
+export async function getEpisodeStreams(episodeId: string, source?: string): Promise<StreamingData | null> {
+    const key = `streams:${episodeId}:${source || "default"}`;
+    return getCachedData(key, async () => {
+        try {
+            if (source) {
+                const provider = getProvider(source);
+                const servers = await provider.getStreams(episodeId);
+                if (!servers || !servers.length) return null;
+                return { url: servers[0].streamUrl, headers: {}, servers };
+            }
+
+            // Default: Try Otakudesu
+            const otakudesuProvider = getProvider("otakudesu");
+            let servers = await otakudesuProvider.getStreams(episodeId);
+
+            // Fallback to Samehadaku if Otakudesu returns no streams
+            if (!servers || servers.length === 0) {
+                try {
+                    const samehadakuProvider = getProvider("samehadaku");
+                    const samehadakuServers = await samehadakuProvider.getStreams(episodeId);
+                    if (samehadakuServers && samehadakuServers.length > 0) {
+                        servers = samehadakuServers;
+                    }
+                } catch {
+                    // Ignore Samehadaku error
+                }
+            }
+
+            if (!servers || !servers.length) return null;
+
+            return {
+                url: servers[0].streamUrl,
+                headers: {},
+                servers,
+            };
+        } catch (e) {
+            console.error("[animbus] Error getting stream:", e);
+            return null;
+        }
+    }, 30 * 60 * 1000); // 30 minutes cache
+}
+
+export async function searchAnimes(query: string, source?: string): Promise<AnimeListResponse> {
+    const cleanQuery = query.trim().toLowerCase();
+    const key = `search:${cleanQuery}:${source || "default"}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
+        const response = await provider.search(query);
+
+        // BUG D FIX: Search Jikan (MyAnimeList) Pagination Fallback
+        const hasResults = response && response.data && response.data.length > 0;
+        const isOtakudesu = !source || source.toLowerCase() === "otakudesu";
+
+        if (!hasResults && isOtakudesu) {
+            console.log(`[animbus] Searching Jikan API fallback for: ${query}`);
+            try {
+                // Kita fetch 10 hasil dari Jikan
+                const jikanRes = await fetch(
+                    `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=10`,
+                    { signal: AbortSignal.timeout(5000) }
+                );
+
+                if (jikanRes.status === 429) {
+                    console.warn("[animbus] Jikan rate limited, skipping fallback");
+                    return { data: response.data.map(toAnime), pagination: response.pagination };
+                }
+
+                if (jikanRes.ok) {
+                    const jikanData = await jikanRes.json();
+                    const jikanItems = jikanData.data || [];
+
+                    if (jikanItems.length > 0) {
+                        const finalData = jikanItems.map((item: any) => ({
+                            id: item.mal_id.toString(),
+                            slug: item.mal_id.toString(),
+                            title: item.title,
+                            image: item.images?.webp?.image_url || item.images?.jpg?.image_url,
+                            poster: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+                            rating: item.score?.toString(),
+                            type: item.type,
+                            status: item.status,
+                            synopsis: item.synopsis,
+                            episode: item.episodes?.toString() || "?",
+                            released: item.year?.toString() || "Unknown",
+                            _source: "jikan"
+                        }));
+
+                        return {
+                            data: finalData as Anime[],
+                            pagination: {
+                                currentPage: 1,
+                                hasNextPage: jikanData.pagination?.has_next_page || false,
+                                hasPrevPage: false,
+                                lastVisiblePage: jikanData.pagination?.last_visible_page || 1,
+                                totalPages: jikanData.pagination?.last_visible_page || 1,
+                                items: {
+                                    count: finalData.length,
+                                    total: jikanData.pagination?.items?.total || finalData.length,
+                                    per_page: jikanData.pagination?.items?.per_page || 10
+                                }
+                            }
+                        };
+                    }
+                } else {
+                    throw new Error(`Jikan HTTP ${jikanRes.status}`);
+                }
+            } catch (error) {
+                console.error("[animbus] Jikan fallback search error:", error);
+            }
+        }
+
         return {
             data: response.data.map(toAnime),
             pagination: response.pagination,
         };
-    }
-
-    // Fallback: search with genre name
-    const response = await provider.search(genre);
-    const mappedData = response.data.map(toAnime);
-    return {
-        data: mappedData,
-        pagination: response.pagination || {
-            currentPage: page,
-            hasNextPage: false,
-            hasPrevPage: page > 1,
-            totalPages: page,
-            lastVisiblePage: page,
-            items: { count: mappedData.length, total: mappedData.length, per_page: 20 }
-        },
-    };
-}
-
-export async function getAnimeInfo(id: string, source?: string): Promise<AnimeDetail> {
-    if (source) {
-        const provider = getProvider(source);
-        const data = await provider.getDetail(id);
-        return toAnimeDetail(data);
-    }
-
-    // Default: Try Otakudesu
-    const provider = getProvider("otakudesu");
-    const data = await provider.getDetail(id);
-    
-    // If Otakudesu returns no episodes (it means it failed and used Jikan fallback)
-    if (!data.episodes || data.episodes.length === 0) {
-        try {
-            const samehadakuProvider = getProvider("samehadaku");
-            const samehadakuData = await samehadakuProvider.getDetail(id);
-            if (samehadakuData.episodes && samehadakuData.episodes.length > 0) {
-                return toAnimeDetail(samehadakuData);
-            }
-        } catch {
-            // Ignore Samehadaku error and fallback to original Otakudesu (Jikan) data
-        }
-    }
-
-    return toAnimeDetail(data);
-}
-
-export async function getEpisodeStreams(episodeId: string, source?: string): Promise<StreamingData | null> {
-    try {
-        if (source) {
-            const provider = getProvider(source);
-            const servers = await provider.getStreams(episodeId);
-            if (!servers || !servers.length) return null;
-            return { url: servers[0].streamUrl, headers: {}, servers };
-        }
-
-        // Default: Try Otakudesu
-        const otakudesuProvider = getProvider("otakudesu");
-        let servers = await otakudesuProvider.getStreams(episodeId);
-
-        // Fallback to Samehadaku if Otakudesu returns no streams
-        if (!servers || servers.length === 0) {
-            try {
-                const samehadakuProvider = getProvider("samehadaku");
-                const samehadakuServers = await samehadakuProvider.getStreams(episodeId);
-                if (samehadakuServers && samehadakuServers.length > 0) {
-                    servers = samehadakuServers;
-                }
-            } catch {
-                // Ignore Samehadaku error
-            }
-        }
-
-        if (!servers || !servers.length) return null;
-
-        return {
-            url: servers[0].streamUrl,
-            headers: {},
-            servers,
-        };
-    } catch (e) {
-        console.error("[animbus] Error getting stream:", e);
-        return null;
-    }
-}
-
-export async function searchAnimes(query: string, source?: string): Promise<AnimeListResponse> {
-    const provider = getProvider(source);
-    const response = await provider.search(query);
-
-    // BUG D FIX: Search Jikan (MyAnimeList) Pagination Fallback
-    const hasResults = response && response.data && response.data.length > 0;
-    const isOtakudesu = !source || source.toLowerCase() === "otakudesu";
-
-    if (!hasResults && isOtakudesu) {
-        console.log(`[animbus] Searching Jikan API fallback for: ${query}`);
-        try {
-            // Kita fetch 10 hasil dari Jikan
-            const jikanRes = await fetch(
-                `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=10`,
-                { signal: AbortSignal.timeout(5000) }
-            );
-
-            if (jikanRes.status === 429) {
-                console.warn("[animbus] Jikan rate limited, skipping fallback");
-                return { data: response.data.map(toAnime), pagination: response.pagination };
-            }
-
-            if (jikanRes.ok) {
-                const jikanData = await jikanRes.json();
-                const jikanItems = jikanData.data || [];
-
-                if (jikanItems.length > 0) {
-                    const finalData = jikanItems.map((item: any) => ({
-                        id: item.mal_id.toString(),
-                        slug: item.mal_id.toString(),
-                        title: item.title,
-                        image: item.images?.webp?.image_url || item.images?.jpg?.image_url,
-                        poster: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-                        rating: item.score?.toString(),
-                        type: item.type,
-                        status: item.status,
-                        synopsis: item.synopsis,
-                        episode: item.episodes?.toString() || "?",
-                        released: item.year?.toString() || "Unknown",
-                        _source: "jikan"
-                    }));
-
-                    return {
-                        data: finalData as Anime[],
-                        pagination: {
-                            currentPage: 1,
-                            hasNextPage: jikanData.pagination?.has_next_page || false,
-                            hasPrevPage: false,
-                            lastVisiblePage: jikanData.pagination?.last_visible_page || 1,
-                            totalPages: jikanData.pagination?.last_visible_page || 1,
-                            items: {
-                                count: finalData.length,
-                                total: jikanData.pagination?.items?.total || finalData.length,
-                                per_page: jikanData.pagination?.items?.per_page || 10
-                            }
-                        }
-                    };
-                }
-            } else {
-                throw new Error(`Jikan HTTP ${jikanRes.status}`);
-            }
-        } catch (error) {
-            console.error("[animbus] Jikan fallback search error:", error);
-        }
-    }
-
-    return {
-        data: response.data.map(toAnime),
-        pagination: response.pagination,
-    };
+    }, 5 * 60 * 1000); // 5 minutes cache
 }
 
 // Re-export PaginationInfo for backward compatibility
 export type { PaginationInfo } from "./providers";
 
 export async function getAnimeSchedule(source?: string): Promise<Record<string, Anime[]>> {
-    const provider = getProvider(source);
-    if (!provider.getSchedule) {
-        return {};
-    }
-
-    try {
-        const scheduleData = await provider.getSchedule();
-        const mappedSchedule: Record<string, Anime[]> = {};
-        
-        for (const [day, animeList] of Object.entries(scheduleData)) {
-            mappedSchedule[day] = animeList.map(toAnime);
+    const key = `schedule:${source || "default"}`;
+    return getCachedData(key, async () => {
+        const provider = getProvider(source);
+        if (!provider.getSchedule) {
+            return {};
         }
-        
-        return mappedSchedule;
-    } catch (e) {
-        console.error("[animbus] Error getting schedule:", e);
-        return {};
-    }
+
+        try {
+            const scheduleData = await provider.getSchedule();
+            const mappedSchedule: Record<string, Anime[]> = {};
+            
+            for (const [day, animeList] of Object.entries(scheduleData)) {
+                mappedSchedule[day] = animeList.map(toAnime);
+            }
+            
+            return mappedSchedule;
+        } catch (e) {
+            console.error("[animbus] Error getting schedule:", e);
+            return {};
+        }
+    }, 2 * 60 * 60 * 1000); // 2 hours cache
 }
