@@ -168,16 +168,16 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
           },
           { key: "X-DNS-Prefetch-Control", value: "on" },
-          // [SECURITY FIX] Content-Security-Policy ditambahkan
+          // [SECURITY FIX] Content-Security-Policy ditambahkan (Disesuaikan agar iklan dinamis & video player embed berjalan lancar)
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://glamournakedemployee.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src * data: blob:",
-              "connect-src 'self' https://api.jikan.moe https://www.sankavollerei.com https://www.google.com",
+              "connect-src 'self' https: http: data: blob:",
               "frame-src 'self' https:",
               "object-src 'none'",
               "base-uri 'self'",

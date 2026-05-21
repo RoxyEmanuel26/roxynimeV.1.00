@@ -7,12 +7,38 @@ import { prisma } from "./prisma";
 //  L1: In-memory Map (fast, 5 min TTL)
 //  L2: Prisma/PostgreSQL (persistent, 1 hour TTL)
 //  + Request Coalescing (singleflight pattern)
+//  + Circuit Breaker (skip L2 if DB is down)
 // ══════════════════════════════════════════════════════
 
 // Cache TTL in milliseconds
 const MEMORY_TTL = 5 * 60 * 1000;   // 5 minutes (L1)
 const DB_TTL = 60 * 60 * 1000;      // 1 hour (L2 default)
 const STALE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours max stale age
+
+// ─── Circuit Breaker for L2 (DB) ────────────────────
+// If DB fails, skip L2 for 30 seconds to prevent error spam
+let l2CircuitOpen = false;
+let l2CircuitOpenedAt = 0;
+const L2_CIRCUIT_COOLDOWN = 30 * 1000; // 30 seconds
+
+function isL2Available(): boolean {
+    if (!l2CircuitOpen) return true;
+    // Check if cooldown has passed
+    if (Date.now() - l2CircuitOpenedAt > L2_CIRCUIT_COOLDOWN) {
+        l2CircuitOpen = false;
+        return true;
+    }
+    return false;
+}
+
+function tripL2Circuit(error: any) {
+    if (!l2CircuitOpen) {
+        console.warn("[Cache] L2 (Database) unavailable, skipping for 30s:", 
+            error instanceof Error ? error.message : String(error));
+    }
+    l2CircuitOpen = true;
+    l2CircuitOpenedAt = Date.now();
+}
 
 // ─── L1: In-Memory Cache ───────────────────────────────
 interface MemoryCacheEntry {
@@ -69,25 +95,27 @@ export async function getCachedData<T>(
     let staleData: string | null = null;
     let staleTimestamp: number = 0;
 
-    try {
-        const cached = await (prisma as any).apiCache.findUnique({
-            where: { key },
-        });
+    if (isL2Available()) {
+        try {
+            const cached = await (prisma as any).apiCache.findUnique({
+                where: { key },
+            });
 
-        if (cached) {
-            const cachedTime = new Date(cached.timestamp).getTime();
-            staleData = cached.data;
-            staleTimestamp = cachedTime;
+            if (cached) {
+                const cachedTime = new Date(cached.timestamp).getTime();
+                staleData = cached.data;
+                staleTimestamp = cachedTime;
 
-            if (now - cachedTime < ttl) {
-                // Fresh DB cache — populate L1 and return
-                memoryCache.set(key, { data: cached.data, timestamp: now });
-                evictOldEntries();
-                return JSON.parse(cached.data) as T;
+                if (now - cachedTime < ttl) {
+                    // Fresh DB cache — populate L1 and return
+                    memoryCache.set(key, { data: cached.data, timestamp: now });
+                    evictOldEntries();
+                    return JSON.parse(cached.data) as T;
+                }
             }
+        } catch (error) {
+            tripL2Circuit(error);
         }
-    } catch (error) {
-        console.warn("[Cache] L2 read error:", error);
     }
 
     // ─── Request Coalescing: Reuse inflight promise ─────
@@ -107,12 +135,14 @@ export async function getCachedData<T>(
             memoryCache.set(key, { data: jsonData, timestamp: Date.now() });
             evictOldEntries();
 
-            // Update L2 (async, non-blocking)
-            (prisma as any).apiCache.upsert({
-                where: { key },
-                update: { data: jsonData, timestamp: new Date() },
-                create: { key, data: jsonData, timestamp: new Date() },
-            }).catch((err: any) => console.warn("[Cache] L2 write error:", err));
+            // Update L2 (async, non-blocking) — skip if circuit is open
+            if (isL2Available()) {
+                (prisma as any).apiCache.upsert({
+                    where: { key },
+                    update: { data: jsonData, timestamp: new Date() },
+                    create: { key, data: jsonData, timestamp: new Date() },
+                }).catch((err: any) => tripL2Circuit(err));
+            }
 
             return data;
         } catch (error) {
@@ -139,4 +169,5 @@ export async function getCachedData<T>(
 
     return fetchPromise;
 }
+
 
