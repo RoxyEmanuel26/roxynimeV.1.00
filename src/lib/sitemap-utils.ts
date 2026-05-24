@@ -188,48 +188,58 @@ export function xmlResponse(xml: string, cache = true): Response {
   });
 }
 
-// ── Cache File I/O ────────────────────────────────────────────────────
+// ── Cache Database I/O ────────────────────────────────────────────────
 
-import { readFile, writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { prisma } from "@/lib/prisma";
 
 /**
- * Baca file JSON dari public/cache/.
- *
- * @param filename - Nama file (contoh: "anime-list.json")
- * @returns Data yang sudah di-parse, atau null jika file tidak ada / error
+ * Mengambil cache dari database Prisma berdasarkan tipe
  */
-export async function readCacheFile<T>(filename: string): Promise<T | null> {
-  try {
-    const filePath = path.join(process.cwd(), "public", "cache", filename);
-    const raw = await readFile(filePath, "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    // File belum ada atau gagal dibaca → return null (bukan throw)
-    return null;
+export async function getSitemapCacheFromDb(type: "anime" | "movie" | "watch") {
+  const records = await prisma.sitemapCache.findMany({
+    where: { type },
+    select: { slug: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return {
+    updatedAt: records[0]?.updatedAt.toISOString() || new Date().toISOString(),
+    total: records.length,
+    data: records.map((r) => ({
+      slug: r.slug,
+      updatedAt: r.updatedAt.toISOString(),
+    })),
+  };
+}
+
+/**
+ * Menyimpan cache baru ke database Prisma
+ */
+export async function saveSitemapCacheToDb(
+  type: "anime" | "movie" | "watch",
+  slugs: { slug: string; updatedAt: string }[]
+) {
+  // Pecah data menjadi chunk maksimal 5000 item untuk mencegah PostgreSQL parameter limit
+  const chunkSize = 5000;
+  const dataChunks: typeof slugs[] = [];
+  for (let i = 0; i < slugs.length; i += chunkSize) {
+    dataChunks.push(slugs.slice(i, i + chunkSize));
   }
-}
 
-/**
- * Tulis file JSON ke public/cache/. Buat folder public/cache/ jika belum ada.
- *
- * @param filename - Nama file (contoh: "anime-list.json")
- * @param data - Data yang akan disimpan (di-serialize ke JSON)
- */
-export async function writeCacheFile(
-  filename: string,
-  data: unknown
-): Promise<void> {
-  try {
-    const dirPath = path.join(process.cwd(), "public", "cache");
-    // Buat folder jika belum ada
-    await mkdir(dirPath, { recursive: true });
+  // Menggunakan transaksi untuk menghapus cache lama dan menulis yang baru agar aman
+  const operations = [
+    prisma.sitemapCache.deleteMany({ where: { type } }),
+    ...dataChunks.map((chunk) =>
+      prisma.sitemapCache.createMany({
+        data: chunk.map((item) => ({
+          type,
+          slug: item.slug,
+          updatedAt: new Date(item.updatedAt),
+        })),
+        skipDuplicates: true,
+      })
+    ),
+  ];
 
-    const filePath = path.join(dirPath, filename);
-    const json = JSON.stringify(data, null, 2);
-    await writeFile(filePath, json, "utf-8");
-  } catch (err) {
-  console.error(`[sitemap-utils] Gagal menulis cache file ${filename}:`, err);
-  throw err; // ← re-throw agar caller tahu dan bisa handle
-}
+  await prisma.$transaction(operations);
 }

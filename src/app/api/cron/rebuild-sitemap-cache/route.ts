@@ -15,8 +15,7 @@
 
 import { type NextRequest } from "next/server";
 import { fetchAllAnime, fetchAllMovies, fetchAllEpisodes } from "@/lib/anime-api";
-
-import prisma from "@/lib/prisma";
+import { saveSitemapCacheToDb } from "@/lib/sitemap-utils";
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -113,51 +112,7 @@ function isAuthorized(request: NextRequest): boolean {
   return isValid;
 }
 
-/**
- * Membagi array menjadi chunk berukuran tertentu.
- */
-function chunkArray<T>(array: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < array.length; i += size) {
-    chunks.push(array.slice(i, i + size));
-  }
-  return chunks;
-}
 
-/**
- * Simpan data cache ke Database Prisma dengan transaksi batch (delete & createMany).
- */
-async function saveCacheToDb(
-  type: string,
-  data: { slug: string; updatedAt: string }[]
-): Promise<void> {
-  console.log(`[cron] Saving ${data.length} items of type "${type}" to database...`);
-  
-  if (data.length === 0) {
-    await prisma.sitemapCache.deleteMany({ where: { type } });
-    console.log(`[cron] Database cleared for type "${type}" as no items were returned`);
-    return;
-  }
-
-  // Pecah data menjadi chunk maksimal 5000 item untuk mencegah PostgreSQL parameter limit
-  const dataChunks = chunkArray(data, 5000);
-
-  const operations = [
-    prisma.sitemapCache.deleteMany({ where: { type } }),
-    ...dataChunks.map((chunk) =>
-      prisma.sitemapCache.createMany({
-        data: chunk.map((item) => ({
-          type,
-          slug: item.slug,
-          updatedAt: new Date(item.updatedAt),
-        })),
-      })
-    ),
-  ];
-
-  await prisma.$transaction(operations);
-  console.log(`[cron] Rebuilt database sitemap cache for type "${type}": ${data.length} items successfully saved`);
-}
 
 /**
  * [SECURITY FIX] Self-invoke: panggil endpoint sendiri dengan phase tertentu.
@@ -285,19 +240,19 @@ export async function GET(request: NextRequest): Promise<Response> {
 async function executePhase1(): Promise<void> {
   console.log("[cron] Phase 1: Fetching all anime...");
   const animeList = await fetchAllAnime();
-  await saveCacheToDb("anime", animeList);
+  await saveSitemapCacheToDb("anime", animeList);
 }
 
 async function executePhase2(): Promise<void> {
   console.log("[cron] Phase 2: Fetching all movies...");
   const moviesList = await fetchAllMovies();
-  await saveCacheToDb("movie", moviesList);
+  await saveSitemapCacheToDb("movie", moviesList);
 }
 
 async function executePhase3(): Promise<void> {
   console.log("[cron] Phase 3: Fetching all episodes...");
   const episodesList = await fetchAllEpisodes();
-  await saveCacheToDb("watch", episodesList);
+  await saveSitemapCacheToDb("watch", episodesList);
   console.log("[cron] Phase 3: Complete. (Google ping skipped - deprecated)");
 }
 
