@@ -15,11 +15,8 @@
 
 import { type NextRequest } from "next/server";
 import { fetchAllAnime, fetchAllMovies, fetchAllEpisodes } from "@/lib/anime-api";
-import {
-  writeCacheFile,
-  getLastmodWIB,
-} from "@/lib/sitemap-utils";
-import type { AnimeCache } from "@/lib/sitemap-utils";
+
+import prisma from "@/lib/prisma";
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -117,23 +114,49 @@ function isAuthorized(request: NextRequest): boolean {
 }
 
 /**
- * Simpan data ke cache file JSON.
+ * Membagi array menjadi chunk berukuran tertentu.
  */
-async function saveCache(
-  filename: string,
-  data: { slug: string; updatedAt: string }[],
-  now: string
-): Promise<void> {
-  const cache: AnimeCache = {
-    updatedAt: now,
-    total: data.length,
-    data,
-  };
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
 
-  await writeCacheFile(filename, cache);
-  console.log(
-    `[cron] Saved ${data.length} items to public/cache/${filename}`
-  );
+/**
+ * Simpan data cache ke Database Prisma dengan transaksi batch (delete & createMany).
+ */
+async function saveCacheToDb(
+  type: string,
+  data: { slug: string; updatedAt: string }[]
+): Promise<void> {
+  console.log(`[cron] Saving ${data.length} items of type "${type}" to database...`);
+  
+  if (data.length === 0) {
+    await prisma.sitemapCache.deleteMany({ where: { type } });
+    console.log(`[cron] Database cleared for type "${type}" as no items were returned`);
+    return;
+  }
+
+  // Pecah data menjadi chunk maksimal 5000 item untuk mencegah PostgreSQL parameter limit
+  const dataChunks = chunkArray(data, 5000);
+
+  const operations = [
+    prisma.sitemapCache.deleteMany({ where: { type } }),
+    ...dataChunks.map((chunk) =>
+      prisma.sitemapCache.createMany({
+        data: chunk.map((item) => ({
+          type,
+          slug: item.slug,
+          updatedAt: new Date(item.updatedAt),
+        })),
+      })
+    ),
+  ];
+
+  await prisma.$transaction(operations);
+  console.log(`[cron] Rebuilt database sitemap cache for type "${type}": ${data.length} items successfully saved`);
 }
 
 /**
@@ -183,7 +206,6 @@ export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const phaseParam = searchParams.get("phase");
   const phase = phaseParam ? parseInt(phaseParam, 10) : 0;
-  const now = getLastmodWIB();
 
   try {
     // ── Phase 0: HANYA trigger — tidak await apa pun ──
@@ -214,7 +236,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     // ── Phase 1: Fetch anime (ongoing + completed) ──
     if (phase === 1) {
-      await executePhase1(now);
+      await executePhase1();
       return Response.json({
         success: true,
         phase: 1,
@@ -224,7 +246,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     // ── Phase 2: Fetch movies ──
     if (phase === 2) {
-      await executePhase2(now);
+      await executePhase2();
       return Response.json({
         success: true,
         phase: 2,
@@ -232,13 +254,13 @@ export async function GET(request: NextRequest): Promise<Response> {
       });
     }
 
-    // ── Phase 3: Fetch episodes + Ping Google ──
+    // ── Phase 3: Fetch episodes ──
     if (phase === 3) {
-      await executePhase3(now);
+      await executePhase3();
       return Response.json({
         success: true,
         phase: 3,
-        message: "Episodes cache rebuilt + Google ping sent.",
+        message: "Episodes cache rebuilt successfully.",
       });
     }
 
@@ -260,41 +282,23 @@ export async function GET(request: NextRequest): Promise<Response> {
 
 // ── Phase Executors ───────────────────────────────────────────────────
 
-async function executePhase1(now: string): Promise<void> {
+async function executePhase1(): Promise<void> {
   console.log("[cron] Phase 1: Fetching all anime...");
   const animeList = await fetchAllAnime();
-  await saveCache("anime-list.json", animeList, now);
+  await saveCacheToDb("anime", animeList);
 }
 
-async function executePhase2(now: string): Promise<void> {
+async function executePhase2(): Promise<void> {
   console.log("[cron] Phase 2: Fetching all movies...");
   const moviesList = await fetchAllMovies();
-  await saveCache("movies-list.json", moviesList, now);
+  await saveCacheToDb("movie", moviesList);
 }
 
-async function executePhase3(now: string): Promise<void> {
+async function executePhase3(): Promise<void> {
   console.log("[cron] Phase 3: Fetching all episodes...");
   const episodesList = await fetchAllEpisodes();
-  await saveCache("watch-list.json", episodesList, now);
-
-  // Ping Google untuk memberitahu sitemap baru
-  console.log("[cron] Pinging Google sitemap...");
-  try {
-    // [SECURITY FIX] Gunakan validated BASE_URL
-    const baseUrl = getValidatedBaseUrl();
-    const pingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(
-      baseUrl + "/sitemap-index.xml"
-    )}`;
-    const res = await fetch(pingUrl, { method: "GET" });
-    console.log(
-      `[cron] Google ping response: HTTP ${res.status} ${res.statusText}`
-    );
-  } catch (err) {
-    // Ping Google gagal bukan critical error — jangan throw
-    // [SECURITY FIX] Jangan log raw error object
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.log("[cron] Google ping failed (non-critical):", errMsg);
-  }
+  await saveCacheToDb("watch", episodesList);
+  console.log("[cron] Phase 3: Complete. (Google ping skipped - deprecated)");
 }
 
 /**

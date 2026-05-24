@@ -8,14 +8,14 @@
  */
 
 import {
-  readCacheFile,
   CHUNK_SIZE,
   BASE_URL,
   getLastmodWIB,
   generateUrlsetXML,
   xmlResponse,
 } from "@/lib/sitemap-utils";
-import type { AnimeCache, SitemapURL } from "@/lib/sitemap-utils";
+import type { SitemapURL } from "@/lib/sitemap-utils";
+import prisma from "@/lib/prisma";
 
 export const revalidate = 86400;
 
@@ -31,26 +31,25 @@ export async function GET(
     return xmlResponse(generateUrlsetXML([]), true);
   }
 
-  const now = getLastmodWIB();
 
   try {
-    const cache = await readCacheFile<AnimeCache>("movies-list.json");
-
-    if (!cache || !cache.data || cache.data.length === 0) {
-      return xmlResponse(generateUrlsetXML([]), true);
-    }
-
     const startIndex = (chunkNum - 1) * CHUNK_SIZE;
-    const endIndex = startIndex + CHUNK_SIZE;
-    const slice = cache.data.slice(startIndex, endIndex);
 
-    if (slice.length === 0) {
+    // Ambil data slice dari database Prisma
+    const items = await prisma.sitemapCache.findMany({
+      where: { type: "movie" },
+      orderBy: { slug: "asc" },
+      skip: startIndex,
+      take: CHUNK_SIZE,
+    });
+
+    if (items.length === 0) {
       return xmlResponse(generateUrlsetXML([]), true);
     }
 
-    const urls: SitemapURL[] = slice.map((item) => ({
+    const urls: SitemapURL[] = items.map((item) => ({
       loc: `${BASE_URL}/anime/${encodeURIComponent(item.slug)}`,
-      lastmod: item.updatedAt || cache.updatedAt || now,
+      lastmod: getLastmodWIB(item.updatedAt),
       changefreq: "daily" as const,
       priority: 0.75,
     }));

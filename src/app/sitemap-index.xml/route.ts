@@ -7,14 +7,14 @@
  */
 
 import {
-  readCacheFile,
   CHUNK_SIZE,
   BASE_URL,
   getLastmodWIB,
   generateSitemapIndexXML,
   xmlResponse,
 } from "@/lib/sitemap-utils";
-import type { AnimeCache, SitemapIndex } from "@/lib/sitemap-utils";
+import type { SitemapIndex } from "@/lib/sitemap-utils";
+import prisma from "@/lib/prisma";
 
 /** ISR: revalidate setiap 24 jam */
 export const revalidate = 86400;
@@ -30,38 +30,53 @@ export async function GET(): Promise<Response> {
   });
 
   // ── 2. Anime chunks ──
-  const animeCache = await readCacheFile<AnimeCache>("anime-list.json");
-  const animeChunks = animeCache?.total
-    ? Math.ceil(animeCache.total / CHUNK_SIZE)
-    : 1;
+  const animeCount = await prisma.sitemapCache.count({
+    where: { type: "anime" },
+  });
+  const latestAnime = await prisma.sitemapCache.findFirst({
+    where: { type: "anime" },
+    orderBy: { updatedAt: "desc" },
+  });
+  const animeChunks = animeCount > 0 ? Math.ceil(animeCount / CHUNK_SIZE) : 1;
+  const animeLastmod = latestAnime ? getLastmodWIB(latestAnime.updatedAt) : now;
   for (let i = 1; i <= animeChunks; i++) {
     sitemaps.push({
       loc: `${BASE_URL}/sitemap_anime_${i}.xml`,
-      lastmod: animeCache?.updatedAt ?? now,
+      lastmod: animeLastmod,
     });
   }
 
   // ── 3. Watch/episode chunks ──
-  const watchCache = await readCacheFile<AnimeCache>("watch-list.json");
-  const watchChunks = watchCache?.total
-    ? Math.ceil(watchCache.total / CHUNK_SIZE)
-    : 1;
+  const watchCount = await prisma.sitemapCache.count({
+    where: { type: "watch" },
+  });
+  const latestWatch = await prisma.sitemapCache.findFirst({
+    where: { type: "watch" },
+    orderBy: { updatedAt: "desc" },
+  });
+  const watchChunks = watchCount > 0 ? Math.ceil(watchCount / CHUNK_SIZE) : 1;
+  const watchLastmod = latestWatch ? getLastmodWIB(latestWatch.updatedAt) : now;
   for (let i = 1; i <= watchChunks; i++) {
     sitemaps.push({
       loc: `${BASE_URL}/sitemap_watch_${i}.xml`,
-      lastmod: watchCache?.updatedAt ?? now,
+      lastmod: watchLastmod,
     });
   }
 
   // ── 4. Movie chunks ──
-  const movieCache = await readCacheFile<AnimeCache>("movies-list.json");
-  const movieChunks = movieCache?.total
-    ? Math.ceil(movieCache.total / CHUNK_SIZE)
-    : 1;
+  const movieCount = await prisma.sitemapCache.count({
+    where: { type: "movie" },
+  });
+  const latestMovie = await prisma.sitemapCache.findFirst({
+    where: { type: "movie" },
+    orderBy: { updatedAt: "desc" },
+  });
+  const movieChunks = movieCount > 0 ? Math.ceil(movieCount / CHUNK_SIZE) : 1;
+  const movieLastmod = latestMovie ? getLastmodWIB(latestMovie.updatedAt) : now;
   for (let i = 1; i <= movieChunks; i++) {
     sitemaps.push({
       loc: `${BASE_URL}/sitemap_movies_${i}.xml`,
-      lastmod: movieCache?.updatedAt ?? now,
+      lastmod: movieLastmod,
     });
   }
 

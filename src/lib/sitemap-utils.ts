@@ -179,7 +179,7 @@ export function xmlResponse(xml: string, cache = true): Response {
 
   if (cache) {
     headers["Cache-Control"] =
-      "public, max-age=86400, stale-while-revalidate=3600";
+      "public, max-age=86400, s-maxage=86400, stale-while-revalidate=43200";
   }
 
   return new Response(xml, {

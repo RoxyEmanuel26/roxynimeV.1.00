@@ -19,3 +19,14 @@ model ApiCache {
 
   @@index([timestamp])
 }
+
+model SitemapCache {
+  id        String   @id @default(cuid())
+  type      String   // "anime" | "movie" | "watch"
+  slug      String
+  updatedAt DateTime @default(now())
+
+  @@unique([type, slug])
+  @@index([type])
+}
+
